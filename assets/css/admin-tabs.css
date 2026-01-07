@@ -1,0 +1,116 @@
+/**
+ * Aucteeno Admin Tabs Styles
+ *
+ * @package Aucteeno
+ * @since 1.0.0
+ */
+
+.aucteeno-tabs-wrapper {
+	margin: 0;
+}
+
+.aucteeno-tabs {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border-bottom: 1px solid #d5d5d5;
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.aucteeno-tab {
+	margin: 0;
+	padding: 0;
+}
+
+.aucteeno-tab-link {
+	display: inline-block;
+	padding: 10px 15px;
+	text-decoration: none;
+	color: #555;
+	border: 1px solid transparent;
+	border-bottom: none;
+	background: #f7f7f7;
+	margin-right: 2px;
+	border-radius: 4px 4px 0 0;
+	transition: all 0.2s ease;
+}
+
+.aucteeno-tab-link:hover {
+	color: #2271b1;
+	background: #f0f0f1;
+}
+
+.aucteeno-tab.active .aucteeno-tab-link {
+	color: #2271b1;
+	background: #fff;
+	border-color: #d5d5d5;
+	border-bottom-color: #fff;
+	font-weight: 600;
+	position: relative;
+	top: 1px;
+	margin-bottom: -1px;
+}
+
+.aucteeno-tab-panel {
+	padding: 20px 0;
+	border-top: 1px solid #d5d5d5;
+	margin-top: -1px;
+}
+
+.aucteeno-tab-panel:not(.active) {
+	display: none;
+}
+
+.aucteeno-tab-panel.active {
+	display: block;
+}
+
+/* Ensure proper spacing within tab panels */
+.aucteeno-tab-panel .options_group {
+	margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+	.aucteeno-tabs {
+		flex-direction: column;
+		border-bottom: none;
+	}
+
+	.aucteeno-tab {
+		margin-bottom: 5px;
+	}
+
+	.aucteeno-tab-link {
+		display: block;
+		border: 1px solid #d5d5d5;
+		border-radius: 4px;
+		margin-right: 0;
+		width: 100%;
+	}
+
+	.aucteeno-tab.active .aucteeno-tab-link {
+		top: 0;
+		margin-bottom: 0;
+		border-bottom-color: #d5d5d5;
+	}
+
+	.aucteeno-tab-panel {
+		border-top: none;
+		margin-top: 0;
+		padding-top: 15px;
+	}
+}
+
+/* Select2 validation error styling */
+.select2-container--error .select2-selection {
+	border-color: #dc3232 !important;
+	box-shadow: 0 0 2px rgba(220, 50, 50, 0.8);
+}
+
+.select2-container--error .select2-selection:focus {
+	border-color: #dc3232 !important;
+	box-shadow: 0 0 2px rgba(220, 50, 50, 0.8);
+}
+

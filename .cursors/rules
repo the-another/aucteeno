@@ -1,0 +1,357 @@
+# Aucteeno Plugin Architecture Rules
+
+This document describes how the container, hook manager, and class loading/initialization works in the Aucteeno plugin.
+
+## Container Pattern
+
+### Overview
+
+The Aucteeno plugin uses a **dependency injection container** pattern following WooCommerce-style architecture. The container provides:
+- **Lazy loading**: Services are only instantiated when accessed
+- **Singleton support**: Services can be registered as singletons
+- **Dependency injection**: Clean dependency management
+- **Hook management**: Centralized hook registration and deregistration
+
+### Container Class
+
+**Location**: `includes/container/class-container.php`
+
+**Key Methods**:
+- `Container::get_instance()` - Get singleton container instance
+- `register( string $key, callable $factory, bool $singleton = true )` - Register a service factory
+- `get( string $key )` - Get a service (triggers lazy instantiation if not already created)
+- `has( string $key )` - Check if a service exists
+- `get_hook_manager()` - Get the hook manager instance
+- `deregister_all_hooks()` - Deregister all hooks managed by the container
+
+### Service Registration Pattern
+
+Services are registered using factory functions that receive the Container as a parameter:
+
+```php
+$container->register(
+    'service_key',
+    function ( Container $c ) {
+        return new Service_Class( $c->get_hook_manager() );
+    },
+    true // Singleton (default)
+);
+```
+
+**Important Rules**:
+- Always use factory functions for service registration
+- Factory functions receive `Container $c` as parameter
+- Services are lazy-loaded (only instantiated when `get()` is called)
+- By default, services are singletons (same instance returned on subsequent `get()` calls)
+- Use `$c->get_hook_manager()` to inject Hook_Manager into services
+
+### Service Access Pattern
+
+```php
+// Get container instance
+$container = Container::get_instance();
+
+// Get service (triggers instantiation if not already created)
+$service = $container->get( 'service_key' );
+
+// Check if service exists
+if ( $container->has( 'service_key' ) ) {
+    $service = $container->get( 'service_key' );
+}
+```
+
+## Hook Manager
+
+### Overview
+
+The **Hook_Manager** tracks all WordPress hooks (actions and filters) registered through it, enabling centralized deregistration.
+
+**Location**: `includes/container/class-hook-manager.php`
+
+**Key Methods**:
+- `register_action( string $hook, callable $callback, int $priority = 10, int $accepted_args = 1 )` - Register an action
+- `register_filter( string $hook, callable $callback, int $priority = 10, int $accepted_args = 1 )` - Register a filter
+- `deregister( string $hook, callable $callback, int $priority = 10 )` - Deregister a specific hook
+- `deregister_all()` - Deregister all tracked hooks
+- `get_registered_hooks()` - Get all registered hooks
+- `get_hooks_for( string $hook )` - Get hooks for a specific hook name
+
+### Hook Registration Pattern
+
+**ALWAYS** use Hook_Manager for hook registration in container-managed classes:
+
+```php
+class My_Service {
+    private $hook_manager;
+
+    public function __construct( Hook_Manager $hook_manager ) {
+        $this->hook_manager = $hook_manager;
+    }
+
+    public function init(): void {
+        // Register actions
+        $this->hook_manager->register_action(
+            'woocommerce_some_action',
+            [ $this, 'callback_method' ]
+        );
+
+        // Register filters
+        $this->hook_manager->register_filter(
+            'woocommerce_some_filter',
+            [ $this, 'filter_method' ],
+            10,
+            1
+        );
+    }
+}
+```
+
+**Important Rules**:
+- **NEVER** use `add_action()` or `add_filter()` directly in container-managed classes
+- **ALWAYS** inject `Hook_Manager` via constructor
+- **ALWAYS** use `register_action()` or `register_filter()` methods
+- Hooks are automatically tracked for deregistration
+- No `deinit()` method needed - hooks can be deregistered through the container
+
+### Hook Deregistration
+
+Hooks can be deregistered through the container or hook manager:
+
+```php
+// Deregister all hooks managed by container
+$container = Container::get_instance();
+$container->deregister_all_hooks();
+
+// Or get hook manager and deregister specific hooks
+$hook_manager = $container->get_hook_manager();
+$hook_manager->deregister( 'hook_name', $callback, $priority );
+
+// Or deregister all hooks
+$hook_manager->deregister_all();
+```
+
+## Class Loading and Initialization
+
+### Plugin Initialization Flow
+
+1. **Plugin Bootstrap** (`aucteeno.php`):
+   - Hooks into `woocommerce_init` action
+   - Calls `Aucteeno::get_instance()->start()`
+
+2. **Main Plugin Class** (`includes/class-aucteeno.php`):
+   - `Aucteeno::start()` initializes all plugin components:
+     - Database migrations
+     - Post statuses
+     - Taxonomies
+     - Product types
+     - Datastores
+     - Admin fields (via container)
+     - Settings
+     - REST API
+
+3. **Service Registration** (`Aucteeno::register_admin_fields()`):
+   - Gets container instance
+   - Registers services with factory functions
+   - Calls `init()` on services (triggers lazy instantiation)
+
+### Service Class Pattern
+
+Services that use the container pattern should follow this structure:
+
+```php
+namespace TheAnother\Plugin\Aucteeno\Admin;
+
+use TheAnother\Plugin\Aucteeno\Hook_Manager;
+
+class My_Service {
+    /**
+     * Hook manager instance.
+     *
+     * @var Hook_Manager
+     */
+    private $hook_manager;
+
+    /**
+     * Constructor.
+     *
+     * @param Hook_Manager $hook_manager Hook manager instance.
+     */
+    public function __construct( Hook_Manager $hook_manager ) {
+        $this->hook_manager = $hook_manager;
+    }
+
+    /**
+     * Initialize the service.
+     *
+     * @return void
+     */
+    public function init(): void {
+        // Register hooks using hook manager
+        $this->hook_manager->register_action( 'hook_name', [ $this, 'callback' ] );
+    }
+}
+```
+
+### Registration in Aucteeno Class
+
+Services are registered in `Aucteeno::register_admin_fields()`:
+
+```php
+private function register_admin_fields() {
+    $this->container = Container::get_instance();
+
+    // Register service with factory
+    $this->container->register(
+        'service_key',
+        function ( Container $c ) {
+            return new Admin\My_Service( $c->get_hook_manager() );
+        },
+        true // Singleton
+    );
+
+    // Initialize service (triggers lazy instantiation)
+    $this->container->get( 'service_key' )->init();
+}
+```
+
+### Static Classes
+
+For static classes that don't use the container pattern, they can still use Hook_Manager:
+
+```php
+class Static_Service {
+    private static $hook_manager = null;
+
+    public static function init( ?Hook_Manager $hook_manager = null ): void {
+        if ( null === $hook_manager ) {
+            $container = Container::get_instance();
+            $hook_manager = $container->get_hook_manager();
+        }
+
+        self::$hook_manager = $hook_manager;
+        self::$hook_manager->register_action( 'hook_name', [ __CLASS__, 'callback' ] );
+    }
+}
+```
+
+## Best Practices
+
+### DO
+
+✅ **Use Container for service management**
+- Register services with factory functions
+- Inject dependencies via constructor
+- Use lazy loading for better performance
+
+✅ **Use Hook_Manager for all hook registration**
+- Inject Hook_Manager via constructor
+- Use `register_action()` and `register_filter()` methods
+- Let the container manage hook lifecycle
+
+✅ **Follow the initialization pattern**
+- Register services in `Aucteeno::register_admin_fields()`
+- Call `init()` after registration to trigger instantiation
+- Keep service classes focused on their responsibilities
+
+✅ **Use type hints**
+- Always type hint `Hook_Manager` in constructors
+- Use return type hints for methods
+- Document all properties and methods
+
+### DON'T
+
+❌ **Don't use direct hook registration**
+- Never use `add_action()` or `add_filter()` directly in container-managed classes
+- Always use Hook_Manager methods
+
+❌ **Don't instantiate services directly**
+- Don't use `new Service_Class()` in the main plugin class
+- Always register via container and use `get()`
+
+❌ **Don't create deinit() methods**
+- Hooks can be deregistered through the container/hook manager
+- No need for per-class deregistration methods
+
+❌ **Don't bypass the container**
+- Always access services through `Container::get_instance()->get()`
+- Don't store service instances directly in Aucteeno class (except during migration)
+
+## Migration Guide
+
+When migrating existing classes to use the container pattern:
+
+1. **Add Hook_Manager dependency**:
+   ```php
+   private $hook_manager;
+   
+   public function __construct( Hook_Manager $hook_manager ) {
+       $this->hook_manager = $hook_manager;
+   }
+   ```
+
+2. **Replace direct hook registration**:
+   ```php
+   // OLD
+   add_action( 'hook', [ $this, 'callback' ] );
+   
+   // NEW
+   $this->hook_manager->register_action( 'hook', [ $this, 'callback' ] );
+   ```
+
+3. **Register in container**:
+   ```php
+   $container->register(
+       'service_key',
+       function ( Container $c ) {
+           return new Service_Class( $c->get_hook_manager() );
+       },
+       true
+   );
+   ```
+
+4. **Update getter methods**:
+   ```php
+   public function get_service() {
+       return $this->container->get( 'service_key' );
+   }
+   ```
+
+## Testing
+
+The container pattern makes testing easier:
+
+```php
+// In tests, you can deregister all hooks
+$container = Container::get_instance();
+$container->deregister_all_hooks();
+
+// Or mock the hook manager
+$mock_hook_manager = Mockery::mock( Hook_Manager::class );
+$service = new My_Service( $mock_hook_manager );
+```
+
+## Summary
+
+- **Container**: Manages service lifecycle with lazy loading and singleton support
+- **Hook_Manager**: Tracks and manages all WordPress hooks for easy deregistration
+- **Initialization**: Services registered in `Aucteeno::register_admin_fields()` and initialized via `init()` methods
+- **Pattern**: Always inject Hook_Manager via constructor, use it for all hook registration
+- **No deinit()**: Hooks are deregistered through the container/hook manager, not per-class methods
+
+## WooCommerce Integration
+
+**IMPORTANT**: This plugin is entirely WooCommerce-based and requires WooCommerce 10.4.3.
+
+- **WooCommerce Version**: 10.4.3 (required)
+- **Repository**: https://github.com/woocommerce/woocommerce/tree/10.4.3
+- **Integration Documentation**: See `docs/WOOCOMMERCE_INTEGRATION.md` for complete details
+
+Key WooCommerce integration points:
+- Plugin hooks into `woocommerce_init` action
+- Extends `WC_Product_External` for custom product types
+- Uses `WC_Product_External_Data_Store_CPT` for custom datastores
+- Leverages WooCommerce admin hooks and helper functions
+- Follows WooCommerce architecture patterns
+
+When working on this project, always consider WooCommerce compatibility and refer to the WooCommerce 10.4.3 codebase for reference.
+

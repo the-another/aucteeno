@@ -1,0 +1,98 @@
+# ------------------------------
+# Aucteeno Plugin .gitignore
+# Excludes dev dependencies, build artifacts, and ephemeral files
+# ------------------------------
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Icon?
+*~
+*.swp
+*.swo
+
+# IDE / Editors
+.idea/
+.fleet/
+.history/
+*.code-workspace
+.project
+.settings/
+.buildpath
+
+# Environment & config
+.env
+.env.*
+!.env.example
+.envrc
+.direnv/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node.js dependencies & cache
+node_modules/
+.pnp.*
+.eslintcache
+.stylelintcache
+.cache/
+.parcel-cache/
+.nyc_output/
+coverage/
+.turbo/
+.vite/
+
+# PHP / Composer dependencies
+vendor/
+composer.phar
+.phpunit.result.cache
+.phpunit.cache
+.php_cs.cache
+.php-cs-fixer.cache
+.phpactor.json
+.phpstorm.meta.php
+.phpstan/
+phpstan.neon.tmp
+
+# Build outputs (blocks build directory)
+dist/
+build/
+
+# Test runners / reports
+.jest/
+jest-cache/
+jest-stare/
+test-results/
+playwright-report/
+playwright/.cache/
+phpunit-coverage/
+coverage/
+
+# Misc artifacts
+*.tgz
+*.zip
+*.tar
+*.gz
+*.7z
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# Local tooling / deployment
+.vercel/
+.netlify/
+.serverless/
+.ddev/
+.vagrant/
+
