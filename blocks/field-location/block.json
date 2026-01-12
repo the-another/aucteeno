@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-location",
+	"title": "Aucteeno Location",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/card" ],
+	"icon": "location",
+	"description": "Display the auction or item location.",
+	"keywords": [ "aucteeno", "location", "city", "country" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": {
+		"html": false,
+		"spacing": { "margin": true, "padding": true }
+	},
+	"attributes": {
+		"showIcon": { "type": "boolean", "default": true },
+		"format": { "type": "string", "default": "city_country" }
+	},
+	"editorScript": "file:../../dist/blocks/field-location/editor.js",
+	"style": "file:../../dist/blocks/field-location/style-editor.css",
+	"render": "file:./render.php"
+}

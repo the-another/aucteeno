@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/pagination",
+	"title": "Aucteeno Pagination",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/query-loop" ],
+	"icon": "controls-play",
+	"description": "Display pagination for the query loop.",
+	"keywords": [ "aucteeno", "pagination", "pages", "navigation" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/queryId", "aucteeno/query" ],
+	"supports": { "html": false, "spacing": { "margin": true, "padding": true } },
+	"attributes": {
+		"showPageNumbers": { "type": "boolean", "default": true },
+		"showPrevNext": { "type": "boolean", "default": true }
+	},
+	"editorScript": "file:../../dist/blocks/pagination/editor.js",
+	"style": "file:../../dist/blocks/pagination/style-editor.css",
+	"render": "file:./render.php"
+}

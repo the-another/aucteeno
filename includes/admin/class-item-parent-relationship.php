@@ -92,7 +92,7 @@ class Item_Parent_Relationship {
 		$wpdb->update(
 			$table_name,
 			array( 'auction_id' => $parent_id ),
-			array( 'product_id' => $post_id ),
+			array( 'item_id' => $post_id ),
 			array( '%d' ),
 			array( '%d' )
 		);
@@ -167,7 +167,7 @@ class Item_Parent_Relationship {
 		$table_name = Database_Items::get_table_name();
 		$existing   = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM {$table_name} WHERE product_id = %d",
+				"SELECT ID FROM {$table_name} WHERE item_id = %d",
 				$item_id
 			)
 		);
@@ -176,7 +176,7 @@ class Item_Parent_Relationship {
 			$wpdb->update(
 				$table_name,
 				array( 'auction_id' => $auction_id ),
-				array( 'product_id' => $item_id ),
+				array( 'item_id' => $item_id ),
 				array( '%d' ),
 				array( '%d' )
 			);
@@ -184,7 +184,7 @@ class Item_Parent_Relationship {
 			$wpdb->insert(
 				$table_name,
 				array(
-					'product_id' => $item_id,
+					'item_id'    => $item_id,
 					'auction_id' => $auction_id,
 				),
 				array( '%d', '%d' )

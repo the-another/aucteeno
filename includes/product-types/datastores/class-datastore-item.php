@@ -273,6 +273,23 @@ class Datastore_Item extends WC_Product_Data_Store_CPT {
 	}
 
 	/**
+	 * Make sure we store the product type and version (to track data changes).
+	 * Override to ensure item product type is always set correctly.
+	 *
+	 * @param \WC_Product $product Product object.
+	 * @return void
+	 */
+	protected function update_version_and_type( &$product ): void {
+		// Ensure product type taxonomy is set correctly for item products.
+		if ( $product instanceof Product_Item ) {
+			wp_set_object_terms( $product->get_id(), Product_Item::PRODUCT_TYPE, 'product_type' );
+		}
+
+		// Call parent to handle version and type change actions.
+		parent::update_version_and_type( $product );
+	}
+
+	/**
 	 * Save location data to database.
 	 *
 	 * @param Product_Item $product Product object.

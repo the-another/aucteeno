@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-countdown",
+	"title": "Aucteeno Countdown",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/card" ],
+	"icon": "clock",
+	"description": "Display countdown timer for auction/item bidding.",
+	"keywords": [ "aucteeno", "countdown", "timer", "time", "ends" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": {
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"attributes": {
+		"showLabel": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"editorScript": "file:../../dist/blocks/field-countdown/editor.js",
+	"viewScript": "file:../../dist/blocks/field-countdown/view.js",
+	"style": "file:../../dist/blocks/field-countdown/style-editor.css",
+	"render": "file:./render.php"
+}

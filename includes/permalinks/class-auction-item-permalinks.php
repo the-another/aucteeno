@@ -119,6 +119,15 @@ class Auction_Item_Permalinks {
 			1
 		);
 
+		// Disable WooCommerce's canonical redirect for our custom URLs.
+		// WooCommerce's wc_product_canonical_redirect runs at priority 5 and redirects
+		// if the URL doesn't match the default product permalink structure.
+		$this->hook_manager->register_action(
+			'template_redirect',
+			array( $this, 'disable_wc_canonical_redirect_for_custom_urls' ),
+			1 // Run early to disable before WooCommerce's redirect (priority 5).
+		);
+
 		// Admin: Add permalink settings fields.
 		$this->hook_manager->register_action(
 			'admin_init',
@@ -250,9 +259,9 @@ class Auction_Item_Permalinks {
 			return $this->get_auction_permalink( $post );
 		}
 
-		// Handle item products.
+		// Handle item products - pass original permalink to avoid recursion.
 		if ( Product_Item::PRODUCT_TYPE === $product_type ) {
-			return $this->get_item_permalink( $post, $product );
+			return $this->get_item_permalink( $post, $product, $permalink );
 		}
 
 		return $permalink;
@@ -272,33 +281,34 @@ class Auction_Item_Permalinks {
 	/**
 	 * Generate permalink for an item product.
 	 *
-	 * @param WP_Post            $post    The item post.
-	 * @param \WC_Product|object $product The product object.
+	 * @param WP_Post            $post      The item post.
+	 * @param \WC_Product|object $product   The product object.
+	 * @param string             $permalink The original permalink (fallback).
 	 * @return string The item permalink.
 	 */
-	private function get_item_permalink( WP_Post $post, $product ): string {
+	private function get_item_permalink( WP_Post $post, $product, string $permalink = '' ): string {
 		// Get parent auction ID (prefer post_parent, fallback to meta).
 		$parent_auction_id = $post->post_parent;
 		if ( ! $parent_auction_id ) {
 			$parent_auction_id = (int) get_post_meta( $post->ID, self::META_KEY_AUCTION_ID, true );
 		}
 
-		// If no parent, fallback to default WooCommerce permalink.
+		// If no parent, fallback to original permalink (avoid recursive get_permalink call).
 		if ( ! $parent_auction_id ) {
-			return get_permalink( $post->ID );
+			return $permalink ?: home_url( '?p=' . $post->ID );
 		}
 
 		// Get parent auction post.
 		$parent_auction = get_post( $parent_auction_id );
 		if ( ! $parent_auction || 'product' !== $parent_auction->post_type ) {
-			// Invalid parent, use default permalink.
-			return home_url( '?p=' . $post->ID );
+			// Invalid parent, use original permalink.
+			return $permalink ?: home_url( '?p=' . $post->ID );
 		}
 
 		// Verify parent is actually an auction type.
 		$parent_product = wc_get_product( $parent_auction_id );
 		if ( ! $parent_product || Product_Auction::PRODUCT_TYPE !== $parent_product->get_type() ) {
-			return home_url( '?p=' . $post->ID );
+			return $permalink ?: home_url( '?p=' . $post->ID );
 		}
 
 		$auction_base = self::get_auction_base();
@@ -512,6 +522,27 @@ class Auction_Item_Permalinks {
 		$wp_query->set_404();
 		status_header( 404 );
 		nocache_headers();
+	}
+
+	/**
+	 * Disable WooCommerce's canonical redirect for our custom auction/item URLs.
+	 *
+	 * WooCommerce's wc_product_canonical_redirect() redirects to the default product
+	 * permalink if the current URL doesn't match. Since we use custom URL structures
+	 * for auction and item products, we need to disable this redirect for our URLs.
+	 *
+	 * @since 1.0.0
+	 */
+	public function disable_wc_canonical_redirect_for_custom_urls(): void {
+		// Check if we have our custom query vars (indicating custom URL structure).
+		$auction_slug = get_query_var( self::QUERY_VAR_AUCTION_SLUG );
+		$item_slug    = get_query_var( self::QUERY_VAR_ITEM_SLUG );
+
+		// If we have either of our custom query vars, disable WooCommerce's redirect.
+		if ( $auction_slug || $item_slug ) {
+			// Remove WooCommerce's canonical redirect for this request.
+			remove_action( 'template_redirect', 'wc_product_canonical_redirect', 5 );
+		}
 	}
 
 	/**

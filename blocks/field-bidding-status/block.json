@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-bidding-status",
+	"title": "Aucteeno Bidding Status",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/card" ],
+	"icon": "info-outline",
+	"description": "Display the bidding status badge.",
+	"keywords": [ "aucteeno", "status", "bidding", "badge" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": { "html": false, "spacing": { "margin": true, "padding": true } },
+	"attributes": {},
+	"editorScript": "file:../../dist/blocks/field-bidding-status/editor.js",
+	"style": "file:../../dist/blocks/field-bidding-status/style-editor.css",
+	"render": "file:./render.php"
+}

@@ -52,14 +52,14 @@ class REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'get_auctions' ),
 					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					'args'                => array(
-						'page'     => array(
+						'page'        => array(
 							'description'       => 'Page number.',
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
-						'per_page' => array(
+						'per_page'    => array(
 							'description'       => 'Items per page.',
 							'type'              => 'integer',
 							'default'           => 10,
@@ -67,19 +67,37 @@ class REST_Controller extends WP_REST_Controller {
 							'maximum'           => 50,
 							'sanitize_callback' => 'absint',
 						),
-						'location' => array(
+						'location'    => array(
 							'description'       => 'Location term slug or ID.',
 							'type'              => array( 'string', 'array' ),
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_location_param' ),
 						),
-						'sort'     => array(
+						'user_id'     => array(
+							'description'       => 'Filter by user/vendor ID.',
+							'type'              => 'integer',
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+						),
+						'country'     => array(
+							'description'       => 'Filter by location country code.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'subdivision' => array(
+							'description'       => 'Filter by location subdivision.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'sort'        => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
 							'enum'        => array( 'ending_soon', 'newest' ),
 						),
-						'format'   => array(
+						'format'      => array(
 							'description' => 'Response format: html (fragments) or json (data).',
 							'type'        => 'string',
 							'default'     => 'html',
@@ -140,14 +158,14 @@ class REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'get_items' ),
 					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					'args'                => array(
-						'page'       => array(
+						'page'        => array(
 							'description'       => 'Page number.',
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
-						'per_page'   => array(
+						'per_page'    => array(
 							'description'       => 'Items per page.',
 							'type'              => 'integer',
 							'default'           => 10,
@@ -155,25 +173,43 @@ class REST_Controller extends WP_REST_Controller {
 							'maximum'           => 50,
 							'sanitize_callback' => 'absint',
 						),
-						'location'   => array(
+						'location'    => array(
 							'description'       => 'Location term slug or ID.',
 							'type'              => array( 'string', 'array' ),
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_location_param' ),
 						),
-						'auction_id' => array(
+						'auction_id'  => array(
 							'description'       => 'Parent auction ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'sort'       => array(
+						'user_id'     => array(
+							'description'       => 'Filter by user/vendor ID.',
+							'type'              => 'integer',
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+						),
+						'country'     => array(
+							'description'       => 'Filter by location country code.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'subdivision' => array(
+							'description'       => 'Filter by location subdivision.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'sort'        => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
 							'enum'        => array( 'ending_soon', 'newest' ),
 						),
-						'format'     => array(
+						'format'      => array(
 							'description' => 'Response format: html (fragments) or json (data).',
 							'type'        => 'string',
 							'default'     => 'html',

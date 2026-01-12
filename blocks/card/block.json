@@ -1,0 +1,48 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/card",
+	"title": "Aucteeno Card",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/query-loop" ],
+	"icon": "index-card",
+	"description": "Display an auction or item card with customizable layout.",
+	"keywords": [ "aucteeno", "auction", "item", "card" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": {
+		"html": false,
+		"align": true,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"layout": {
+			"allowSwitching": true,
+			"allowInheriting": false,
+			"default": {
+				"type": "flex",
+				"orientation": "vertical"
+			}
+		}
+	},
+	"attributes": {
+		"useImageAsBackground": {
+			"type": "boolean",
+			"default": false
+		},
+		"backgroundOverlay": {
+			"type": "number",
+			"default": 0.5
+		}
+	},
+	"example": {
+		"attributes": {
+			"useImageAsBackground": false
+		}
+	},
+	"editorScript": "file:../../dist/blocks/card/editor.js",
+	"style": "file:../../dist/blocks/card/style-editor.css",
+	"editorStyle": "file:../../dist/blocks/card/editor.css",
+	"render": "file:./render.php"
+}

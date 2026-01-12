@@ -1,0 +1,39 @@
+/**
+ * Aucteeno Query Loop Block - Editor Styles
+ *
+ * @package Aucteeno
+ */
+
+.aucteeno-query-loop {
+	position: relative;
+}
+
+.aucteeno-query-loop .components-placeholder {
+	min-height: 200px;
+}
+
+.aucteeno-query-loop .components-notice {
+	margin-bottom: 1rem;
+}
+
+/* Editor preview grid */
+.aucteeno-query-loop .aucteeno-items-wrap {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.aucteeno-query-loop .aucteeno-items-wrap > li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* Ensure inner blocks have proper spacing in editor */
+.aucteeno-query-loop .block-editor-inner-blocks {
+	width: 100%;
+}
+
+.aucteeno-query-loop .block-editor-block-list__layout {
+	display: contents;
+}

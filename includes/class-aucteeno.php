@@ -311,7 +311,6 @@ class Aucteeno {
      */
 	private function register_permalinks(): void
     {
-
 		// Register Auction_Item_Permalinks with lazy loading.
 		$this->container->register(
 			'permalinks',
@@ -334,7 +333,6 @@ class Aucteeno {
 	 */
 	private function register_breadcrumbs(): void
     {
-
 		// Register Breadcrumbs with lazy loading.
 		$this->container->register(
 			'breadcrumbs',

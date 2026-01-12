@@ -13,24 +13,30 @@ const path = require( 'path' );
 module.exports = {
 	...defaultConfig,
 	entry: {
-		// Auction Listing
-		'auction-listing/editor': path.resolve( __dirname, 'blocks/auction-listing/src/editor.js' ),
-		'auction-listing/view': path.resolve( __dirname, 'blocks/auction-listing/src/view.js' ),
+		// Query Loop block
+		'query-loop/editor': path.resolve( __dirname, 'blocks/query-loop/src/editor.js' ),
 
-		// Items Listing
-		'items-listing/editor': path.resolve( __dirname, 'blocks/items-listing/src/editor.js' ),
-		'items-listing/view': path.resolve( __dirname, 'blocks/items-listing/src/view.js' ),
+		// Card block
+		'card/editor': path.resolve( __dirname, 'blocks/card/src/editor.js' ),
 
-		// Auction Card
-		'auction-card/editor': path.resolve( __dirname, 'blocks/auction-card/src/editor.js' ),
+		// Field blocks
+		'field-image/editor': path.resolve( __dirname, 'blocks/field-image/src/editor.js' ),
+		'field-title/editor': path.resolve( __dirname, 'blocks/field-title/src/editor.js' ),
+		'field-countdown/editor': path.resolve( __dirname, 'blocks/field-countdown/src/editor.js' ),
+		'field-countdown/view': path.resolve( __dirname, 'blocks/field-countdown/src/view.js' ),
+		'field-location/editor': path.resolve( __dirname, 'blocks/field-location/src/editor.js' ),
+		'field-current-bid/editor': path.resolve( __dirname, 'blocks/field-current-bid/src/editor.js' ),
+		'field-reserve-price/editor': path.resolve( __dirname, 'blocks/field-reserve-price/src/editor.js' ),
+		'field-lot-number/editor': path.resolve( __dirname, 'blocks/field-lot-number/src/editor.js' ),
+		'field-bidding-status/editor': path.resolve( __dirname, 'blocks/field-bidding-status/src/editor.js' ),
 
-		// Item Card
-		'item-card/editor': path.resolve( __dirname, 'blocks/item-card/src/editor.js' ),
+		// Pagination block
+		'pagination/editor': path.resolve( __dirname, 'blocks/pagination/src/editor.js' ),
 	},
 	output: {
 		...defaultConfig.output,
 		path: path.resolve( __dirname, 'dist/blocks' ),
 		filename: '[name].js',
-		clean: true, // Safe to clean since dist/blocks is separate from source
+		clean: true,
 	},
 };

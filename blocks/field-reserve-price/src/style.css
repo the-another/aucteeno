@@ -1,0 +1,23 @@
+/**
+ * Aucteeno Field Reserve Price - Styles
+ */
+
+.aucteeno-field-reserve-price {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.5rem 1rem;
+}
+
+.aucteeno-field-reserve-price__label {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #666;
+}
+
+.aucteeno-field-reserve-price__value {
+	font-size: 1rem;
+	font-weight: 600;
+	color: #856404;
+}

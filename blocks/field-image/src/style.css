@@ -1,0 +1,33 @@
+/**
+ * Aucteeno Field Image - Styles
+ */
+
+.aucteeno-field-image__link,
+.aucteeno-field-image__wrapper {
+	display: block;
+	position: relative;
+	overflow: hidden;
+	background: #f0f0f0;
+}
+
+.aucteeno-field-image__img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.3s ease;
+}
+
+.aucteeno-card:hover .aucteeno-field-image__img {
+	transform: scale(1.05);
+}
+
+.aucteeno-field-image__placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+	color: #999;
+	font-size: 0.875rem;
+}

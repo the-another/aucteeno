@@ -1,0 +1,22 @@
+/**
+ * Aucteeno Field Lot Number - Styles
+ */
+
+.aucteeno-field-lot-number {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.25rem 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	background: #f0f0f0;
+	border-radius: 4px;
+}
+
+.aucteeno-field-lot-number__prefix {
+	color: #666;
+}
+
+.aucteeno-field-lot-number__value {
+	color: #333;
+}

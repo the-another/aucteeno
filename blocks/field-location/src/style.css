@@ -1,0 +1,22 @@
+/**
+ * Aucteeno Field Location - Styles
+ */
+
+.aucteeno-field-location {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1rem;
+	font-size: 0.875rem;
+	color: #666;
+}
+
+.aucteeno-field-location__icon {
+	font-size: 1rem;
+}
+
+.aucteeno-field-location__text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

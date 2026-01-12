@@ -1,0 +1,78 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/query-loop",
+	"title": "Aucteeno Query Loop",
+	"category": "aucteeno",
+	"icon": "grid-view",
+	"description": "Display a grid or list of auctions or items with customizable layout.",
+	"keywords": [ "aucteeno", "auction", "item", "query", "loop", "grid", "list" ],
+	"textdomain": "aucteeno",
+	"providesContext": {
+		"aucteeno/item": "previewItem",
+		"aucteeno/itemType": "queryType"
+	},
+	"usesContext": [
+		"userId",
+		"queryId",
+		"query/perPage",
+		"query/page",
+		"query/orderBy",
+		"locationCountry",
+		"locationSubdivision"
+	],
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"attributes": {
+		"queryType": {
+			"type": "string",
+			"default": "auctions",
+			"enum": [ "auctions", "items" ]
+		},
+		"userId": {
+			"type": "number",
+			"default": 0
+		},
+		"perPage": {
+			"type": "number",
+			"default": 12
+		},
+		"columns": {
+			"type": "number",
+			"default": 4
+		},
+		"displayLayout": {
+			"type": "string",
+			"default": "grid",
+			"enum": [ "grid", "list" ]
+		},
+		"orderBy": {
+			"type": "string",
+			"default": "ending_soon",
+			"enum": [ "ending_soon", "newest" ]
+		},
+		"previewItem": {
+			"type": "object",
+			"default": null
+		}
+	},
+	"example": {
+		"attributes": {
+			"queryType": "auctions",
+			"perPage": 12,
+			"columns": 4,
+			"displayLayout": "grid"
+		}
+	},
+	"editorScript": "file:../../dist/blocks/query-loop/editor.js",
+	"viewScript": "file:./view.js",
+	"style": "file:../../dist/blocks/query-loop/style-editor.css",
+	"editorStyle": "file:../../dist/blocks/query-loop/editor.css",
+	"render": "file:./render.php"
+}

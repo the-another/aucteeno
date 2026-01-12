@@ -1,0 +1,70 @@
+/**
+ * Aucteeno Pagination - Styles
+ */
+
+.aucteeno-pagination {
+	margin-top: 2rem;
+	padding-top: 2rem;
+	border-top: 1px solid #e0e0e0;
+	text-align: center;
+}
+
+.aucteeno-pagination__inner,
+.aucteeno-pagination .page-numbers {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.aucteeno-pagination .page-numbers li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.aucteeno-pagination__page,
+.aucteeno-pagination__prev,
+.aucteeno-pagination__next,
+.aucteeno-pagination .page-numbers a,
+.aucteeno-pagination .page-numbers span {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.5rem;
+	height: 2.5rem;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	text-decoration: none;
+	color: #333;
+	background: #fff;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.aucteeno-pagination .page-numbers a:hover,
+.aucteeno-pagination__page:hover,
+.aucteeno-pagination__prev:hover,
+.aucteeno-pagination__next:hover {
+	border-color: #0073aa;
+	color: #0073aa;
+	background: #f0f7fa;
+}
+
+.aucteeno-pagination__page--current,
+.aucteeno-pagination .page-numbers .current {
+	border-color: #0073aa;
+	color: #fff;
+	background: #0073aa;
+	cursor: default;
+}
+
+.aucteeno-pagination__page--current:hover,
+.aucteeno-pagination .page-numbers .current:hover {
+	background: #005a87;
+	border-color: #005a87;
+	color: #fff;
+}

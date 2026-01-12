@@ -1,0 +1,158 @@
+/**
+ * Aucteeno Card Block - Frontend Styles
+ *
+ * Includes bidding status color variations.
+ *
+ * @package Aucteeno
+ */
+
+.aucteeno-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.aucteeno-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+/* Status-based border/accent colors */
+.aucteeno-card--running {
+	border-top: 3px solid #28a745; /* Green - active bidding */
+}
+
+.aucteeno-card--upcoming {
+	border-top: 3px solid #ffc107; /* Yellow/Amber - coming soon */
+}
+
+.aucteeno-card--expired {
+	border-top: 3px solid #6c757d; /* Gray - ended */
+	opacity: 0.85;
+}
+
+/* Card with background image */
+.aucteeno-card--has-background {
+	min-height: 200px;
+	color: #fff;
+}
+
+.aucteeno-card--has-background a {
+	color: #fff;
+}
+
+/* Media/Image area */
+.aucteeno-card__media {
+	display: block;
+	position: relative;
+	overflow: hidden;
+	aspect-ratio: 4 / 3;
+	background: #f0f0f0;
+}
+
+.aucteeno-card__media img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.3s ease;
+}
+
+.aucteeno-card:hover .aucteeno-card__media img {
+	transform: scale(1.05);
+}
+
+.aucteeno-card__media-placeholder {
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.aucteeno-card__media-placeholder::before {
+	content: "";
+	width: 48px;
+	height: 48px;
+	background: #ccc;
+	border-radius: 4px;
+}
+
+/* Title */
+.aucteeno-card__title {
+	display: block;
+	padding: 1rem;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.4;
+	color: #333;
+	text-decoration: none;
+}
+
+.aucteeno-card__title:hover {
+	color: #0073aa;
+}
+
+/* Card footer area */
+.aucteeno-card__footer {
+	padding: 0.75rem 1rem 1rem;
+	margin-top: auto;
+	border-top: 1px solid #eee;
+}
+
+/* Status-specific styling adjustments */
+.aucteeno-card--running .aucteeno-card__countdown {
+	color: #28a745;
+}
+
+.aucteeno-card--upcoming .aucteeno-card__countdown {
+	color: #856404;
+}
+
+.aucteeno-card--expired .aucteeno-card__countdown {
+	color: #6c757d;
+}
+
+/* Countdown component */
+.aucteeno-card__countdown {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.aucteeno-card__countdown-label {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #666;
+}
+
+.aucteeno-card__countdown-value {
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+/* Expired card overlay effect */
+.aucteeno-card--expired::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(255, 255, 255, 0.3);
+	pointer-events: none;
+}
+
+/* Status badge (if added as inner block) */
+.aucteeno-card .aucteeno-field-bidding-status {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	z-index: 10;
+}

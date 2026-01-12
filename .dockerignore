@@ -1,0 +1,7 @@
+# Exclude Git directories
+.git/
+.github/
+
+# Also exclude at any level in subdirectories
+**/.git/
+**/.github/

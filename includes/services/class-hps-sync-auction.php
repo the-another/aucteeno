@@ -52,27 +52,27 @@ class HPS_Sync_Auction {
 			)
 		);
 
-		if ( $exists ) {
-			// Update existing record.
-			$result = $wpdb->update(
-				$table_name,
-				$data,
-				array( 'auction_id' => $product_id ),
-				array( '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' ),
-				array( '%d' )
-			);
+	if ( $exists ) {
+		// Update existing record.
+		$result = $wpdb->update(
+			$table_name,
+			$data,
+			array( 'auction_id' => $product_id ),
+			array( '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' ),
+			array( '%d' )
+		);
 
-			return false !== $result;
-		} else {
-			// Insert new record.
-			$result = $wpdb->insert(
-				$table_name,
-				$data,
-				array( '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' )
-			);
+		return false !== $result;
+	} else {
+		// Insert new record.
+		$result = $wpdb->insert(
+			$table_name,
+			$data,
+			array( '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' )
+		);
 
-			return false !== $result;
-		}
+		return false !== $result;
+	}
 	}
 
 	/**
@@ -173,17 +173,22 @@ class HPS_Sync_Auction {
 			}
 		}
 
-		return array(
-			'auction_id'          => $product_id,
-			'bidding_status'      => $bidding_status,
-			'bidding_starts_at'   => $bidding_starts_at,
-			'bidding_ends_at'     => $bidding_ends_at,
-			'location_country'    => $country,
-			'location_subdivision' => $subdivision,
-			'location_city'       => $city,
-			'location_lat'       => 0.0,
-			'location_lng'       => 0.0,
-		);
+	// Get user_id (post_author).
+	$user_id = get_post_field( 'post_author', $product_id );
+	$user_id = $user_id ? absint( $user_id ) : 0;
+
+	return array(
+		'auction_id'          => $product_id,
+		'user_id'             => $user_id,
+		'bidding_status'      => $bidding_status,
+		'bidding_starts_at'   => $bidding_starts_at,
+		'bidding_ends_at'     => $bidding_ends_at,
+		'location_country'    => $country,
+		'location_subdivision' => $subdivision,
+		'location_city'       => $city,
+		'location_lat'       => 0.0,
+		'location_lng'       => 0.0,
+	);
 	}
 }
 

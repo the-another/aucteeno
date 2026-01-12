@@ -1,0 +1,35 @@
+/**
+ * Aucteeno Field Countdown - Styles
+ */
+
+.aucteeno-field-countdown {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.5rem 1rem;
+}
+
+.aucteeno-field-countdown__label {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #666;
+}
+
+.aucteeno-field-countdown__value {
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+/* Status-based colors */
+.aucteeno-field-countdown--running .aucteeno-field-countdown__value {
+	color: #28a745;
+}
+
+.aucteeno-field-countdown--upcoming .aucteeno-field-countdown__value {
+	color: #856404;
+}
+
+.aucteeno-field-countdown--expired .aucteeno-field-countdown__value {
+	color: #6c757d;
+}

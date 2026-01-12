@@ -1,0 +1,23 @@
+/**
+ * Aucteeno Field Current Bid - Styles
+ */
+
+.aucteeno-field-current-bid {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.5rem 1rem;
+}
+
+.aucteeno-field-current-bid__label {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #666;
+}
+
+.aucteeno-field-current-bid__value {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: #28a745;
+}

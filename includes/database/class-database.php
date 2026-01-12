@@ -29,7 +29,7 @@ class Database {
 	 *
 	 * @var string
 	 */
-	private const string CURRENT_DB_VERSION = '2.2.0';
+	private const string CURRENT_DB_VERSION = '1.0.0';
 
 	/**
 	 * Get database version.
@@ -87,13 +87,6 @@ class Database {
 	public static function maybe_migrate(): void {
 		if ( self::needs_update() ) {
 			self::create_tables();
-
-			// Run version-specific migrations.
-			$current_version = self::get_db_version();
-			if ( version_compare( $current_version, '2.2.0', '<' ) ) {
-				require_once __DIR__ . '/class-database-migration-v2.2.0.php';
-				Database_Migration_V2_2_0::run();
-			}
 		}
 	}
 }

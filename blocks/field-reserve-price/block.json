@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-reserve-price",
+	"title": "Aucteeno Reserve Price",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/card" ],
+	"icon": "tag",
+	"description": "Display the reserve price.",
+	"keywords": [ "aucteeno", "reserve", "price" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": { "html": false, "spacing": { "margin": true, "padding": true } },
+	"attributes": {
+		"showLabel": { "type": "boolean", "default": true },
+		"hideIfZero": { "type": "boolean", "default": true }
+	},
+	"editorScript": "file:../../dist/blocks/field-reserve-price/editor.js",
+	"style": "file:../../dist/blocks/field-reserve-price/style-editor.css",
+	"render": "file:./render.php"
+}

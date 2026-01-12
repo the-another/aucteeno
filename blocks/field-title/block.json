@@ -1,0 +1,37 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-title",
+	"title": "Aucteeno Title",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/card" ],
+	"icon": "heading",
+	"description": "Display the auction or item title.",
+	"keywords": [ "aucteeno", "title", "name", "heading" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": {
+		"html": false,
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"attributes": {
+		"tagName": {
+			"type": "string",
+			"default": "h3"
+		},
+		"isLink": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"editorScript": "file:../../dist/blocks/field-title/editor.js",
+	"style": "file:../../dist/blocks/field-title/style-editor.css",
+	"render": "file:./render.php"
+}

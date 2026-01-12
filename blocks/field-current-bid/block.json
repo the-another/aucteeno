@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-current-bid",
+	"title": "Aucteeno Current Bid",
+	"category": "aucteeno",
+	"parent": [ "aucteeno/card" ],
+	"icon": "money-alt",
+	"description": "Display the current bid amount.",
+	"keywords": [ "aucteeno", "bid", "price", "current" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": { "html": false, "spacing": { "margin": true, "padding": true } },
+	"attributes": {
+		"showLabel": { "type": "boolean", "default": true },
+		"label": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:../../dist/blocks/field-current-bid/editor.js",
+	"style": "file:../../dist/blocks/field-current-bid/style-editor.css",
+	"render": "file:./render.php"
+}

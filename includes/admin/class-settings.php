@@ -56,6 +56,12 @@ class Settings {
 			'admin_init',
 			array( $this, 'register_settings' )
 		);
+
+		// Register default general tab panel action.
+		$this->hook_manager->register_action(
+			'aucteeno_settings_tab_panel_general',
+			array( $this, 'render_general_tab_panel' )
+		);
 	}
 
 	/**
@@ -100,41 +106,91 @@ class Settings {
 			return;
 		}
 
+		// Get tabs from filter.
+		$tabs = apply_filters( 'aucteeno_settings_tabs', array( 'general' => __( 'General', 'aucteeno' ) ) );
+
+		// Get active tab from query parameter.
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '';
+		if ( empty( $active_tab ) || ! isset( $tabs[ $active_tab ] ) ) {
+			$active_tab = array_key_first( $tabs );
+		}
+
+		$page_url = admin_url( 'options-general.php?page=aucteeno-settings' );
+
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+			<?php if ( count( $tabs ) > 1 ) : ?>
+				<nav class="nav-tab-wrapper">
+					<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
+						<a href="<?php echo esc_url( add_query_arg( 'tab', $tab_key, $page_url ) ); ?>" 
+							class="nav-tab <?php echo $active_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
+							<?php echo esc_html( $tab_label ); ?>
+						</a>
+					<?php endforeach; ?>
+				</nav>
+			<?php endif; ?>
+
 			<form action="options.php" method="post">
 				<?php
 				settings_fields( 'aucteeno_settings' );
 				do_settings_sections( 'aucteeno_settings' );
 				?>
-				<table class="form-table">
-					<tr>
-						<th scope="row">
-							<label for="<?php echo esc_attr( self::OPTION_TERMS ); ?>">
-								<?php esc_html_e( 'General Terms and Conditions', 'aucteeno' ); ?>
-							</label>
-						</th>
-						<td>
-							<?php
-							wp_editor(
-								get_option( self::OPTION_TERMS, '' ),
-								self::OPTION_TERMS,
-								array(
-									'textarea_name' => self::OPTION_TERMS,
-									'textarea_rows' => 10,
-								)
-							);
-							?>
-							<p class="description">
-								<?php esc_html_e( 'General terms and conditions that apply to all auctions. Can be overridden per auction.', 'aucteeno' ); ?>
-							</p>
-						</td>
-					</tr>
-				</table>
-				<?php submit_button(); ?>
-			</form>
+
+			<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
+				<div class="aucteeno-settings-tab-panel aucteeno-settings-tab-panel-<?php echo esc_attr( $tab_key ); ?> <?php echo $active_tab === $tab_key ? 'active' : ''; ?>" 
+					<?php echo $active_tab !== $tab_key ? 'style="display: none;"' : ''; ?>>
+					<?php
+					// Fire action hook for this tab.
+					do_action( "aucteeno_settings_tab_panel_{$tab_key}" );
+					?>
+				</div>
+			<?php endforeach; ?>
+
+			<?php
+			// Allow tabs to specify if they need the submit button (default: true).
+			$show_submit_button = apply_filters( "aucteeno_settings_tab_show_submit_{$active_tab}", true );
+			if ( $show_submit_button ) {
+				submit_button();
+			}
+			?>
+		</form>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render general tab panel content.
+	 *
+	 * @return void
+	 */
+	public function render_general_tab_panel(): void {
+		?>
+		<table class="form-table">
+			<tr>
+				<th scope="row">
+					<label for="<?php echo esc_attr( self::OPTION_TERMS ); ?>">
+						<?php esc_html_e( 'General Terms and Conditions', 'aucteeno' ); ?>
+					</label>
+				</th>
+				<td>
+					<?php
+					wp_editor(
+						get_option( self::OPTION_TERMS, '' ),
+						self::OPTION_TERMS,
+						array(
+							'textarea_name' => self::OPTION_TERMS,
+							'textarea_rows' => 10,
+						)
+					);
+					?>
+					<p class="description">
+						<?php esc_html_e( 'General terms and conditions that apply to all auctions. Can be overridden per auction.', 'aucteeno' ); ?>
+					</p>
+				</td>
+			</tr>
+		</table>
 		<?php
 	}
 

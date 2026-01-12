@@ -221,6 +221,23 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 	}
 
 	/**
+	 * Make sure we store the product type and version (to track data changes).
+	 * Override to ensure auction product type is always set correctly.
+	 *
+	 * @param \WC_Product $product Product object.
+	 * @return void
+	 */
+	protected function update_version_and_type( &$product ): void {
+		// Ensure product type taxonomy is set correctly for auction products.
+		if ( $product instanceof Product_Auction ) {
+			wp_set_object_terms( $product->get_id(), Product_Auction::PRODUCT_TYPE, 'product_type' );
+		}
+
+		// Call parent to handle version and type change actions.
+		parent::update_version_and_type( $product );
+	}
+
+	/**
 	 * Save location data to database.
 	 *
 	 * @param Product_Auction $product Product object.

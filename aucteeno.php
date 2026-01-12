@@ -20,6 +20,7 @@
 namespace TheAnother\Plugin\Aucteeno;
 
 // Exit if accessed directly.
+use Exception;
 use TheAnother\Plugin\Aucteeno\Installer\Install;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -89,7 +90,7 @@ add_action(
 	function () {
 		try {
 			Aucteeno::get_instance()->start();
-		} catch ( \Exception $e ) {
+		} catch ( Exception $e ) {
 			// Use plain string for error title to avoid translation issues during fatal errors.
 			wp_die(
 				esc_html( $e->getMessage() ),
