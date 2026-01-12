@@ -20,11 +20,13 @@ use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
 use TheAnother\Plugin\Aucteeno\Database\Database_Items;
 
 // Parse attributes with defaults.
-$query_type     = $attributes['queryType'] ?? 'auctions';
-$columns        = absint( $attributes['columns'] ?? 4 );
-$display_layout = $attributes['displayLayout'] ?? 'grid';
-$per_page       = absint( $attributes['perPage'] ?? 12 );
-$order_by       = $attributes['orderBy'] ?? 'ending_soon';
+$query_type      = $attributes['queryType'] ?? 'auctions';
+$columns         = absint( $attributes['columns'] ?? 4 );
+$display_layout  = $attributes['displayLayout'] ?? 'grid';
+$per_page        = absint( $attributes['perPage'] ?? 12 );
+$order_by        = $attributes['orderBy'] ?? 'ending_soon';
+$infinite_scroll = $attributes['infiniteScroll'] ?? false;
+$gap             = $attributes['gap'] ?? '1.5rem';
 
 // Determine user ID from attribute or context (attribute takes priority).
 $user_id = 0;
@@ -41,7 +43,7 @@ if ( ! empty( $attributes['userId'] ) ) {
 			$user_id = absint( $vendor_id );
 		}
 	}
-	
+
 	// Try Dokan's native function if still no vendor ID.
 	if ( ! $user_id && function_exists( 'dokan_get_current_seller_id' ) ) {
 		$vendor_id = dokan_get_current_seller_id();
@@ -49,7 +51,7 @@ if ( ! empty( $attributes['userId'] ) ) {
 			$user_id = absint( $vendor_id );
 		}
 	}
-	
+
 	// Try to get from 'store' query var (Dokan store page URL).
 	if ( ! $user_id ) {
 		$store_name = get_query_var( 'store', '' );
@@ -113,23 +115,36 @@ if ( 'grid' === $display_layout ) {
 	$items_classes .= ' aucteeno-items-columns-' . absint( $columns );
 }
 
-// Get wrapper attributes.
-// Add data attributes for REST API navigation.
-$data_attrs = array(
-	'class' => $wrapper_classes,
-	'data-query-type' => esc_attr( $query_type ),
-	'data-user-id' => esc_attr( $user_id ),
-	'data-per-page' => esc_attr( $per_page ),
-	'data-order-by' => esc_attr( $order_by ),
+// Prepare Interactivity API context.
+$interactivity_context = array(
+	'page'           => $page,
+	'pages'          => $total_pages,
+	'total'          => $total_items,
+	'isLoading'      => false,
+	'hasMore'        => $page < $total_pages,
+	'queryType'      => $query_type,
+	'userId'         => $user_id,
+	'perPage'        => $per_page,
+	'orderBy'        => $order_by,
+	'country'        => $query_args['country'] ?? '',
+	'subdivision'    => $query_args['subdivision'] ?? '',
+	'infiniteScroll' => $infinite_scroll,
+	'restUrl'        => rest_url( 'aucteeno/v1/' . ( 'auctions' === $query_type ? 'auctions' : 'items' ) ),
+	'restNonce'      => wp_create_nonce( 'wp_rest' ),
 );
 
-// Add location filters if present.
-if ( ! empty( $block->context['locationCountry'] ) ) {
-	$data_attrs['data-country'] = esc_attr( $block->context['locationCountry'] );
-}
-if ( ! empty( $block->context['locationSubdivision'] ) ) {
-	$data_attrs['data-subdivision'] = esc_attr( $block->context['locationSubdivision'] );
-}
+// Get wrapper attributes with Interactivity API directives.
+$data_attrs = array(
+	'class'                         => $wrapper_classes,
+	'data-wp-interactive'           => 'aucteeno/query-loop',
+	'data-wp-context'               => wp_json_encode( $interactivity_context ),
+	'data-wp-class--is-loading'     => 'context.isLoading',
+	'data-wp-init'                  => 'callbacks.onInit',
+	'style'                         => sprintf(
+		'--gap: %s;',
+		esc_attr( $gap )
+	),
+);
 
 $wrapper_attributes = get_block_wrapper_attributes( $data_attrs );
 
@@ -165,12 +180,18 @@ if ( ! empty( $block->inner_blocks ) ) {
 	}
 }
 
+// Extract card width from first card block to apply to list items.
+$card_width = '20rem'; // Default.
+if ( ! empty( $template_blocks ) && ! empty( $template_blocks[0]->parsed_block['attrs']['cardWidth'] ) ) {
+	$card_width = $template_blocks[0]->parsed_block['attrs']['cardWidth'];
+}
+
 ob_start();
 
 if ( ! empty( $items ) ) {
 	?>
 	<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-		<ul class="<?php echo esc_attr( $items_classes ); ?>">
+		<div class="<?php echo esc_attr( $items_classes ); ?>">
 			<?php
 			foreach ( $items as $item_data ) {
 				// Set item data in block context for inner blocks.
@@ -181,81 +202,111 @@ if ( ! empty( $items ) ) {
 						'aucteeno/itemType' => $query_type,
 					)
 				);
-				?>
-				<li class="aucteeno-query-loop__item">
-					<?php
-					// Render template blocks (card) with item context.
-					if ( ! empty( $template_blocks ) ) {
-						foreach ( $template_blocks as $template_block ) {
-							$template_block_instance = new WP_Block(
-								$template_block->parsed_block,
-								$item_context
-							);
-							echo $template_block_instance->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+				// Render template blocks (card) with item context.
+				if ( ! empty( $template_blocks ) ) {
+					foreach ( $template_blocks as $template_block ) {
+						// Add card-width as a style on the card block.
+						$template_block_with_width = $template_block->parsed_block;
+						if ( ! isset( $template_block_with_width['attrs']['style'] ) ) {
+							$template_block_with_width['attrs']['style'] = array();
 						}
-					} else {
-						// Fallback: render a basic card if no card blocks defined.
-						$status_class = 'running';
-						if ( isset( $item_data['bidding_status'] ) ) {
-							$status_map = array(
-								10 => 'running',
-								20 => 'upcoming',
-								30 => 'expired',
-							);
-							$status_class = $status_map[ $item_data['bidding_status'] ] ?? 'running';
-						}
-						?>
-						<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>">
-							<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
-								<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
-									<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
-								</a>
-							<?php endif; ?>
-							<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
-								<?php echo esc_html( $item_data['title'] ?? '' ); ?>
-							</a>
-						</article>
-						<?php
+						$template_block_with_width['attrs']['cardWidthOverride'] = $card_width;
+
+						$template_block_instance = new WP_Block(
+							$template_block_with_width,
+							$item_context
+						);
+						echo $template_block_instance->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					}
+				} else {
+					// Fallback: render a basic card if no card blocks defined.
+					$status_class = 'running';
+					if ( isset( $item_data['bidding_status'] ) ) {
+						$status_map = array(
+							10 => 'running',
+							20 => 'upcoming',
+							30 => 'expired',
+						);
+						$status_class = $status_map[ $item_data['bidding_status'] ] ?? 'running';
 					}
 					?>
-				</li>
-				<?php
+					<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>" style="--card-width: <?php echo esc_attr( $card_width ); ?>">
+						<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
+							<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+								<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
+							</a>
+						<?php endif; ?>
+						<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+							<?php echo esc_html( $item_data['title'] ?? '' ); ?>
+						</a>
+					</article>
+					<?php
+				}
 			}
 			?>
-		</ul>
+		</div>
 
 		<?php
-		// Render pagination blocks after the loop.
-		$pagination_rendered = false;
-		if ( ! empty( $pagination_blocks ) ) {
-			foreach ( $pagination_blocks as $pagination_block ) {
-				$pagination_block_instance = new WP_Block(
-					$pagination_block->parsed_block,
-					$block->context
-				);
-				echo $pagination_block_instance->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				$pagination_rendered = true;
-				break; // Only render first pagination block.
+		// Conditionally render pagination or infinite scroll elements.
+		if ( ! $infinite_scroll ) {
+			// Render pagination blocks after the loop.
+			$pagination_rendered = false;
+			if ( ! empty( $pagination_blocks ) ) {
+				foreach ( $pagination_blocks as $pagination_block ) {
+					$pagination_block_instance = new WP_Block(
+						$pagination_block->parsed_block,
+						$block->context
+					);
+					echo $pagination_block_instance->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					$pagination_rendered = true;
+					break; // Only render first pagination block.
+				}
 			}
-		}
 
-		// Fallback: Show default pagination if no pagination block is present and pages > 1.
-		if ( ! $pagination_rendered && $total_pages > 1 ) :
-			$current_page = get_query_var( 'paged' ) ? absint( get_query_var( 'paged' ) ) : $page;
-			?>
-			<nav class="aucteeno-query-loop__pagination">
-				<?php
-				echo paginate_links(
+			// Fallback: Show default pagination if no pagination block is present and pages > 1.
+			if ( ! $pagination_rendered && $total_pages > 1 ) :
+				// Use the $page variable we already calculated above.
+				$current_page = $page;
+
+				// Get pagination HTML.
+				$fallback_pagination = paginate_links(
 					array(
 						'total'     => $total_pages,
 						'current'   => $current_page,
 						'prev_text' => __( '&larr; Previous', 'aucteeno' ),
 						'next_text' => __( 'Next &rarr;', 'aucteeno' ),
+						'format'    => '?paged=%#%', // Force query string format for Interactivity API.
 					)
 				);
+
+				// Add Interactivity API directives to pagination links.
+				$fallback_pagination = preg_replace_callback(
+					'/<a([^>]*)href=["\']([^"\']*[?&]paged?=(\d+)[^"\']*)["\'](([^>]*)>)/i',
+					function ( $matches ) {
+						$before_href = $matches[1];
+						$href        = $matches[2];
+						$page_num    = $matches[3];
+						$after_attrs = $matches[5];
+						return '<a' . $before_href . 'href="' . esc_url( $href ) . '"' . $after_attrs . ' data-wp-on--click="actions.loadPage" data-page="' . esc_attr( $page_num ) . '">';
+					},
+					$fallback_pagination
+				);
 				?>
-			</nav>
-		<?php endif; ?>
+				<nav class="aucteeno-query-loop__pagination">
+					<?php echo $fallback_pagination; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</nav>
+			<?php endif;
+		} else {
+			// Render infinite scroll elements.
+			?>
+			<div class="aucteeno-query-loop__loading" data-wp-class--is-visible="context.isLoading">
+				<span><?php esc_html_e( 'Loading...', 'aucteeno' ); ?></span>
+			</div>
+			<div class="aucteeno-query-loop__sentinel" data-wp-init="callbacks.initInfiniteScroll" aria-hidden="true"></div>
+			<?php
+		}
+		?>
 	</div>
 	<?php
 } else {

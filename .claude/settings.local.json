@@ -1,15 +1,29 @@
 {
   "permissions": {
+    "defaultMode": "default",
     "allow": [
-      "Bash(grep:*)",
+      "WebSearch",
       "Bash(find:*)",
-      "Bash(tree:*)",
-      "Bash(wc:*)",
-      "Bash(mkdir:*)",
-      "Bash(npm install:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:packagist.org)",
+      "Bash(composer update:*)",
+      "Bash(composer mozart-build:*)",
+      "Bash(make update:*)",
+      "Bash(make build:*)",
+      "Bash(make dump-autoload:*)",
+      "Bash(make lint:*)",
+      "Bash(php:*)",
+      "Bash(php -l:*)",
+      "Bash(make test:*)",
       "Bash(npm run build:*)",
-      "Bash(composer dump-autoload:*)",
-      "Bash(php -l:*)"
+      "Bash(npm run start:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)"
+    ],
+    "additionalDirectories": [
+      "/Volumes/DevExtreme/Aucteeno/wordpress/woocommerce",
+      "/Volumes/DevExtreme/Aucteeno/wordpress/dokan"
     ]
-  }
+  },
+  "model": "sonnet"
 }

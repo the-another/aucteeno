@@ -8,6 +8,7 @@ import { PanelBody, ToggleControl, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 import metadata from '../block.json';
+import './style.css';
 
 function Edit( { attributes, setAttributes, context } ) {
 	const { showLabel = true, prefix = 'Lot #' } = attributes;

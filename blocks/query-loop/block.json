@@ -57,6 +57,14 @@
 			"default": "ending_soon",
 			"enum": [ "ending_soon", "newest" ]
 		},
+		"infiniteScroll": {
+			"type": "boolean",
+			"default": false
+		},
+		"gap": {
+			"type": "string",
+			"default": "1.5rem"
+		},
 		"previewItem": {
 			"type": "object",
 			"default": null
@@ -71,7 +79,7 @@
 		}
 	},
 	"editorScript": "file:../../dist/blocks/query-loop/editor.js",
-	"viewScript": "file:./view.js",
+	"viewScriptModule": "file:../../dist/blocks/query-loop/view.js",
 	"style": "file:../../dist/blocks/query-loop/style-editor.css",
 	"editorStyle": "file:../../dist/blocks/query-loop/editor.css",
 	"render": "file:./render.php"

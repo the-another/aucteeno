@@ -18,9 +18,11 @@ import {
 	RangeControl,
 	SelectControl,
 	TextControl,
+	ToggleControl,
 	Placeholder,
 	Spinner,
 	Notice,
+	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect, useMemo } from '@wordpress/element';
@@ -83,6 +85,8 @@ function Edit( { attributes, setAttributes, context } ) {
 		columns = 4,
 		displayLayout = 'grid',
 		orderBy = 'ending_soon',
+		infiniteScroll = false,
+		gap = '1.5rem',
 	} = attributes;
 
 	// Determine effective userId from attribute or context.
@@ -150,21 +154,23 @@ function Edit( { attributes, setAttributes, context } ) {
 		setAttributes( { previewItem } );
 	}, [ previewItem, setAttributes ] );
 
-	// Grid styles for preview.
-	const gridStyle = useMemo( () => {
+	// Flex styles for preview.
+	const flexStyle = useMemo( () => {
 		if ( displayLayout === 'grid' ) {
 			return {
-				display: 'grid',
-				gridTemplateColumns: `repeat(${ columns }, 1fr)`,
-				gap: '1.5rem',
+				display: 'flex',
+				flexWrap: 'wrap',
+				gap: gap || '1.5rem',
+				'--gap': gap || '1.5rem',
 			};
 		}
 		return {
 			display: 'flex',
 			flexDirection: 'column',
-			gap: '1.5rem',
+			gap: gap || '1.5rem',
+			'--gap': gap || '1.5rem',
 		};
-	}, [ displayLayout, columns ] );
+	}, [ displayLayout, gap ] );
 
 	const blockProps = useBlockProps( {
 		className: `aucteeno-query-loop aucteeno-query-loop--${ displayLayout } aucteeno-query-loop--${ queryType }`,
@@ -174,7 +180,7 @@ function Edit( { attributes, setAttributes, context } ) {
 	const innerBlocksProps = useInnerBlocksProps(
 		{
 			className: `aucteeno-items-wrap aucteeno-items-${ displayLayout } aucteeno-items-columns-${ columns }`,
-			style: gridStyle,
+			style: flexStyle,
 		},
 		{
 			template: TEMPLATE,
@@ -262,6 +268,34 @@ function Edit( { attributes, setAttributes, context } ) {
 					title={ __( 'Layout Settings', 'aucteeno' ) }
 					initialOpen={ true }
 				>
+					<ToggleControl
+						label={ __( 'Enable Infinite Scroll', 'aucteeno' ) }
+						help={ __(
+							'Load more items automatically when scrolling. Hides pagination.',
+							'aucteeno'
+						) }
+						checked={ infiniteScroll }
+						onChange={ ( value ) =>
+							setAttributes( { infiniteScroll: value } )
+						}
+					/>
+					<UnitControl
+						label={ __( 'Gap Between Cards', 'aucteeno' ) }
+						help={ __(
+							'Spacing between cards',
+							'aucteeno'
+						) }
+						value={ gap || '1.5rem' }
+						onChange={ ( value ) =>
+							setAttributes( { gap: value || '1.5rem' } )
+						}
+						units={ [
+							{ value: 'px', label: 'px' },
+							{ value: 'rem', label: 'rem' },
+							{ value: 'em', label: 'em' },
+						] }
+						isUnitSelectTabbable
+					/>
 					<SelectControl
 						label={ __( 'Display Layout', 'aucteeno' ) }
 						value={ displayLayout }
@@ -279,21 +313,6 @@ function Edit( { attributes, setAttributes, context } ) {
 							setAttributes( { displayLayout: value } )
 						}
 					/>
-					{ displayLayout === 'grid' && (
-						<RangeControl
-							label={ __( 'Columns', 'aucteeno' ) }
-							help={ __(
-								'Number of columns on desktop.',
-								'aucteeno'
-							) }
-							value={ columns }
-							onChange={ ( value ) =>
-								setAttributes( { columns: value } )
-							}
-							min={ 1 }
-							max={ 6 }
-						/>
-					) }
 				</PanelBody>
 
 				{ effectiveUserId > 0 && (

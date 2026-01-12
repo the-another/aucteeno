@@ -8,6 +8,7 @@ import { __ } from '@wordpress/i18n';
 import { useMemo } from '@wordpress/element';
 
 import metadata from '../block.json';
+import './style.css';
 
 function Edit( { context } ) {
 	const itemData = context?.[ 'aucteeno/item' ] || {};

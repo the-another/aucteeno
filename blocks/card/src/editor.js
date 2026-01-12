@@ -17,6 +17,7 @@ import {
 	PanelBody,
 	ToggleControl,
 	RangeControl,
+	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useMemo } from '@wordpress/element';
@@ -56,7 +57,11 @@ const ALLOWED_BLOCKS = [
  * @return {JSX.Element} Block editor interface.
  */
 function Edit( { attributes, setAttributes, context } ) {
-	const { useImageAsBackground = false, backgroundOverlay = 0.5 } = attributes;
+	const {
+		useImageAsBackground = false,
+		backgroundOverlay = 0.5,
+		cardWidth = '20rem',
+	} = attributes;
 
 	// Get item data from context.
 	const itemData = context?.[ 'aucteeno/item' ] || null;
@@ -88,16 +93,19 @@ function Edit( { attributes, setAttributes, context } ) {
 
 	// Build background style.
 	const backgroundStyle = useMemo( () => {
+		const style = {
+			'--card-width': cardWidth || '20rem',
+		};
+
 		if ( useImageAsBackground && itemData?.image_url ) {
-			return {
-				backgroundImage: `linear-gradient(rgba(0, 0, 0, ${ backgroundOverlay }), rgba(0, 0, 0, ${ backgroundOverlay })), url(${ itemData.image_url })`,
-				backgroundSize: 'cover',
-				backgroundPosition: 'center',
-				backgroundRepeat: 'no-repeat',
-			};
+			style.backgroundImage = `linear-gradient(rgba(0, 0, 0, ${ backgroundOverlay }), rgba(0, 0, 0, ${ backgroundOverlay })), url(${ itemData.image_url })`;
+			style.backgroundSize = 'cover';
+			style.backgroundPosition = 'center';
+			style.backgroundRepeat = 'no-repeat';
 		}
-		return {};
-	}, [ useImageAsBackground, backgroundOverlay, itemData ] );
+
+		return style;
+	}, [ useImageAsBackground, backgroundOverlay, itemData, cardWidth ] );
 
 	const blockProps = useBlockProps( {
 		className,
@@ -118,6 +126,24 @@ function Edit( { attributes, setAttributes, context } ) {
 					title={ __( 'Card Settings', 'aucteeno' ) }
 					initialOpen={ true }
 				>
+					<UnitControl
+						label={ __( 'Card Width', 'aucteeno' ) }
+						help={ __(
+							'Fixed width for this card',
+							'aucteeno'
+						) }
+						value={ cardWidth || '20rem' }
+						onChange={ ( value ) =>
+							setAttributes( { cardWidth: value || '20rem' } )
+						}
+						units={ [
+							{ value: 'px', label: 'px' },
+							{ value: 'rem', label: 'rem' },
+							{ value: 'em', label: 'em' },
+							{ value: '%', label: '%' },
+						] }
+						isUnitSelectTabbable
+					/>
 					<ToggleControl
 						label={ __( 'Use image as background', 'aucteeno' ) }
 						help={ __(

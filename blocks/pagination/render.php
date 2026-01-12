@@ -39,6 +39,7 @@ ob_start();
 		'prev_next' => $show_prev_next,
 		'prev_text' => __( '&larr; Previous', 'aucteeno' ),
 		'next_text' => __( 'Next &rarr;', 'aucteeno' ),
+		'format'    => '?paged=%#%', // Force query string format for Interactivity API compatibility.
 	);
 
 	if ( ! $show_page_numbers ) {
@@ -47,7 +48,24 @@ ob_start();
 		$pagination_args['show_all']  = false;
 	}
 
-	echo paginate_links( $pagination_args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	// Get pagination HTML.
+	$pagination_html = paginate_links( $pagination_args );
+
+	// Add Interactivity API directives to pagination links.
+	// This allows the Interactivity API to handle page navigation without full page reload.
+	$pagination_html = preg_replace_callback(
+		'/<a([^>]*)href=["\']([^"\']*[?&]paged?=(\d+)[^"\']*)["\'](([^>]*)>)/i',
+		function ( $matches ) {
+			$before_href = $matches[1];
+			$href        = $matches[2];
+			$page        = $matches[3];
+			$after_attrs = $matches[5]; // Use match 5 (without >) not match 4 (with >).
+			return '<a' . $before_href . 'href="' . esc_url( $href ) . '"' . $after_attrs . ' data-wp-on--click="actions.loadPage" data-page="' . esc_attr( $page ) . '">';
+		},
+		$pagination_html
+	);
+
+	echo $pagination_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	?>
 </nav>
 <?php

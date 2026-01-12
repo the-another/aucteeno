@@ -8,6 +8,7 @@ import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 import metadata from '../block.json';
+import './style.css';
 
 function Edit( { attributes, setAttributes, context } ) {
 	const { showIcon = true, format = 'city_country' } = attributes;

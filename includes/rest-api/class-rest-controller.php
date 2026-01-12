@@ -21,6 +21,8 @@ use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
 use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
 use TheAnother\Plugin\Aucteeno\Helpers\DateTime_Helper;
 use TheAnother\Plugin\Aucteeno\Database\Status_Mapper;
+use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
+use TheAnother\Plugin\Aucteeno\Database\Database_Items;
 
 /**
  * Class REST_Controller
@@ -400,17 +402,34 @@ class REST_Controller extends WP_REST_Controller {
 			return new WP_REST_Response( $auctions, 200 );
 		}
 
-		// For HTML format, use the Fragment Renderer.
+		// For HTML format, use HPS database query and render HTML.
 		$args = array(
-			'page'     => $request->get_param( 'page' ) ?? 1,
-			'per_page' => $request->get_param( 'per_page' ) ?? 10,
-			'location' => $request->get_param( 'location' ) ?? array(),
-			'sort'     => $request->get_param( 'sort' ) ?? 'ending_soon',
+			'page'        => $request->get_param( 'page' ) ?? 1,
+			'per_page'    => $request->get_param( 'per_page' ) ?? 10,
+			'sort'        => $request->get_param( 'sort' ) ?? 'ending_soon',
+			'user_id'     => $request->get_param( 'user_id' ) ?? 0,
+			'country'     => $request->get_param( 'country' ) ?? '',
+			'subdivision' => $request->get_param( 'subdivision' ) ?? '',
 		);
 
-		$result = Fragment_Renderer::auctions( $args );
+		$result = Database_Auctions::query_for_listing( $args );
 
-		return new WP_REST_Response( $result, 200 );
+		// Render HTML for each auction.
+		ob_start();
+		foreach ( $result['items'] as $item_data ) {
+			$this->render_auction_card( $item_data );
+		}
+		$html = ob_get_clean();
+
+		return new WP_REST_Response(
+			array(
+				'html'  => $html,
+				'page'  => $result['page'],
+				'pages' => $result['pages'],
+				'total' => $result['total'],
+			),
+			200
+		);
 	}
 
 	/**
@@ -589,18 +608,35 @@ class REST_Controller extends WP_REST_Controller {
 			return new WP_REST_Response( $items, 200 );
 		}
 
-		// For HTML format, use the Fragment Renderer.
+		// For HTML format, use HPS database query and render HTML.
 		$args = array(
-			'page'       => $request->get_param( 'page' ) ?? 1,
-			'per_page'   => $request->get_param( 'per_page' ) ?? 10,
-			'location'   => $request->get_param( 'location' ) ?? array(),
-			'auction_id' => $request->get_param( 'auction_id' ) ?? 0,
-			'sort'       => $request->get_param( 'sort' ) ?? 'ending_soon',
+			'page'        => $request->get_param( 'page' ) ?? 1,
+			'per_page'    => $request->get_param( 'per_page' ) ?? 10,
+			'sort'        => $request->get_param( 'sort' ) ?? 'ending_soon',
+			'user_id'     => $request->get_param( 'user_id' ) ?? 0,
+			'country'     => $request->get_param( 'country' ) ?? '',
+			'subdivision' => $request->get_param( 'subdivision' ) ?? '',
+			'auction_id'  => $request->get_param( 'auction_id' ) ?? 0,
 		);
 
-		$result = Fragment_Renderer::items( $args );
+		$result = Database_Items::query_for_listing( $args );
 
-		return new WP_REST_Response( $result, 200 );
+		// Render HTML for each item.
+		ob_start();
+		foreach ( $result['items'] as $item_data ) {
+			$this->render_item_card( $item_data );
+		}
+		$html = ob_get_clean();
+
+		return new WP_REST_Response(
+			array(
+				'html'  => $html,
+				'page'  => $result['page'],
+				'pages' => $result['pages'],
+				'total' => $result['total'],
+			),
+			200
+		);
 	}
 
 	/**
@@ -705,6 +741,60 @@ class REST_Controller extends WP_REST_Controller {
 		}
 
 		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	/**
+	 * Render a single auction card as HTML.
+	 *
+	 * @param array $item_data Auction item data from HPS query.
+	 * @return void
+	 */
+	private function render_auction_card( array $item_data ): void {
+		$status_map = array(
+			10 => 'running',
+			20 => 'upcoming',
+			30 => 'expired',
+		);
+		$status_class = $status_map[ $item_data['bidding_status'] ?? 10 ] ?? 'running';
+		?>
+		<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>">
+			<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
+				<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+					<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
+				</a>
+			<?php endif; ?>
+			<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+				<?php echo esc_html( $item_data['title'] ?? '' ); ?>
+			</a>
+		</article>
+		<?php
+	}
+
+	/**
+	 * Render a single item card as HTML.
+	 *
+	 * @param array $item_data Item data from HPS query.
+	 * @return void
+	 */
+	private function render_item_card( array $item_data ): void {
+		$status_map = array(
+			10 => 'running',
+			20 => 'upcoming',
+			30 => 'expired',
+		);
+		$status_class = $status_map[ $item_data['bidding_status'] ?? 10 ] ?? 'running';
+		?>
+		<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>">
+			<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
+				<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+					<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
+				</a>
+			<?php endif; ?>
+			<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+				<?php echo esc_html( $item_data['title'] ?? '' ); ?>
+			</a>
+		</article>
+		<?php
 	}
 
 	/**

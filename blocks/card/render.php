@@ -28,6 +28,7 @@ if ( ! $item_data ) {
 // Extract attributes.
 $use_image_as_background = $attributes['useImageAsBackground'] ?? false;
 $background_overlay      = $attributes['backgroundOverlay'] ?? 0.5;
+$card_width              = $attributes['cardWidth'] ?? '20rem';
 
 // Map bidding_status to class name.
 $status_map = array(
@@ -51,6 +52,11 @@ if ( $use_image_as_background ) {
 
 // Build inline styles.
 $inline_styles = array();
+
+// Add card width CSS variable.
+if ( ! empty( $card_width ) ) {
+	$inline_styles[] = '--card-width: ' . esc_attr( $card_width );
+}
 
 if ( $use_image_as_background && ! empty( $item_data['image_url'] ) ) {
 	$inline_styles[] = sprintf(

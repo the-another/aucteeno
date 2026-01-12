@@ -34,6 +34,10 @@
 		"backgroundOverlay": {
 			"type": "number",
 			"default": 0.5
+		},
+		"cardWidth": {
+			"type": "string",
+			"default": "20rem"
 		}
 	},
 	"example": {

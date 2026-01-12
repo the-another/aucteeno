@@ -16,17 +16,31 @@
 	margin-bottom: 1rem;
 }
 
-/* Editor preview grid */
+/* Editor preview - match frontend flexbox layout */
 .aucteeno-query-loop .aucteeno-items-wrap {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gap, 1.5rem);
+	width: 100%;
+}
+
+/* Card items in editor - fixed width, no grow */
+.aucteeno-query-loop .aucteeno-items-wrap > .wp-block {
+	display: block;
+	flex: 0 0 var(--card-width, 20rem);
+	max-width: var(--card-width, 20rem);
 	list-style: none;
 	margin: 0;
 	padding: 0;
 }
 
-.aucteeno-query-loop .aucteeno-items-wrap > li {
-	list-style: none;
-	margin: 0;
-	padding: 0;
+/* List layout - override to full width */
+.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-list > .wp-block {
+	flex: 1 1 100%;
+	max-width: 100%;
 }
 
 /* Ensure inner blocks have proper spacing in editor */
@@ -36,4 +50,26 @@
 
 .aucteeno-query-loop .block-editor-block-list__layout {
 	display: contents;
+}
+
+/* Responsive breakpoints for editor */
+@media (max-width: 782px) {
+	.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-grid > .wp-block {
+		flex: 0 0 calc(50% - (var(--gap, 1.5rem) / 2));
+		max-width: calc(50% - (var(--gap, 1.5rem) / 2));
+	}
+}
+
+@media (max-width: 600px) {
+	.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-grid > .wp-block {
+		flex: 0 0 100%;
+		max-width: 100%;
+	}
+}
+
+/* Force pagination block to appear on its own row in editor */
+.aucteeno-query-loop .aucteeno-items-wrap > .wp-block[data-type="aucteeno/pagination"] {
+	flex-basis: 100%;
+	width: 100%;
+	max-width: 100%;
 }
