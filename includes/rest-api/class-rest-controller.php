@@ -111,6 +111,12 @@ class REST_Controller extends WP_REST_Controller {
 							'default'           => '',
 							'sanitize_callback' => 'wp_kses_post',
 						),
+						'page_url'       => array(
+							'description'       => 'Original page URL for pagination link generation.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'esc_url_raw',
+						),
 					),
 				),
 				array(
@@ -228,6 +234,12 @@ class REST_Controller extends WP_REST_Controller {
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'wp_kses_post',
+						),
+						'page_url'       => array(
+							'description'       => 'Original page URL for pagination link generation.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'esc_url_raw',
 						),
 					),
 				),
@@ -469,12 +481,19 @@ class REST_Controller extends WP_REST_Controller {
 		}
 		$html = ob_get_clean();
 
+		// Get page URL for pagination links.
+		$page_url = $request->get_param( 'page_url' ) ?? '';
+
+		// Render pagination HTML.
+		$pagination_html = $this->render_pagination( $result['page'], $result['pages'], $page_url );
+
 		return new WP_REST_Response(
 			array(
-				'html'  => $html,
-				'page'  => $result['page'],
-				'pages' => $result['pages'],
-				'total' => $result['total'],
+				'html'       => $html,
+				'pagination' => $pagination_html,
+				'page'       => $result['page'],
+				'pages'      => $result['pages'],
+				'total'      => $result['total'],
 			),
 			200
 		);
@@ -680,12 +699,19 @@ class REST_Controller extends WP_REST_Controller {
 		}
 		$html = ob_get_clean();
 
+		// Get page URL for pagination links.
+		$page_url = $request->get_param( 'page_url' ) ?? '';
+
+		// Render pagination HTML.
+		$pagination_html = $this->render_pagination( $result['page'], $result['pages'], $page_url );
+
 		return new WP_REST_Response(
 			array(
-				'html'  => $html,
-				'page'  => $result['page'],
-				'pages' => $result['pages'],
-				'total' => $result['total'],
+				'html'       => $html,
+				'pagination' => $pagination_html,
+				'page'       => $result['page'],
+				'pages'      => $result['pages'],
+				'total'      => $result['total'],
 			),
 			200
 		);
@@ -851,6 +877,57 @@ class REST_Controller extends WP_REST_Controller {
 		</article>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render pagination HTML for AJAX responses.
+	 *
+	 * @param int    $current_page Current page number.
+	 * @param int    $total_pages  Total number of pages.
+	 * @param string $base_url     Base URL for pagination links.
+	 * @return string Pagination HTML.
+	 */
+	private function render_pagination( int $current_page, int $total_pages, string $base_url = '' ): string {
+		if ( $total_pages <= 1 ) {
+			return '';
+		}
+
+		$args = array(
+			'total'     => $total_pages,
+			'current'   => $current_page,
+			'prev_text' => __( '&larr; Previous', 'aucteeno' ),
+			'next_text' => __( 'Next &rarr;', 'aucteeno' ),
+			'format'    => '?paged=%#%',
+		);
+
+		// Use provided base URL to avoid REST API URL in pagination links.
+		if ( ! empty( $base_url ) ) {
+			$args['base'] = trailingslashit( $base_url ) . '%_%';
+		}
+
+		$pagination = paginate_links( $args );
+
+		if ( ! $pagination ) {
+			return '';
+		}
+
+		// Add Interactivity API directives to pagination links.
+		// Build clean URLs with both /page/X/ (pretty permalink) and ?paged=X (query string).
+		$pagination = preg_replace_callback(
+			'/<a([^>]*)href=["\']([^"\']*)\?paged=(\d+)[^"\']*["\'](([^>]*)>)/i',
+			function ( $matches ) {
+				$before_href = $matches[1];
+				$base_href   = $matches[2]; // URL before ?paged=
+				$page_num    = $matches[3];
+				$after_attrs = $matches[5];
+				// Build URL with /page/X/?paged=X format.
+				$clean_href  = trailingslashit( $base_href ) . 'page/' . $page_num . '/?paged=' . $page_num;
+				return '<a' . $before_href . 'href="' . esc_url( $clean_href ) . '"' . $after_attrs . ' data-wp-on--click="actions.loadPage" data-page="' . esc_attr( $page_num ) . '">';
+			},
+			$pagination
+		);
+
+		return $pagination;
 	}
 
 	/**

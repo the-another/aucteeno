@@ -65,8 +65,33 @@ if ( ! empty( $attributes['userId'] ) ) {
 }
 
 // Build query args, prioritizing context over attributes.
-// Get page from URL query var first, then context, then default to 1.
-$page = get_query_var( 'paged' ) ? absint( get_query_var( 'paged' ) ) : absint( $block->context['query/page'] ?? 1 );
+// Determine current page with multiple fallbacks since query_vars may not be parsed yet.
+$page = 0;
+
+// 1. Check WordPress query var.
+if ( ! $page && get_query_var( 'paged' ) ) {
+	$page = absint( get_query_var( 'paged' ) );
+}
+
+// 2. Check ?paged= query argument directly.
+if ( ! $page && isset( $_GET['paged'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$page = absint( $_GET['paged'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+}
+
+// 3. Parse URL path for /page/N/ pattern.
+if ( ! $page && isset( $_SERVER['REQUEST_URI'] ) ) {
+	$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+	if ( preg_match( '#/page/(\d+)/?#', $request_uri, $matches ) ) {
+		$page = absint( $matches[1] );
+	}
+}
+
+// 4. Check block context.
+if ( ! $page && ! empty( $block->context['query/page'] ) ) {
+	$page = absint( $block->context['query/page'] );
+}
+
+// 5. Default to page 1.
 if ( $page < 1 ) {
 	$page = 1;
 }
@@ -129,12 +154,23 @@ if ( ! empty( $block->inner_blocks ) ) {
 	}
 }
 
+// Extract card width from first card block to apply to query loop wrapper.
+$card_width = '20rem'; // Default.
+if ( ! empty( $template_blocks ) && ! empty( $template_blocks[0]->parsed_block['attrs']['cardWidth'] ) ) {
+	$card_width = $template_blocks[0]->parsed_block['attrs']['cardWidth'];
+}
+
 // Serialize card template for REST API pagination.
 // This allows the REST endpoint to render cards with the same block structure.
 $card_template_json = null;
 if ( ! empty( $template_blocks ) ) {
 	$card_template_json = wp_json_encode( $template_blocks[0]->parsed_block );
 }
+
+// Get current page URL without paged param for pagination base.
+// Use home_url() to ensure absolute URL (remove_query_arg returns relative path).
+$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+$current_url = home_url( remove_query_arg( 'paged', $request_uri ) );
 
 // Prepare Interactivity API context.
 $interactivity_context = array(
@@ -153,6 +189,7 @@ $interactivity_context = array(
 	'restUrl'        => rest_url( 'aucteeno/v1/' . ( 'auctions' === $query_type ? 'auctions' : 'items' ) ),
 	'restNonce'      => wp_create_nonce( 'wp_rest' ),
 	'blockTemplate'  => $card_template_json,
+	'pageUrl'        => $current_url,
 );
 
 // Get wrapper attributes with Interactivity API directives.
@@ -163,8 +200,9 @@ $data_attrs = array(
 	'data-wp-class--is-loading'     => 'context.isLoading',
 	'data-wp-init'                  => 'callbacks.onInit',
 	'style'                         => sprintf(
-		'--gap: %s;',
-		esc_attr( $gap )
+		'--gap: %s; --card-width: %s;',
+		esc_attr( $gap ),
+		esc_attr( $card_width )
 	),
 );
 
@@ -188,18 +226,12 @@ if ( ! isset( $block->context ) ) {
 $block->context['aucteeno/queryId'] = $query_context['queryId'];
 $block->context['aucteeno/query']   = $query_context['query'];
 
-// Extract card width from first card block to apply to list items.
-$card_width = '20rem'; // Default.
-if ( ! empty( $template_blocks ) && ! empty( $template_blocks[0]->parsed_block['attrs']['cardWidth'] ) ) {
-	$card_width = $template_blocks[0]->parsed_block['attrs']['cardWidth'];
-}
-
 ob_start();
 
 if ( ! empty( $items ) ) {
 	?>
 	<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-		<div class="<?php echo esc_attr( $items_classes ); ?>">
+		<ul class="<?php echo esc_attr( $items_classes ); ?>">
 			<?php
 			foreach ( $items as $item_data ) {
 				// Set item data in block context for inner blocks.
@@ -225,7 +257,11 @@ if ( ! empty( $items ) ) {
 							$template_block_with_width,
 							$item_context
 						);
-						echo $template_block_instance->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						?>
+						<li class="aucteeno-query-loop__item">
+							<?php echo $template_block_instance->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						</li>
+						<?php
 					}
 				} else {
 					// Fallback: render a basic card if no card blocks defined.
@@ -239,21 +275,23 @@ if ( ! empty( $items ) ) {
 						$status_class = $status_map[ $item_data['bidding_status'] ] ?? 'running';
 					}
 					?>
-					<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>" style="--card-width: <?php echo esc_attr( $card_width ); ?>">
-						<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
-							<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
-								<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
+					<li class="aucteeno-query-loop__item">
+						<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>" style="--card-width: <?php echo esc_attr( $card_width ); ?>">
+							<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
+								<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+									<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
+								</a>
+							<?php endif; ?>
+							<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
+								<?php echo esc_html( $item_data['title'] ?? '' ); ?>
 							</a>
-						<?php endif; ?>
-						<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
-							<?php echo esc_html( $item_data['title'] ?? '' ); ?>
-						</a>
-					</article>
+						</article>
+					</li>
 					<?php
 				}
 			}
 			?>
-		</div>
+		</ul>
 
 		<?php
 		// Conditionally render pagination or infinite scroll elements.
@@ -277,6 +315,10 @@ if ( ! empty( $items ) ) {
 				// Use the $page variable we already calculated above.
 				$current_page = $page;
 
+				// Get base URL without /page/X/ for building pagination links.
+				$base_url = preg_replace( '#/page/\d+/?$#', '/', $current_url );
+				$base_url = trailingslashit( $base_url );
+
 				// Get pagination HTML.
 				$fallback_pagination = paginate_links(
 					array(
@@ -288,15 +330,16 @@ if ( ! empty( $items ) ) {
 					)
 				);
 
-				// Add Interactivity API directives to pagination links.
+				// Add Interactivity API directives and build clean URLs with /page/X/?paged=X format.
 				$fallback_pagination = preg_replace_callback(
-					'/<a([^>]*)href=["\']([^"\']*[?&]paged?=(\d+)[^"\']*)["\'](([^>]*)>)/i',
-					function ( $matches ) {
+					'/<a([^>]*)href=["\']([^"\']*)\?paged=(\d+)[^"\']*["\'](([^>]*)>)/i',
+					function ( $matches ) use ( $base_url ) {
 						$before_href = $matches[1];
-						$href        = $matches[2];
 						$page_num    = $matches[3];
 						$after_attrs = $matches[5];
-						return '<a' . $before_href . 'href="' . esc_url( $href ) . '"' . $after_attrs . ' data-wp-on--click="actions.loadPage" data-page="' . esc_attr( $page_num ) . '">';
+						// Build URL with /page/X/?paged=X format.
+						$clean_href  = $base_url . 'page/' . $page_num . '/?paged=' . $page_num;
+						return '<a' . $before_href . 'href="' . esc_url( $clean_href ) . '"' . $after_attrs . ' data-wp-on--click="actions.loadPage" data-page="' . esc_attr( $page_num ) . '">';
 					},
 					$fallback_pagination
 				);

@@ -37,6 +37,11 @@ async function fetchItems( context, page ) {
 		url.searchParams.set( 'block_template', context.blockTemplate );
 	}
 
+	// Pass page URL for pagination link generation.
+	if ( context.pageUrl ) {
+		url.searchParams.set( 'page_url', context.pageUrl );
+	}
+
 	const response = await fetch( url.toString(), {
 		headers: {
 			'X-WP-Nonce': context.restNonce,
@@ -51,22 +56,6 @@ async function fetchItems( context, page ) {
 }
 
 /**
- * Build URL for a specific page
- *
- * @param {number} page Page number
- * @return {string} Page URL
- */
-function buildPageUrl( page ) {
-	const url = new URL( window.location );
-	if ( page > 1 ) {
-		url.searchParams.set( 'paged', page );
-	} else {
-		url.searchParams.delete( 'paged' );
-	}
-	return url.toString();
-}
-
-/**
  * Update browser URL
  *
  * @param {number} page Page number
@@ -76,25 +65,29 @@ function updateURL( page ) {
 		return;
 	}
 
-	const url = new URL( window.location );
+	// Get base URL without /page/X/ and without ?paged query param.
+	let baseUrl = window.location.origin + window.location.pathname;
+	baseUrl = baseUrl.replace( /\/page\/\d+\/?$/, '/' );
 
+	let newUrl;
 	if ( page > 1 ) {
-		url.searchParams.set( 'paged', page );
+		// Build URL with /page/X/ format (clean permalink).
+		newUrl = baseUrl.replace( /\/$/, '' ) + '/page/' + page + '/';
 	} else {
-		url.searchParams.delete( 'paged' );
+		// Page 1: just the base URL without pagination.
+		newUrl = baseUrl;
 	}
 
-	window.history.pushState( { page }, '', url.toString() );
+	window.history.pushState( { page }, '', newUrl );
 }
 
 /**
- * Update pagination UI after AJAX navigation
+ * Replace pagination HTML from REST API response
  *
- * @param {Element} container Query loop container element
- * @param {number}  page      Current page number
- * @param {number}  pages     Total pages
+ * @param {Element} container      Query loop container element
+ * @param {string}  paginationHtml New pagination HTML from REST API
  */
-function updatePagination( container, page, pages ) {
+function replacePagination( container, paginationHtml ) {
 	const pagination = container.querySelector(
 		'.aucteeno-pagination, .aucteeno-query-loop__pagination'
 	);
@@ -103,66 +96,8 @@ function updatePagination( container, page, pages ) {
 		return;
 	}
 
-	// Remove current class from all elements.
-	pagination
-		.querySelectorAll( '.current' )
-		.forEach( ( el ) => el.classList.remove( 'current' ) );
-
-	// Add current class to the matching page number.
-	const pageLinks = pagination.querySelectorAll( 'a[data-page]' );
-	pageLinks.forEach( ( link ) => {
-		const linkPage = parseInt( link.dataset.page, 10 );
-
-		if ( linkPage === page ) {
-			// Replace the link with a span for current page.
-			const span = document.createElement( 'span' );
-			span.className = 'page-numbers current';
-			span.setAttribute( 'aria-current', 'page' );
-			span.textContent = page;
-			link.replaceWith( span );
-		}
-	} );
-
-	// Convert current span back to link if it's no longer current.
-	const currentSpans = pagination.querySelectorAll(
-		'span.page-numbers.current'
-	);
-	currentSpans.forEach( ( span ) => {
-		const spanPage = parseInt( span.textContent, 10 );
-		if ( spanPage !== page && ! isNaN( spanPage ) ) {
-			const link = document.createElement( 'a' );
-			link.className = 'page-numbers';
-			link.href = buildPageUrl( spanPage );
-			link.textContent = spanPage;
-			link.dataset.page = spanPage;
-			link.setAttribute( 'data-wp-on--click', 'actions.loadPage' );
-			span.replaceWith( link );
-		}
-	} );
-
-	// Update prev/next links visibility.
-	const prevLink = pagination.querySelector( '.prev' );
-	const nextLink = pagination.querySelector( '.next' );
-
-	if ( prevLink ) {
-		if ( page <= 1 ) {
-			prevLink.style.visibility = 'hidden';
-		} else {
-			prevLink.style.visibility = 'visible';
-			prevLink.dataset.page = page - 1;
-			prevLink.href = buildPageUrl( page - 1 );
-		}
-	}
-
-	if ( nextLink ) {
-		if ( page >= pages ) {
-			nextLink.style.visibility = 'hidden';
-		} else {
-			nextLink.style.visibility = 'visible';
-			nextLink.dataset.page = page + 1;
-			nextLink.href = buildPageUrl( page + 1 );
-		}
-	}
+	// Replace pagination content with server-rendered HTML.
+	pagination.innerHTML = paginationHtml;
 }
 
 /**
@@ -196,8 +131,10 @@ function replaceItems( context, data, ref ) {
 	context.total = data.total;
 	context.hasMore = data.page < data.pages;
 
-	// Update pagination UI to reflect new current page.
-	updatePagination( container, data.page, data.pages );
+	// Replace pagination with server-rendered HTML.
+	if ( data.pagination ) {
+		replacePagination( container, data.pagination );
+	}
 }
 
 /**
@@ -322,10 +259,113 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 
 	callbacks: {
 		/**
+		 * Initialize infinite scroll observer on sentinel element
+		 */
+		initInfiniteScroll() {
+			const element = getElement();
+			const sentinel = element.ref;
+			// Capture context during init - getContext() only works in Interactivity API callbacks.
+			const context = getContext();
+			const container = findContainer( sentinel );
+
+			// Create IntersectionObserver to detect when sentinel enters viewport.
+			const observer = new IntersectionObserver(
+				( entries ) => {
+					const entry = entries[ 0 ];
+					if (
+						entry.isIntersecting &&
+						context.hasMore &&
+						! context.isLoading
+					) {
+						// Load more items directly (can't use generator action from observer).
+						const nextPage = context.page + 1;
+						context.isLoading = true;
+
+						fetchItems( context, nextPage )
+							.then( ( data ) => {
+								appendItems( context, data, container );
+								updateURL( nextPage );
+							} )
+							.catch( ( error ) => {
+								context.error = error.message;
+								// eslint-disable-next-line no-console
+								console.error(
+									'Failed to load more items:',
+									error
+								);
+							} )
+							.finally( () => {
+								context.isLoading = false;
+							} );
+					}
+				},
+				{
+					// Trigger when sentinel is 200px from entering viewport.
+					rootMargin: '200px',
+					threshold: 0,
+				}
+			);
+
+			observer.observe( sentinel );
+
+			// Store observer reference for cleanup if needed.
+			sentinel._infiniteScrollObserver = observer;
+		},
+
+		/**
 		 * Initialize on mount
 		 */
 		onInit() {
-			// Listen for browser back/forward
+			const element = getElement();
+			const container = element.ref;
+			// Capture context during init - getContext() only works in Interactivity API callbacks.
+			const context = getContext();
+
+			// Event delegation for pagination clicks.
+			// This handles clicks on dynamically replaced pagination HTML
+			// where Interactivity API directives aren't automatically re-bound.
+			container.addEventListener( 'click', ( event ) => {
+				const link = event.target.closest( 'a[data-page]' );
+				if ( ! link ) {
+					return;
+				}
+
+				event.preventDefault();
+
+				const page = parseInt( link.dataset.page, 10 );
+
+				if ( ! page || page === context.page || context.isLoading ) {
+					return;
+				}
+
+				context.isLoading = true;
+
+				fetchItems( context, page )
+					.then( ( data ) => {
+						replaceItems( context, data, container );
+						updateURL( page );
+
+						// Scroll to top of query loop container with offset.
+						const offset = 50;
+						const top =
+							container.getBoundingClientRect().top +
+							window.scrollY -
+							offset;
+						window.scrollTo( {
+							top,
+							behavior: 'smooth',
+						} );
+					} )
+					.catch( ( error ) => {
+						context.error = error.message;
+						console.error( 'Failed to load page:', error );
+					} )
+					.finally( () => {
+						context.isLoading = false;
+					} );
+			} );
+
+			// Listen for browser back/forward.
 			window.addEventListener( 'popstate', ( event ) => {
 				if ( event.state?.page ) {
 					window.location.reload();
