@@ -52,27 +52,27 @@ class HPS_Sync_Auction {
 			)
 		);
 
-	if ( $exists ) {
-		// Update existing record.
-		$result = $wpdb->update(
-			$table_name,
-			$data,
-			array( 'auction_id' => $product_id ),
-			array( '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' ),
-			array( '%d' )
-		);
+		if ( $exists ) {
+			// Update existing record.
+			$result = $wpdb->update(
+				$table_name,
+				$data,
+				array( 'auction_id' => $product_id ),
+				array( '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' ),
+				array( '%d' )
+			);
 
-		return false !== $result;
-	} else {
-		// Insert new record.
-		$result = $wpdb->insert(
-			$table_name,
-			$data,
-			array( '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' )
-		);
+			return false !== $result;
+		} else {
+			// Insert new record.
+			$result = $wpdb->insert(
+				$table_name,
+				$data,
+				array( '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%f' )
+			);
 
-		return false !== $result;
-	}
+			return false !== $result;
+		}
 	}
 
 	/**
@@ -133,7 +133,7 @@ class HPS_Sync_Auction {
 		// Get location data from aucteeno-location taxonomy terms.
 		$location_terms = wp_get_post_terms( $product_id, 'aucteeno-location', array( 'fields' => 'all' ) );
 
-		$country    = '';
+		$country     = '';
 		$subdivision = '';
 
 		if ( ! is_wp_error( $location_terms ) && ! empty( $location_terms ) ) {
@@ -149,7 +149,7 @@ class HPS_Sync_Auction {
 					$subdivision = substr( sanitize_text_field( $code ), 0, 50 );
 					// Extract country from subdivision code.
 					if ( strpos( $code, ':' ) !== false ) {
-						$parts = explode( ':', $code, 2 );
+						$parts   = explode( ':', $code, 2 );
 						$country = isset( $parts[0] ) ? substr( sanitize_text_field( $parts[0] ), 0, 2 ) : '';
 					}
 				} else {
@@ -173,22 +173,21 @@ class HPS_Sync_Auction {
 			}
 		}
 
-	// Get user_id (post_author).
-	$user_id = get_post_field( 'post_author', $product_id );
-	$user_id = $user_id ? absint( $user_id ) : 0;
+		// Get user_id (post_author).
+		$user_id = get_post_field( 'post_author', $product_id );
+		$user_id = $user_id ? absint( $user_id ) : 0;
 
-	return array(
-		'auction_id'          => $product_id,
-		'user_id'             => $user_id,
-		'bidding_status'      => $bidding_status,
-		'bidding_starts_at'   => $bidding_starts_at,
-		'bidding_ends_at'     => $bidding_ends_at,
-		'location_country'    => $country,
-		'location_subdivision' => $subdivision,
-		'location_city'       => $city,
-		'location_lat'       => 0.0,
-		'location_lng'       => 0.0,
-	);
+		return array(
+			'auction_id'           => $product_id,
+			'user_id'              => $user_id,
+			'bidding_status'       => $bidding_status,
+			'bidding_starts_at'    => $bidding_starts_at,
+			'bidding_ends_at'      => $bidding_ends_at,
+			'location_country'     => $country,
+			'location_subdivision' => $subdivision,
+			'location_city'        => $city,
+			'location_lat'         => 0.0,
+			'location_lng'         => 0.0,
+		);
 	}
 }
-

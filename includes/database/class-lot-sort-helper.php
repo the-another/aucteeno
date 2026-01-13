@@ -101,4 +101,3 @@ class Lot_Sort_Helper {
 		return $results;
 	}
 }
-

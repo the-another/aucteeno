@@ -16,7 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 use WP_Query;
-use TheAnother\Plugin\Aucteeno\Fragment_Renderer;
+use WP_Block;
 use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
 use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
 use TheAnother\Plugin\Aucteeno\Helpers\DateTime_Helper;
@@ -54,14 +54,14 @@ class REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'get_auctions' ),
 					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					'args'                => array(
-						'page'        => array(
+						'page'           => array(
 							'description'       => 'Page number.',
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
-						'per_page'    => array(
+						'per_page'       => array(
 							'description'       => 'Items per page.',
 							'type'              => 'integer',
 							'default'           => 10,
@@ -69,41 +69,47 @@ class REST_Controller extends WP_REST_Controller {
 							'maximum'           => 50,
 							'sanitize_callback' => 'absint',
 						),
-						'location'    => array(
+						'location'       => array(
 							'description'       => 'Location term slug or ID.',
 							'type'              => array( 'string', 'array' ),
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_location_param' ),
 						),
-						'user_id'     => array(
+						'user_id'        => array(
 							'description'       => 'Filter by user/vendor ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'country'     => array(
+						'country'        => array(
 							'description'       => 'Filter by location country code.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'subdivision' => array(
+						'subdivision'    => array(
 							'description'       => 'Filter by location subdivision.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'sort'        => array(
+						'sort'           => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
 							'enum'        => array( 'ending_soon', 'newest' ),
 						),
-						'format'      => array(
+						'format'         => array(
 							'description' => 'Response format: html (fragments) or json (data).',
 							'type'        => 'string',
 							'default'     => 'html',
 							'enum'        => array( 'html', 'json' ),
+						),
+						'block_template' => array(
+							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'wp_kses_post',
 						),
 					),
 				),
@@ -160,14 +166,14 @@ class REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'get_items' ),
 					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					'args'                => array(
-						'page'        => array(
+						'page'           => array(
 							'description'       => 'Page number.',
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
-						'per_page'    => array(
+						'per_page'       => array(
 							'description'       => 'Items per page.',
 							'type'              => 'integer',
 							'default'           => 10,
@@ -175,47 +181,53 @@ class REST_Controller extends WP_REST_Controller {
 							'maximum'           => 50,
 							'sanitize_callback' => 'absint',
 						),
-						'location'    => array(
+						'location'       => array(
 							'description'       => 'Location term slug or ID.',
 							'type'              => array( 'string', 'array' ),
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_location_param' ),
 						),
-						'auction_id'  => array(
+						'auction_id'     => array(
 							'description'       => 'Parent auction ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'user_id'     => array(
+						'user_id'        => array(
 							'description'       => 'Filter by user/vendor ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'country'     => array(
+						'country'        => array(
 							'description'       => 'Filter by location country code.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'subdivision' => array(
+						'subdivision'    => array(
 							'description'       => 'Filter by location subdivision.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'sort'        => array(
+						'sort'           => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
 							'enum'        => array( 'ending_soon', 'newest' ),
 						),
-						'format'      => array(
+						'format'         => array(
 							'description' => 'Response format: html (fragments) or json (data).',
 							'type'        => 'string',
 							'default'     => 'html',
 							'enum'        => array( 'html', 'json' ),
+						),
+						'block_template' => array(
+							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'wp_kses_post',
 						),
 					),
 				),
@@ -307,8 +319,40 @@ class REST_Controller extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_locations( $request ) {
-		$locations = Fragment_Renderer::get_location_terms();
+		$locations = self::get_location_terms();
 		return new WP_REST_Response( $locations, 200 );
+	}
+
+	/**
+	 * Get all location terms for dropdown.
+	 *
+	 * @return array Array of location terms with id, name, and parent.
+	 */
+	private static function get_location_terms(): array {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'aucteeno-location',
+				'hide_empty' => true,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			)
+		);
+
+		if ( is_wp_error( $terms ) || empty( $terms ) ) {
+			return array();
+		}
+
+		$result = array();
+		foreach ( $terms as $term ) {
+			$result[] = array(
+				'id'     => $term->term_id,
+				'slug'   => $term->slug,
+				'name'   => $term->name,
+				'parent' => $term->parent,
+			);
+		}
+
+		return $result;
 	}
 
 	/**
@@ -384,7 +428,7 @@ class REST_Controller extends WP_REST_Controller {
 				);
 			}
 
-			$query   = new WP_Query( $query_args );
+			$query    = new WP_Query( $query_args );
 			$auctions = array();
 
 			if ( $query->have_posts() ) {
@@ -414,10 +458,14 @@ class REST_Controller extends WP_REST_Controller {
 
 		$result = Database_Auctions::query_for_listing( $args );
 
-		// Render HTML for each auction.
+		// Parse block template if provided.
+		$block_template_json = $request->get_param( 'block_template' ) ?? '';
+		$block_template      = ! empty( $block_template_json ) ? json_decode( $block_template_json, true ) : null;
+
+		// Render HTML for each auction using block template or fallback.
 		ob_start();
 		foreach ( $result['items'] as $item_data ) {
-			$this->render_auction_card( $item_data );
+			echo $this->render_card( $item_data, 'auctions', $block_template );
 		}
 		$html = ob_get_clean();
 
@@ -591,7 +639,7 @@ class REST_Controller extends WP_REST_Controller {
 			}
 
 			$query = new WP_Query( $query_args );
-			$items  = array();
+			$items = array();
 
 			if ( $query->have_posts() ) {
 				while ( $query->have_posts() ) {
@@ -621,10 +669,14 @@ class REST_Controller extends WP_REST_Controller {
 
 		$result = Database_Items::query_for_listing( $args );
 
-		// Render HTML for each item.
+		// Parse block template if provided.
+		$block_template_json = $request->get_param( 'block_template' ) ?? '';
+		$block_template      = ! empty( $block_template_json ) ? json_decode( $block_template_json, true ) : null;
+
+		// Render HTML for each item using block template or fallback.
 		ob_start();
 		foreach ( $result['items'] as $item_data ) {
-			$this->render_item_card( $item_data );
+			echo $this->render_card( $item_data, 'items', $block_template );
 		}
 		$html = ob_get_clean();
 
@@ -744,45 +796,48 @@ class REST_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Render a single auction card as HTML.
+	 * Render a card using block template or fallback.
 	 *
-	 * @param array $item_data Auction item data from HPS query.
-	 * @return void
+	 * If a block template is provided (from query-loop's card block), it renders
+	 * using WordPress block system to match initial page load. Otherwise, falls
+	 * back to a basic card structure.
+	 *
+	 * @param array      $item_data      Item data from HPS query.
+	 * @param string     $query_type     Query type ('auctions' or 'items').
+	 * @param array|null $block_template Parsed block template array or null.
+	 * @return string Rendered HTML.
 	 */
-	private function render_auction_card( array $item_data ): void {
-		$status_map = array(
-			10 => 'running',
-			20 => 'upcoming',
-			30 => 'expired',
-		);
-		$status_class = $status_map[ $item_data['bidding_status'] ?? 10 ] ?? 'running';
-		?>
-		<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>">
-			<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
-				<a class="aucteeno-card__media" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
-					<img src="<?php echo esc_url( $item_data['image_url'] ); ?>" alt="" loading="lazy" />
-				</a>
-			<?php endif; ?>
-			<a class="aucteeno-card__title" href="<?php echo esc_url( $item_data['permalink'] ?? '#' ); ?>">
-				<?php echo esc_html( $item_data['title'] ?? '' ); ?>
-			</a>
-		</article>
-		<?php
+	private function render_card( array $item_data, string $query_type, ?array $block_template ): string {
+		// If block template provided, render using WordPress block system.
+		if ( $block_template && class_exists( 'WP_Block' ) ) {
+			$context = array(
+				'aucteeno/item'     => $item_data,
+				'aucteeno/itemType' => $query_type,
+			);
+
+			$block = new WP_Block( $block_template, $context );
+			return $block->render();
+		}
+
+		// Fallback: render a basic card.
+		return $this->render_fallback_card( $item_data );
 	}
 
 	/**
-	 * Render a single item card as HTML.
+	 * Render a basic fallback card when no block template is available.
 	 *
 	 * @param array $item_data Item data from HPS query.
-	 * @return void
+	 * @return string Rendered HTML.
 	 */
-	private function render_item_card( array $item_data ): void {
-		$status_map = array(
+	private function render_fallback_card( array $item_data ): string {
+		$status_map   = array(
 			10 => 'running',
 			20 => 'upcoming',
 			30 => 'expired',
 		);
 		$status_class = $status_map[ $item_data['bidding_status'] ?? 10 ] ?? 'running';
+
+		ob_start();
 		?>
 		<article class="aucteeno-card aucteeno-card--<?php echo esc_attr( $status_class ); ?>">
 			<?php if ( ! empty( $item_data['image_url'] ) ) : ?>
@@ -795,6 +850,7 @@ class REST_Controller extends WP_REST_Controller {
 			</a>
 		</article>
 		<?php
+		return ob_get_clean();
 	}
 
 	/**
@@ -805,23 +861,23 @@ class REST_Controller extends WP_REST_Controller {
 	 */
 	private function product_to_auction_array( Product_Auction $product ): array {
 		$data = array(
-			'id'                        => $product->get_id(),
-			'name'                      => $product->get_name(),
-			'permalink'                 => $product->get_permalink(),
-			'status'                    => $product->get_status(),
-			'product_url'               => $product->get_product_url(),
-			'button_text'               => $product->get_button_text(),
-			'location'                  => $product->get_location(),
-			'notice'                    => $product->get_notice(),
-			'bidding_notice'            => $product->get_bidding_notice(),
-			'directions'                => $product->get_directions(),
-			'terms_conditions'          => $product->get_terms_conditions(),
-			'bidding_starts_at_utc'     => $product->get_bidding_starts_at_utc(),
-			'bidding_starts_at_local'   => $product->get_bidding_starts_at_local(),
+			'id'                          => $product->get_id(),
+			'name'                        => $product->get_name(),
+			'permalink'                   => $product->get_permalink(),
+			'status'                      => $product->get_status(),
+			'product_url'                 => $product->get_product_url(),
+			'button_text'                 => $product->get_button_text(),
+			'location'                    => $product->get_location(),
+			'notice'                      => $product->get_notice(),
+			'bidding_notice'              => $product->get_bidding_notice(),
+			'directions'                  => $product->get_directions(),
+			'terms_conditions'            => $product->get_terms_conditions(),
+			'bidding_starts_at_utc'       => $product->get_bidding_starts_at_utc(),
+			'bidding_starts_at_local'     => $product->get_bidding_starts_at_local(),
 			'bidding_starts_at_timestamp' => $product->get_bidding_starts_at_timestamp(),
-			'bidding_ends_at_utc'       => $product->get_bidding_ends_at_utc(),
-			'bidding_ends_at_local'     => $product->get_bidding_ends_at_local(),
-			'bidding_ends_at_timestamp' => $product->get_bidding_ends_at_timestamp(),
+			'bidding_ends_at_utc'         => $product->get_bidding_ends_at_utc(),
+			'bidding_ends_at_local'       => $product->get_bidding_ends_at_local(),
+			'bidding_ends_at_timestamp'   => $product->get_bidding_ends_at_timestamp(),
 		);
 
 		return $data;
@@ -835,26 +891,26 @@ class REST_Controller extends WP_REST_Controller {
 	 */
 	private function product_to_item_array( Product_Item $product ): array {
 		$data = array(
-			'id'                        => $product->get_id(),
-			'name'                      => $product->get_name(),
-			'permalink'                 => $product->get_permalink(),
-			'status'                    => $product->get_status(),
-			'auction_id'                => $product->get_auction_id(),
-			'lot_no'                    => $product->get_lot_no(),
-			'description'               => $product->get_description(),
-			'asking_bid'                 => $product->get_asking_bid(),
-			'current_bid'               => $product->get_current_bid(),
-			'sold_price'                => $product->get_sold_price(),
-			'sold_at_utc'               => $product->get_sold_at_utc(),
-			'sold_at_local'             => $product->get_sold_at_local(),
-			'sold_at_timestamp'         => $product->get_sold_at_timestamp(),
-			'location'                  => $product->get_location(),
-			'bidding_starts_at_utc'     => $product->get_bidding_starts_at_utc(),
-			'bidding_starts_at_local'   => $product->get_bidding_starts_at_local(),
+			'id'                          => $product->get_id(),
+			'name'                        => $product->get_name(),
+			'permalink'                   => $product->get_permalink(),
+			'status'                      => $product->get_status(),
+			'auction_id'                  => $product->get_auction_id(),
+			'lot_no'                      => $product->get_lot_no(),
+			'description'                 => $product->get_description(),
+			'asking_bid'                  => $product->get_asking_bid(),
+			'current_bid'                 => $product->get_current_bid(),
+			'sold_price'                  => $product->get_sold_price(),
+			'sold_at_utc'                 => $product->get_sold_at_utc(),
+			'sold_at_local'               => $product->get_sold_at_local(),
+			'sold_at_timestamp'           => $product->get_sold_at_timestamp(),
+			'location'                    => $product->get_location(),
+			'bidding_starts_at_utc'       => $product->get_bidding_starts_at_utc(),
+			'bidding_starts_at_local'     => $product->get_bidding_starts_at_local(),
 			'bidding_starts_at_timestamp' => $product->get_bidding_starts_at_timestamp(),
-			'bidding_ends_at_utc'       => $product->get_bidding_ends_at_utc(),
-			'bidding_ends_at_local'     => $product->get_bidding_ends_at_local(),
-			'bidding_ends_at_timestamp' => $product->get_bidding_ends_at_timestamp(),
+			'bidding_ends_at_utc'         => $product->get_bidding_ends_at_utc(),
+			'bidding_ends_at_local'       => $product->get_bidding_ends_at_local(),
+			'bidding_ends_at_timestamp'   => $product->get_bidding_ends_at_timestamp(),
 		);
 
 		return $data;
@@ -914,7 +970,7 @@ class REST_Controller extends WP_REST_Controller {
 	 * Set item product data from array.
 	 *
 	 * @param Product_Item $product Product instance.
-	 * @param array         $data   Data array.
+	 * @param array        $data   Data array.
 	 * @return void
 	 */
 	private function set_item_data_from_array( Product_Item $product, array $data ): void {

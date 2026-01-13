@@ -155,4 +155,3 @@ class Breadcrumbs {
 		return $crumbs;
 	}
 }
-

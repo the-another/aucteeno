@@ -387,7 +387,7 @@ class Auction_Item_Permalinks {
 			return;
 		}
 
-		$post = $post_query->posts[0];
+		$post    = $post_query->posts[0];
 		$post_id = $post->ID;
 
 		// Check 2: Verify post is a product (already checked by query, but double-check).
@@ -453,15 +453,15 @@ class Auction_Item_Permalinks {
 
 		// All checks passed - URL is valid.
 		// Set up the WordPress query properly so the post is found.
-		$wp_query->is_404 = false;
-		$wp_query->is_single = true;
-		$wp_query->is_singular = true;
-		$wp_query->queried_object = $post;
+		$wp_query->is_404            = false;
+		$wp_query->is_single         = true;
+		$wp_query->is_singular       = true;
+		$wp_query->queried_object    = $post;
 		$wp_query->queried_object_id = $post_id;
-		$wp_query->post = $post;
-		$wp_query->posts = array( $post );
-		$wp_query->post_count = 1;
-		$wp_query->found_posts = 1;
+		$wp_query->post              = $post;
+		$wp_query->posts             = array( $post );
+		$wp_query->post_count        = 1;
+		$wp_query->found_posts       = 1;
 	}
 
 	/**
@@ -485,7 +485,7 @@ class Auction_Item_Permalinks {
 			return;
 		}
 
-		$post = $post_query->posts[0];
+		$post    = $post_query->posts[0];
 		$post_id = $post->ID;
 
 		// Verify post is a product (already checked by query, but double-check).
@@ -503,15 +503,15 @@ class Auction_Item_Permalinks {
 
 		// Valid auction URL - set up the WordPress query properly.
 		global $wp_query;
-		$wp_query->is_404 = false;
-		$wp_query->is_single = true;
-		$wp_query->is_singular = true;
-		$wp_query->queried_object = $post;
+		$wp_query->is_404            = false;
+		$wp_query->is_single         = true;
+		$wp_query->is_singular       = true;
+		$wp_query->queried_object    = $post;
 		$wp_query->queried_object_id = $post_id;
-		$wp_query->post = $post;
-		$wp_query->posts = array( $post );
-		$wp_query->post_count = 1;
-		$wp_query->found_posts = 1;
+		$wp_query->post              = $post;
+		$wp_query->posts             = array( $post );
+		$wp_query->post_count        = 1;
+		$wp_query->found_posts       = 1;
 	}
 
 	/**

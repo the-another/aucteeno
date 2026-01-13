@@ -128,7 +128,7 @@ class Disable_Reviews_Comments {
 	/**
 	 * Disable comments when saving auction or item products.
 	 *
-	 * @param int     $post_id Post ID.
+	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post Post object.
 	 * @return void
 	 */
@@ -200,8 +200,8 @@ class Disable_Reviews_Comments {
 	/**
 	 * Close comments for auction and item products.
 	 *
-	 * @param bool    $open Whether comments are open.
-	 * @param int $post_id Post ID.
+	 * @param bool $open Whether comments are open.
+	 * @param int  $post_id Post ID.
 	 * @return bool Whether comments are open.
 	 */
 	public function close_comments( bool $open, int $post_id ): bool {
@@ -215,8 +215,8 @@ class Disable_Reviews_Comments {
 	/**
 	 * Disable WooCommerce reviews for auction and item products.
 	 *
-	 * @param bool    $enabled Whether reviews are enabled.
-	 * @param int $product_id Product ID.
+	 * @param bool $enabled Whether reviews are enabled.
+	 * @param int  $product_id Product ID.
 	 * @return bool Whether reviews are enabled.
 	 */
 	public function disable_woocommerce_reviews( bool $enabled, int $product_id ): bool {
@@ -237,15 +237,15 @@ class Disable_Reviews_Comments {
 	public function hide_comments_count( $counts, int $post_id ): \stdClass {
 		if ( $this->is_auction_or_item_product( $post_id ) ) {
 			// Return zero counts for all comment types.
-			$counts->approved   = 0;
-			$counts->moderated  = 0;
-			$counts->spam       = 0;
-			$counts->trash      = 0;
+			$counts->approved  = 0;
+			$counts->moderated = 0;
+			$counts->spam      = 0;
+			$counts->trash     = 0;
 			if ( isset( $counts->{'post-trashed'} ) ) {
 				$counts->{'post-trashed'} = 0;
 			}
 			$counts->total_comments = 0;
-			$counts->all        = 0;
+			$counts->all            = 0;
 		}
 
 		return $counts;
@@ -278,12 +278,11 @@ class Disable_Reviews_Comments {
 		);
 
 		if ( ! empty( $product_ids ) ) {
-			$product_ids_int = array_map( 'intval', $product_ids );
+			$product_ids_int    = array_map( 'intval', $product_ids );
 			$product_ids_string = implode( ',', $product_ids_int );
-			$clauses['where'] .= " AND {$wpdb->comments}.comment_post_ID NOT IN ($product_ids_string)";
+			$clauses['where']  .= " AND {$wpdb->comments}.comment_post_ID NOT IN ($product_ids_string)";
 		}
 
 		return $clauses;
 	}
 }
-

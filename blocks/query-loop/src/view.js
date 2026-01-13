@@ -32,6 +32,11 @@ async function fetchItems( context, page ) {
 		url.searchParams.set( 'subdivision', context.subdivision );
 	}
 
+	// Pass block template so REST API can render cards with same structure.
+	if ( context.blockTemplate ) {
+		url.searchParams.set( 'block_template', context.blockTemplate );
+	}
+
 	const response = await fetch( url.toString(), {
 		headers: {
 			'X-WP-Nonce': context.restNonce,
@@ -161,14 +166,26 @@ function updatePagination( container, page, pages ) {
 }
 
 /**
+ * Find the query-loop container from any element inside it
+ *
+ * @param {Element} element Any element inside the query-loop
+ * @return {Element|null} The query-loop container or null
+ */
+function findContainer( element ) {
+	return element.closest( '.aucteeno-query-loop' );
+}
+
+/**
  * Replace items in the list (pagination)
  *
  * @param {Object}  context Current context
  * @param {Object}  data    API response data
- * @param {Element} ref     Container element reference
+ * @param {Element} ref     Element reference (may be clicked element or container)
  */
 function replaceItems( context, data, ref ) {
-	const itemsList = ref.querySelector( '.aucteeno-items-wrap' );
+	// Find the container - ref might be the clicked link, not the container.
+	const container = findContainer( ref ) || ref;
+	const itemsList = container.querySelector( '.aucteeno-items-wrap' );
 
 	if ( itemsList && data.html ) {
 		itemsList.innerHTML = data.html;
@@ -180,7 +197,7 @@ function replaceItems( context, data, ref ) {
 	context.hasMore = data.page < data.pages;
 
 	// Update pagination UI to reflect new current page.
-	updatePagination( ref, data.page, data.pages );
+	updatePagination( container, data.page, data.pages );
 }
 
 /**
@@ -188,10 +205,12 @@ function replaceItems( context, data, ref ) {
  *
  * @param {Object}  context Current context
  * @param {Object}  data    API response data
- * @param {Element} ref     Container element reference
+ * @param {Element} ref     Element reference (may be sentinel or container)
  */
 function appendItems( context, data, ref ) {
-	const itemsList = ref.querySelector( '.aucteeno-items-wrap' );
+	// Find the container - ref might be the sentinel element, not the container.
+	const container = findContainer( ref ) || ref;
+	const itemsList = container.querySelector( '.aucteeno-items-wrap' );
 
 	if ( itemsList && data.html ) {
 		// Create temporary container
@@ -247,6 +266,9 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 				return;
 			}
 
+			// Find container BEFORE replacing items (element may be detached after DOM updates).
+			const container = findContainer( element.ref );
+
 			context.isLoading = true;
 
 			try {
@@ -254,11 +276,13 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 				replaceItems( context, data, element.ref );
 				updateURL( page );
 
-				// Scroll to top of query loop
-				if ( element.ref ) {
-					element.ref.scrollIntoView( {
+				// Scroll to top of query loop container with offset
+				if ( container ) {
+					const offset = 50;
+					const top = container.getBoundingClientRect().top + window.scrollY - offset;
+					window.scrollTo( {
+						top,
 						behavior: 'smooth',
-						block: 'start',
 					} );
 				}
 			} catch ( error ) {

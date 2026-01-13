@@ -45,7 +45,7 @@ class Database_Auctions {
 		$table_name      = self::get_table_name();
 		$charset_collate = $wpdb->get_charset_collate();
 
-	$sql = "CREATE TABLE {$table_name} (
+		$sql = "CREATE TABLE {$table_name} (
 		ID bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 		auction_id bigint(20) UNSIGNED NOT NULL DEFAULT 0,
 		user_id bigint(20) UNSIGNED NOT NULL DEFAULT 0,
@@ -163,7 +163,7 @@ class Database_Auctions {
 			$order_sql = 'p.post_date DESC, a.auction_id DESC';
 		} else {
 			// ending_soon: Running first (by ends_at ASC), then Upcoming (by starts_at ASC), then Expired (by ends_at DESC).
-			$order_sql = "
+			$order_sql = '
 				CASE a.bidding_status
 					WHEN 10 THEN 1
 					WHEN 20 THEN 2
@@ -176,7 +176,7 @@ class Database_Auctions {
 					ELSE -a.bidding_ends_at
 				END ASC,
 				a.auction_id ASC
-			";
+			';
 		}
 
 		// Count query.
@@ -226,19 +226,19 @@ class Database_Auctions {
 			}
 
 			$items[] = array(
-				'id'                 => $auction_id,
-				'title'              => $row['post_title'],
-				'permalink'          => get_permalink( $auction_id ),
-				'image_url'          => $image_url,
-				'user_id'            => absint( $row['user_id'] ),
-				'bidding_status'     => absint( $row['bidding_status'] ),
-				'bidding_starts_at'  => absint( $row['bidding_starts_at'] ),
-				'bidding_ends_at'    => absint( $row['bidding_ends_at'] ),
-				'location_country'   => $row['location_country'],
+				'id'                   => $auction_id,
+				'title'                => $row['post_title'],
+				'permalink'            => get_permalink( $auction_id ),
+				'image_url'            => $image_url,
+				'user_id'              => absint( $row['user_id'] ),
+				'bidding_status'       => absint( $row['bidding_status'] ),
+				'bidding_starts_at'    => absint( $row['bidding_starts_at'] ),
+				'bidding_ends_at'      => absint( $row['bidding_ends_at'] ),
+				'location_country'     => $row['location_country'],
 				'location_subdivision' => $row['location_subdivision'],
-				'location_city'      => $row['location_city'],
-				'current_bid'        => $product ? (float) $product->get_price() : 0,
-				'reserve_price'      => $product && method_exists( $product, 'get_reserve_price' ) ? (float) $product->get_reserve_price() : 0,
+				'location_city'        => $row['location_city'],
+				'current_bid'          => $product ? (float) $product->get_price() : 0,
+				'reserve_price'        => $product && method_exists( $product, 'get_reserve_price' ) ? (float) $product->get_reserve_price() : 0,
 			);
 		}
 

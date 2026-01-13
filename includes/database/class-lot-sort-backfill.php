@@ -70,7 +70,7 @@ class Lot_Sort_Backfill {
 			);
 		}
 
-		$processed = 0;
+		$processed   = 0;
 		$new_last_id = $last_id;
 
 		foreach ( $items as $item ) {
@@ -160,7 +160,7 @@ class Lot_Sort_Backfill {
 				AND lot_no IS NOT NULL"
 		);
 
-		$remaining = max( 0, $total - $processed );
+		$remaining  = max( 0, $total - $processed );
 		$percentage = $total > 0 ? ( $processed / $total ) * 100 : 100.0;
 
 		return array(
@@ -180,4 +180,3 @@ class Lot_Sort_Backfill {
 		delete_option( self::LAST_ID_OPTION );
 	}
 }
-

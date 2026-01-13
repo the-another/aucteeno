@@ -45,7 +45,7 @@ class Database_Items {
 		$table_name      = self::get_table_name();
 		$charset_collate = $wpdb->get_charset_collate();
 
-	$sql = "CREATE TABLE {$table_name} (
+		$sql = "CREATE TABLE {$table_name} (
 		ID bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 		auction_id bigint(20) UNSIGNED NOT NULL DEFAULT 0,
 		item_id bigint(20) UNSIGNED NOT NULL DEFAULT 0,

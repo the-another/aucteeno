@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "default",
     "allow": [
       "WebSearch",
       "Bash(find:*)",
@@ -18,8 +17,10 @@
       "Bash(npm run build:*)",
       "Bash(npm run start:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(make format:*)"
     ],
+    "defaultMode": "default",
     "additionalDirectories": [
       "/Volumes/DevExtreme/Aucteeno/wordpress/woocommerce",
       "/Volumes/DevExtreme/Aucteeno/wordpress/dokan"

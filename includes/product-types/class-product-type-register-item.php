@@ -44,14 +44,14 @@ class Product_Type_Register_Item {
 		$this->hook_manager->register_filter(
 			'woocommerce_product_types',
 			array( $this, 'register_product_type' ),
-            0
+			0
 		);
-        $this->hook_manager->register_filter(
-            'woocommerce_product_type_query',
-            array( $this, 'register_product_type_query' ),
-            0,
-            2
-        );
+		$this->hook_manager->register_filter(
+			'woocommerce_product_type_query',
+			array( $this, 'register_product_type_query' ),
+			0,
+			2
+		);
 		$this->hook_manager->register_filter(
 			'product_type_selector',
 			array( $this, 'add_product_type' )
@@ -83,23 +83,23 @@ class Product_Type_Register_Item {
 		return $types;
 	}
 
-    /**
-     * Force type resolution during the save request (fixes first-save fallback to simple).
-     *
-     * @param string $override
-     * @param int $product_id
-     * @return string
-     */
-    public function register_product_type_query( string $override, int $product_id ): string {
-        if (
-            is_admin()
-            && isset( $_POST['product-type'] )
-            && Product_Item::PRODUCT_TYPE === sanitize_text_field( wp_unslash( $_POST['product-type'] ) )
-        ) {
-            return Product_Item::PRODUCT_TYPE;
-        }
-        return $override;
-    }
+	/**
+	 * Force type resolution during the save request (fixes first-save fallback to simple).
+	 *
+	 * @param string $override
+	 * @param int    $product_id
+	 * @return string
+	 */
+	public function register_product_type_query( string $override, int $product_id ): string {
+		if (
+			is_admin()
+			&& isset( $_POST['product-type'] )
+			&& Product_Item::PRODUCT_TYPE === sanitize_text_field( wp_unslash( $_POST['product-type'] ) )
+		) {
+			return Product_Item::PRODUCT_TYPE;
+		}
+		return $override;
+	}
 
 	/**
 	 * Add product type to selector.

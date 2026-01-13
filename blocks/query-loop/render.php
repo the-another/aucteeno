@@ -115,6 +115,27 @@ if ( 'grid' === $display_layout ) {
 	$items_classes .= ' aucteeno-items-columns-' . absint( $columns );
 }
 
+// Separate template blocks (card) from query-level blocks (pagination).
+$template_blocks   = array();
+$pagination_blocks = array();
+
+if ( ! empty( $block->inner_blocks ) ) {
+	foreach ( $block->inner_blocks as $inner_block ) {
+		if ( 'aucteeno/pagination' === $inner_block->name ) {
+			$pagination_blocks[] = $inner_block;
+		} elseif ( 'aucteeno/card' === $inner_block->name ) {
+			$template_blocks[] = $inner_block;
+		}
+	}
+}
+
+// Serialize card template for REST API pagination.
+// This allows the REST endpoint to render cards with the same block structure.
+$card_template_json = null;
+if ( ! empty( $template_blocks ) ) {
+	$card_template_json = wp_json_encode( $template_blocks[0]->parsed_block );
+}
+
 // Prepare Interactivity API context.
 $interactivity_context = array(
 	'page'           => $page,
@@ -131,6 +152,7 @@ $interactivity_context = array(
 	'infiniteScroll' => $infinite_scroll,
 	'restUrl'        => rest_url( 'aucteeno/v1/' . ( 'auctions' === $query_type ? 'auctions' : 'items' ) ),
 	'restNonce'      => wp_create_nonce( 'wp_rest' ),
+	'blockTemplate'  => $card_template_json,
 );
 
 // Get wrapper attributes with Interactivity API directives.
@@ -165,20 +187,6 @@ if ( ! isset( $block->context ) ) {
 }
 $block->context['aucteeno/queryId'] = $query_context['queryId'];
 $block->context['aucteeno/query']   = $query_context['query'];
-
-// Separate template blocks (card) from query-level blocks (pagination).
-$template_blocks   = array();
-$pagination_blocks = array();
-
-if ( ! empty( $block->inner_blocks ) ) {
-	foreach ( $block->inner_blocks as $inner_block ) {
-		if ( 'aucteeno/pagination' === $inner_block->name ) {
-			$pagination_blocks[] = $inner_block;
-		} elseif ( 'aucteeno/card' === $inner_block->name ) {
-			$template_blocks[] = $inner_block;
-		}
-	}
-}
 
 // Extract card width from first card block to apply to list items.
 $card_width = '20rem'; // Default.

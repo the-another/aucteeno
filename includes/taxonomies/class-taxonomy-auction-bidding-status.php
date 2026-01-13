@@ -99,4 +99,3 @@ class Taxonomy_Auction_Bidding_Status {
 		}
 	}
 }
-

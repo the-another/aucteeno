@@ -75,7 +75,7 @@ class Hook_Manager {
 	 * @return bool True if removed, false otherwise.
 	 */
 	public function deregister( string $hook, callable $callback, int $priority = 10 ): bool {
-        // Try to remove as action.
+		// Try to remove as action.
 		$removed_action = remove_action( $hook, $callback, $priority );
 
 		// Try to remove as filter.

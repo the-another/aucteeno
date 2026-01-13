@@ -210,4 +210,3 @@ class HPS_Sync_Handler {
 		}
 	}
 }
-

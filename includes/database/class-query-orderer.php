@@ -392,7 +392,7 @@ class Query_Orderer {
 	private function build_where_conditions( WP_Query $query, string $type ): string {
 		global $wpdb;
 
-		$conditions = array();
+		$conditions  = array();
 		$table_alias = 'items' === $type ? 'i' : 'a';
 
 		// Handle auction_id filter (for items: post_parent, for auctions: not applicable but check anyway).
@@ -419,7 +419,7 @@ class Query_Orderer {
 		// Handle search.
 		$search = $query->get( 's' );
 		if ( ! empty( $search ) ) {
-			$conditions[] = $wpdb->prepare( "p.post_title LIKE %s", '%' . $wpdb->esc_like( $search ) . '%' );
+			$conditions[] = $wpdb->prepare( 'p.post_title LIKE %s', '%' . $wpdb->esc_like( $search ) . '%' );
 		}
 
 		if ( empty( $conditions ) ) {
@@ -555,4 +555,3 @@ class Query_Orderer {
 		// In production with Redis/Memcached, implement proper group invalidation.
 	}
 }
-

@@ -53,7 +53,7 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 
 		// CRITICAL: Capture changes BEFORE calling parent::update().
 		// Parent's apply_changes() clears the changes array!
-		$changes = $product->get_changes();
+		$changes         = $product->get_changes();
 		$extra_data_keys = $product->get_extra_data_keys();
 
 		// Filter to only extra_data changes.
@@ -98,11 +98,11 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 	 * @return void
 	 */
 	private function read_auction_extra_data( Product_Auction $product ): void {
-		$product_id = $product->get_id();
+		$product_id      = $product->get_id();
 		$extra_data_keys = $product->get_extra_data_keys();
 
-        // Load all meta for product
-        $all_meta = get_post_meta( $product_id );
+		// Load all meta for product
+		$all_meta = get_post_meta( $product_id );
 
 		foreach ( $extra_data_keys as $key ) {
 			// Skip location - handled specially below.
@@ -111,23 +111,23 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 			}
 
 			$setter = 'set_' . $key;
-            // Drop `_aucteeno_` part from setter.
-            $setter = str_replace( '_aucteeno_', '_', $setter );
+			// Drop `_aucteeno_` part from setter.
+			$setter = str_replace( '_aucteeno_', '_', $setter );
 			if ( ! is_callable( array( $product, $setter ) ) ) {
 				continue;
 			}
 
 			$meta_key = '_' . $key;
-            if (isset($all_meta[ $meta_key ])) {
-                if (is_array( $all_meta[ $meta_key ] )) {
-                    $value = current( $all_meta[ $meta_key ] );
-                } else {
-                    $value = $all_meta[ $meta_key ];
-                }
-            }
+			if ( isset( $all_meta[ $meta_key ] ) ) {
+				if ( is_array( $all_meta[ $meta_key ] ) ) {
+					$value = current( $all_meta[ $meta_key ] );
+				} else {
+					$value = $all_meta[ $meta_key ];
+				}
+			}
 
 			// Only set if value exists in database.
-			if ( !empty( $value ) ) {
+			if ( ! empty( $value ) ) {
 				$product->{$setter}( $value );
 			}
 		}
@@ -170,7 +170,7 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 	/**
 	 * Save auction extra data to database.
 	 *
-	 * @param Product_Auction $product Product object.
+	 * @param Product_Auction           $product Product object.
 	 * @param array<string, mixed>|null $changes Changed fields. If null, saves all extra_data.
 	 * @return void
 	 */
@@ -192,7 +192,7 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 				continue;
 			}
 
-            $meta_key = '_' . $key;
+			$meta_key = '_' . $key;
 
 			// Skip location - handled specially below.
 			if ( 'aucteeno_location' === $key ) {
@@ -249,26 +249,26 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 			return;
 		}
 
-		$location = $product->get_location( 'edit' );
-		$country_term_id = 0;
+		$location            = $product->get_location( 'edit' );
+		$country_term_id     = 0;
 		$subdivision_term_id = 0;
 
 		// Process WooCommerce codes if provided (from dropdowns).
 		if ( ! empty( $location['country'] ) ) {
 			$country_code = $location['country'];
-			$countries = WC()->countries->get_countries();
+			$countries    = WC()->countries->get_countries();
 			if ( isset( $countries[ $country_code ] ) ) {
-				$country_name = $countries[ $country_code ];
+				$country_name    = $countries[ $country_code ];
 				$country_term_id = Location_Helper::get_or_create_country_term( $country_code, $country_name );
 			}
 		}
 
 		if ( ! empty( $location['subdivision'] ) && ! empty( $location['country'] ) ) {
-			$state_code = $location['subdivision'];
+			$state_code   = $location['subdivision'];
 			$country_code = $location['country'];
-			$states = WC()->countries->get_states( $country_code );
+			$states       = WC()->countries->get_states( $country_code );
 			if ( is_array( $states ) && isset( $states[ $state_code ] ) ) {
-				$state_name = $states[ $state_code ];
+				$state_name          = $states[ $state_code ];
 				$subdivision_term_id = Location_Helper::get_or_create_subdivision_term( $country_code, $state_code, $state_name );
 			}
 		}
@@ -280,7 +280,7 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 			$terms_to_assign[] = $subdivision_term_id;
 			// Get parent country term ID.
 		}
-        if ( $country_term_id > 0 ) {
+		if ( $country_term_id > 0 ) {
 			// Only country term (no subdivision).
 			$terms_to_assign[] = $country_term_id;
 		}

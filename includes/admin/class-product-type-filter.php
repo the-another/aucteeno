@@ -183,4 +183,3 @@ class Product_Type_Filter {
 		return $vars;
 	}
 }
-

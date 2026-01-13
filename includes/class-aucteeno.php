@@ -59,8 +59,7 @@ class Aucteeno {
 	 *
 	 * @since 1.0.0
 	 */
-	public function start(): void
-    {
+	public function start(): void {
 		// Initialize container.
 		$this->container = Container::get_instance();
 
@@ -101,8 +100,7 @@ class Aucteeno {
 	 *
 	 * @since 1.0.0
 	 */
-	public function register_taxonomies(): void
-    {
+	public function register_taxonomies(): void {
 		Taxonomies\Taxonomy_Auction_Type::register();
 		Taxonomies\Taxonomy_Location::register();
 		Taxonomies\Taxonomy_Auction_Bidding_Status::register();
@@ -113,20 +111,18 @@ class Aucteeno {
 	 *
 	 * @since 1.0.0
 	 */
-	public function register_blocks(): void
-	{
+	public function register_blocks(): void {
 		Blocks::register();
 	}
 
-    /**
-     * Register product types.
-     *
-     * @throws Exception
-     *
-     * @since 1.0.0
-     */
-	private function register_product_types(): void
-    {
+	/**
+	 * Register product types.
+	 *
+	 * @throws Exception
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_product_types(): void {
 
 		// Register Product_Type_Register_Auction with lazy loading.
 		$this->container->register(
@@ -156,8 +152,7 @@ class Aucteeno {
 	 *
 	 * @since 1.0.0
 	 */
-	private function register_datastores(): void
-    {
+	private function register_datastores(): void {
 		$hook_manager = $this->container->get_hook_manager();
 
 		// Register product class filter.
@@ -182,11 +177,11 @@ class Aucteeno {
 			'woocommerce_data_stores',
 			function ( $stores ) {
 				// Map product-aucteeno-ext-auction to our custom datastore class.
-				$auction_store_key = 'product-' . Product_Types\Product_Auction::PRODUCT_TYPE;
+				$auction_store_key            = 'product-' . Product_Types\Product_Auction::PRODUCT_TYPE;
 				$stores[ $auction_store_key ] = Product_Types\Datastores\Datastore_Auction::class;
 
 				// Map product-aucteeno-ext-item to our custom item datastore class.
-				$item_store_key = 'product-' . Product_Types\Product_Item::PRODUCT_TYPE;
+				$item_store_key            = 'product-' . Product_Types\Product_Item::PRODUCT_TYPE;
 				$stores[ $item_store_key ] = Product_Types\Datastores\Datastore_Item::class;
 
 				return $stores;
@@ -196,15 +191,14 @@ class Aucteeno {
 		);
 	}
 
-    /**
-     * Register admin fields.
-     *
-     * @throws Exception
-     *
-     * @since 1.0.0
-     */
-	private function register_admin_fields(): void
-    {
+	/**
+	 * Register admin fields.
+	 *
+	 * @throws Exception
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_admin_fields(): void {
 
 		// Register Meta_Fields_Auction with lazy loading.
 		$this->container->register(
@@ -279,15 +273,14 @@ class Aucteeno {
 		$this->container->get( 'hps_sync_handler' )->init();
 	}
 
-    /**
-     * Register settings.
-     *
-     * @throws Exception
-     *
-     * @since 1.0.0
-     */
-	private function register_settings(): void
-    {
+	/**
+	 * Register settings.
+	 *
+	 * @throws Exception
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_settings(): void {
 
 		// Register Settings with lazy loading.
 		$this->container->register(
@@ -302,15 +295,14 @@ class Aucteeno {
 		$this->container->get( 'settings' )->init();
 	}
 
-    /**
-     * Register permalinks.
-     *
-     * @throws Exception
-     *
-     * @since 1.0.0
-     */
-	private function register_permalinks(): void
-    {
+	/**
+	 * Register permalinks.
+	 *
+	 * @throws Exception
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_permalinks(): void {
 		// Register Auction_Item_Permalinks with lazy loading.
 		$this->container->register(
 			'permalinks',
@@ -331,8 +323,7 @@ class Aucteeno {
 	 *
 	 * @since 1.0.0
 	 */
-	private function register_breadcrumbs(): void
-    {
+	private function register_breadcrumbs(): void {
 		// Register Breadcrumbs with lazy loading.
 		$this->container->register(
 			'breadcrumbs',
@@ -351,8 +342,7 @@ class Aucteeno {
 	 *
 	 * @since 1.0.0
 	 */
-	public function register_rest_api(): void
-    {
+	public function register_rest_api(): void {
 		$rest_controller = new REST_API\REST_Controller();
 		$rest_controller->register_routes();
 	}
@@ -367,34 +357,31 @@ class Aucteeno {
 		$query_orderer->init();
 	}
 
-    /**
-     * Get meta fields auction instance.
-     *
-     * @return Admin\Custom_Fields_Auction|null Meta fields auction instance.
-     *
-     * @throws Exception
-     *
-     * @since 1.0.0
-     */
-	public function get_meta_fields_auction(): ?Admin\Custom_Fields_Auction
-    {
-        return $this->container?->get('meta_fields_auction');
+	/**
+	 * Get meta fields auction instance.
+	 *
+	 * @return Admin\Custom_Fields_Auction|null Meta fields auction instance.
+	 *
+	 * @throws Exception
+	 *
+	 * @since 1.0.0
+	 */
+	public function get_meta_fields_auction(): ?Admin\Custom_Fields_Auction {
+		return $this->container?->get( 'meta_fields_auction' );
+	}
 
-    }
-
-    /**
-     * Get meta fields item instance.
-     *
-     * @return Admin\Custom_Fields_Item|null Meta fields item instance.
-     *
-     * @throws Exception
-     *
-     * @since 1.0.0
-     */
-	public function get_meta_fields_item(): ?Admin\Custom_Fields_Item
-    {
-        return $this->container?->get('meta_fields_item');
-    }
+	/**
+	 * Get meta fields item instance.
+	 *
+	 * @return Admin\Custom_Fields_Item|null Meta fields item instance.
+	 *
+	 * @throws Exception
+	 *
+	 * @since 1.0.0
+	 */
+	public function get_meta_fields_item(): ?Admin\Custom_Fields_Item {
+		return $this->container?->get( 'meta_fields_item' );
+	}
 
 	/**
 	 * Prevent cloning of the instance.
@@ -403,11 +390,11 @@ class Aucteeno {
 		// Prevent cloning.
 	}
 
-    /**
-     * Prevent unserialization of the instance.
-     *
-     * @throws Exception
-     */
+	/**
+	 * Prevent unserialization of the instance.
+	 *
+	 * @throws Exception
+	 */
 	public function __wakeup() {
 		throw new Exception( 'Cannot unserialize singleton' );
 	}

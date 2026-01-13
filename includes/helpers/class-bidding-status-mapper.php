@@ -102,4 +102,3 @@ class Bidding_Status_Mapper {
 		return self::term_to_number( $terms[0] );
 	}
 }
-

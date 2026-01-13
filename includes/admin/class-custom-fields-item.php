@@ -67,37 +67,36 @@ class Custom_Fields_Item {
 
 		$this->hook_manager->register_action(
 			'aucteeno_product_tab_link',
-			function( $post_id, $post_type ) {
-                $this->render_link_tab( $post_id, $post_type );
+			function ( $post_id, $post_type ) {
+				$this->render_link_tab( $post_id, $post_type );
 			},
 			10,
 			2
 		);
 		$this->hook_manager->register_action(
 			'aucteeno_product_tab_location',
-			function( $post_id, $post_type ) {
-                $this->render_location_tab( $post_id, $post_type );
+			function ( $post_id, $post_type ) {
+				$this->render_location_tab( $post_id, $post_type );
 			},
 			10,
 			2
 		);
 		$this->hook_manager->register_action(
 			'aucteeno_product_tab_times',
-			function( $post_id, $post_type ) {
-                $this->render_times_tab( $post_id, $post_type );
+			function ( $post_id, $post_type ) {
+				$this->render_times_tab( $post_id, $post_type );
 			},
 			10,
 			2
 		);
 		$this->hook_manager->register_action(
 			'aucteeno_product_tab_details',
-			function( $post_id, $post_type ) {
-                $this->render_details_tab( $post_id, $post_type );
+			function ( $post_id, $post_type ) {
+				$this->render_details_tab( $post_id, $post_type );
 			},
 			10,
 			2
 		);
-
 	}
 
 	/**
@@ -271,11 +270,11 @@ class Custom_Fields_Item {
 		// Only include auctions with "running" or "expired" bidding-status terms.
 		$auctions = wc_get_products(
 			array(
-				'type'     => Product_Auction::PRODUCT_TYPE,
-				'status'   => 'publish',
-				'limit'    => -1,
-				'orderby'  => 'title',
-				'order'    => 'ASC',
+				'type'      => Product_Auction::PRODUCT_TYPE,
+				'status'    => 'publish',
+				'limit'     => -1,
+				'orderby'   => 'title',
+				'order'     => 'ASC',
 				'tax_query' => array(
 					array(
 						'taxonomy' => 'auction-bidding-status',
@@ -319,7 +318,7 @@ class Custom_Fields_Item {
 
 		// Get current country and state codes from taxonomy terms.
 		$country_code = '';
-		$state_code = '';
+		$state_code   = '';
 
 		// Get WooCommerce countries.
 		$countries = WC()->countries->get_countries();
@@ -330,11 +329,11 @@ class Custom_Fields_Item {
 		// Country dropdown.
 		woocommerce_wp_select(
 			array(
-				'id' => 'aucteeno_item_location_country',
-				'label' => __( 'Country', 'aucteeno' ),
-				'value' => $location['country'],
-				'options' => $countries,
-				'wrapper_class' => 'form-field-wide',
+				'id'                => 'aucteeno_item_location_country',
+				'label'             => __( 'Country', 'aucteeno' ),
+				'value'             => $location['country'],
+				'options'           => $countries,
+				'wrapper_class'     => 'form-field-wide',
 				'custom_attributes' => array(
 					'class' => 'select short aucteeno-country-select',
 				),
@@ -342,12 +341,12 @@ class Custom_Fields_Item {
 		);
 
 		// Get states for selected country.
-		$states = array();
+		$states           = array();
 		$show_state_field = false;
 		if ( ! empty( $location['country'] ) ) {
 			$wc_states = WC()->countries->get_states( $location['country'] );
 			if ( is_array( $wc_states ) && ! empty( $wc_states ) ) {
-				$states = $wc_states;
+				$states           = $wc_states;
 				$show_state_field = true;
 			}
 		}
@@ -355,13 +354,13 @@ class Custom_Fields_Item {
 		// State dropdown (always create, but hide if no states for current country).
 		woocommerce_wp_select(
 			array(
-				'id' => 'aucteeno_item_location_state',
-				'label' => __( 'State / Province', 'aucteeno' ),
-				'value' => $location['subdivision'],
-				'options' => $states,
-				'wrapper_class' => $show_state_field ? 'form-field-wide' : 'form-field-wide' . ( empty( $states ) ? ' aucteeno-state-field-hidden' : '' ),
+				'id'                => 'aucteeno_item_location_state',
+				'label'             => __( 'State / Province', 'aucteeno' ),
+				'value'             => $location['subdivision'],
+				'options'           => $states,
+				'wrapper_class'     => $show_state_field ? 'form-field-wide' : 'form-field-wide' . ( empty( $states ) ? ' aucteeno-state-field-hidden' : '' ),
 				'custom_attributes' => array(
-					'class' => 'select short aucteeno-state-select',
+					'class'              => 'select short aucteeno-state-select',
 					'data-country-field' => 'aucteeno_item_location_country',
 				),
 			)
@@ -494,11 +493,11 @@ class Custom_Fields_Item {
 		$asking_bid = $product->get_asking_bid();
 		woocommerce_wp_text_input(
 			array(
-				'id'          => 'aucteeno_item_asking_bid',
-				'label'       => __( 'Asking bid', 'aucteeno' ),
-				'description' => __( 'Initial asking price for the item.', 'aucteeno' ),
-				'type'        => 'number',
-				'value'       => $asking_bid > 0 ? $asking_bid : '',
+				'id'                => 'aucteeno_item_asking_bid',
+				'label'             => __( 'Asking bid', 'aucteeno' ),
+				'description'       => __( 'Initial asking price for the item.', 'aucteeno' ),
+				'type'              => 'number',
+				'value'             => $asking_bid > 0 ? $asking_bid : '',
 				'custom_attributes' => array(
 					'step' => '0.01',
 					'min'  => '0',
@@ -510,11 +509,11 @@ class Custom_Fields_Item {
 		$current_bid = $product->get_current_bid();
 		woocommerce_wp_text_input(
 			array(
-				'id'          => 'aucteeno_item_current_bid',
-				'label'       => __( 'Current bid', 'aucteeno' ),
-				'description' => __( 'Current highest bid for the item.', 'aucteeno' ),
-				'type'        => 'number',
-				'value'       => $current_bid > 0 ? $current_bid : '',
+				'id'                => 'aucteeno_item_current_bid',
+				'label'             => __( 'Current bid', 'aucteeno' ),
+				'description'       => __( 'Current highest bid for the item.', 'aucteeno' ),
+				'type'              => 'number',
+				'value'             => $current_bid > 0 ? $current_bid : '',
 				'custom_attributes' => array(
 					'step' => '0.01',
 					'min'  => '0',
@@ -526,11 +525,11 @@ class Custom_Fields_Item {
 		$sold_price = $product->get_sold_price();
 		woocommerce_wp_text_input(
 			array(
-				'id'          => 'aucteeno_item_sold_price',
-				'label'       => __( 'Sold Price', 'aucteeno' ),
-				'description' => __( 'Final sale price if the item has been sold.', 'aucteeno' ),
-				'type'        => 'number',
-				'value'       => $sold_price > 0 ? $sold_price : '',
+				'id'                => 'aucteeno_item_sold_price',
+				'label'             => __( 'Sold Price', 'aucteeno' ),
+				'description'       => __( 'Final sale price if the item has been sold.', 'aucteeno' ),
+				'type'              => 'number',
+				'value'             => $sold_price > 0 ? $sold_price : '',
 				'custom_attributes' => array(
 					'step' => '0.01',
 					'min'  => '0',
@@ -573,9 +572,9 @@ class Custom_Fields_Item {
 	 * @return void
 	 */
 	public function process_product_object( mixed $product ): void {
-        if ( ! ( $product instanceof Product_Item ) ) {
-            return;
-        }
+		if ( ! ( $product instanceof Product_Item ) ) {
+			return;
+		}
 
 		// Save parent auction (mandatory).
 		if ( isset( $_POST['aucteeno_item_parent_auction_id'] ) ) {

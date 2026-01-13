@@ -52,27 +52,27 @@ class HPS_Sync_Item {
 			)
 		);
 
-	if ( $exists ) {
-		// Update existing record.
-		$result = $wpdb->update(
-			$table_name,
-			$data,
-			array( 'item_id' => $product_id ),
-			array( '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%s', '%f', '%f' ),
-			array( '%d' )
-		);
+		if ( $exists ) {
+			// Update existing record.
+			$result = $wpdb->update(
+				$table_name,
+				$data,
+				array( 'item_id' => $product_id ),
+				array( '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%s', '%f', '%f' ),
+				array( '%d' )
+			);
 
-		return false !== $result;
-	} else {
-		// Insert new record.
-		$result = $wpdb->insert(
-			$table_name,
-			$data,
-			array( '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%s', '%f', '%f' )
-		);
+			return false !== $result;
+		} else {
+			// Insert new record.
+			$result = $wpdb->insert(
+				$table_name,
+				$data,
+				array( '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%s', '%f', '%f' )
+			);
 
-		return false !== $result;
-	}
+			return false !== $result;
+		}
 	}
 
 	/**
@@ -155,7 +155,7 @@ class HPS_Sync_Item {
 					$subdivision = substr( sanitize_text_field( $code ), 0, 50 );
 					// Extract country from subdivision code.
 					if ( strpos( $code, ':' ) !== false ) {
-						$parts = explode( ':', $code, 2 );
+						$parts   = explode( ':', $code, 2 );
 						$country = isset( $parts[0] ) ? substr( sanitize_text_field( $parts[0] ), 0, 2 ) : '';
 					}
 				} else {
@@ -181,7 +181,7 @@ class HPS_Sync_Item {
 						$subdivision = substr( sanitize_text_field( $code ), 0, 50 );
 						// Extract country from subdivision code.
 						if ( strpos( $code, ':' ) !== false ) {
-							$parts = explode( ':', $code, 2 );
+							$parts   = explode( ':', $code, 2 );
 							$country = isset( $parts[0] ) ? substr( sanitize_text_field( $parts[0] ), 0, 2 ) : '';
 						}
 					} else {
@@ -217,32 +217,31 @@ class HPS_Sync_Item {
 			}
 		}
 
-	// Get lot number.
-	$lot_no = $product->get_lot_no();
-	$lot_no = substr( sanitize_text_field( $lot_no ), 0, 50 );
+		// Get lot number.
+		$lot_no = $product->get_lot_no();
+		$lot_no = substr( sanitize_text_field( $lot_no ), 0, 50 );
 
-	// Compute lot_sort_key from lot_no.
-	$lot_sort_key = \TheAnother\Plugin\Aucteeno\Database\Lot_Sort_Helper::compute_lot_sort_key( $lot_no, $product_id );
+		// Compute lot_sort_key from lot_no.
+		$lot_sort_key = \TheAnother\Plugin\Aucteeno\Database\Lot_Sort_Helper::compute_lot_sort_key( $lot_no, $product_id );
 
-	// Get user_id (post_author).
-	$user_id = get_post_field( 'post_author', $product_id );
-	$user_id = $user_id ? absint( $user_id ) : 0;
+		// Get user_id (post_author).
+		$user_id = get_post_field( 'post_author', $product_id );
+		$user_id = $user_id ? absint( $user_id ) : 0;
 
-	return array(
-		'auction_id'          => $auction_id,
-		'item_id'            => $product_id,
-		'user_id'             => $user_id,
-		'bidding_status'      => $bidding_status,
-		'bidding_starts_at'   => $bidding_starts_at,
-		'bidding_ends_at'     => $bidding_ends_at,
-		'lot_no'             => $lot_no,
-		'lot_sort_key'        => $lot_sort_key,
-		'location_country'    => $country,
-		'location_subdivision' => $subdivision,
-		'location_city'       => $city,
-		'location_lat'       => 0.0,
-		'location_lng'       => 0.0,
-	);
+		return array(
+			'auction_id'           => $auction_id,
+			'item_id'              => $product_id,
+			'user_id'              => $user_id,
+			'bidding_status'       => $bidding_status,
+			'bidding_starts_at'    => $bidding_starts_at,
+			'bidding_ends_at'      => $bidding_ends_at,
+			'lot_no'               => $lot_no,
+			'lot_sort_key'         => $lot_sort_key,
+			'location_country'     => $country,
+			'location_subdivision' => $subdivision,
+			'location_city'        => $city,
+			'location_lat'         => 0.0,
+			'location_lng'         => 0.0,
+		);
 	}
 }
-

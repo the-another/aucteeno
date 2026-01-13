@@ -58,4 +58,3 @@ class Taxonomy_Location {
 		register_taxonomy( self::TAXONOMY, array( 'product' ), $args );
 	}
 }
-

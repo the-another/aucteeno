@@ -593,12 +593,12 @@ class Product_Tab_Aucteeno {
 		// Get first tab key as default active tab.
 		$active_tab = array_key_first( $tabs );
 
-		$aucteeno_product_data_classes = array(
+		$aucteeno_product_data_classes        = array(
 			'aucteeno-product-data',
 			'panel',
 			'woocommerce_options_panel',
 		);
-		$aucteeno_product_data_classes = array_merge( $aucteeno_product_data_classes, $this->get_tab_classes() );
+		$aucteeno_product_data_classes        = array_merge( $aucteeno_product_data_classes, $this->get_tab_classes() );
 		$aucteeno_product_data_classes_string = implode( ' ', $aucteeno_product_data_classes );
 		?>
 		<div id="aucteeno_product_data" class="<?php echo esc_attr( $aucteeno_product_data_classes_string ); ?>">
@@ -606,9 +606,9 @@ class Product_Tab_Aucteeno {
 				<ul class="aucteeno-tabs" role="tablist">
 					<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
 						<?php
-						$tab_id     = 'aucteeno-tab-' . esc_attr( $tab_key );
-						$panel_id   = 'aucteeno-tab-panel-' . esc_attr( $tab_key );
-						$is_active  = $tab_key === $active_tab ? 'active' : '';
+						$tab_id        = 'aucteeno-tab-' . esc_attr( $tab_key );
+						$panel_id      = 'aucteeno-tab-panel-' . esc_attr( $tab_key );
+						$is_active     = $tab_key === $active_tab ? 'active' : '';
 						$aria_selected = $tab_key === $active_tab ? 'true' : 'false';
 						?>
 						<li class="aucteeno-tab <?php echo esc_attr( $is_active ); ?>">
@@ -629,9 +629,9 @@ class Product_Tab_Aucteeno {
 
 				<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
 					<?php
-					$panel_id    = 'aucteeno-tab-panel-' . esc_attr( $tab_key );
-					$is_active   = $tab_key === $active_tab ? 'active' : '';
-					$display     = $tab_key === $active_tab ? 'block' : 'none';
+					$panel_id  = 'aucteeno-tab-panel-' . esc_attr( $tab_key );
+					$is_active = $tab_key === $active_tab ? 'active' : '';
+					$display   = $tab_key === $active_tab ? 'block' : 'none';
 					?>
 					<div 
 						id="<?php echo esc_attr( $panel_id ); ?>"

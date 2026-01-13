@@ -20,7 +20,7 @@ use TheAnother\Plugin\Aucteeno\Product_Types\Datastores\Datastore_Auction;
  */
 class Product_Auction extends WC_Product_External {
 
-    use Traits\Use_Normalized_Method_Names;
+	use Traits\Use_Normalized_Method_Names;
 
 	/**
 	 * Product type constant.
@@ -36,15 +36,14 @@ class Product_Auction extends WC_Product_External {
 	 */
 	protected $product_type = self::PRODUCT_TYPE;
 
-    /**
-     * Get internal type.
-     *
-     * @return string
-     */
-    public function get_type(): string
-    {
-        return self::PRODUCT_TYPE;
-    }
+	/**
+	 * Get internal type.
+	 *
+	 * @return string
+	 */
+	public function get_type(): string {
+		return self::PRODUCT_TYPE;
+	}
 
 	/**
 	 * Get data store.
@@ -70,8 +69,8 @@ class Product_Auction extends WC_Product_External {
 	 */
 	protected $extra_data = array(
 		// From WC_Product_External.
-		'product_url'             => '',
-		'button_text'             => '',
+		'product_url'                      => '',
+		'button_text'                      => '',
 		// Custom fields.
 		'aucteeno_location'                => array(
 			'country'     => '',

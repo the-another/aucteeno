@@ -59,7 +59,7 @@ class Location_Helper {
 		}
 
 		// Term doesn't exist, create it as top-level (parent = 0).
-		$term_slug = sanitize_title( $country_name );
+		$term_slug   = sanitize_title( $country_name );
 		$term_result = wp_insert_term(
 			$country_name,
 			self::TAXONOMY,
@@ -130,7 +130,7 @@ class Location_Helper {
 		}
 
 		// Term doesn't exist, create it as child of country term.
-		$term_slug = sanitize_title( $state_name );
+		$term_slug   = sanitize_title( $state_name );
 		$term_result = wp_insert_term(
 			$state_name,
 			self::TAXONOMY,

@@ -78,11 +78,10 @@ class Container {
 	 *
 	 * @param string $key Service key.
 	 * @return mixed Service instance.
-     *
+	 *
 	 * @throws Exception If service not found.
 	 */
-	public function get( string $key ): mixed
-    {
+	public function get( string $key ): mixed {
 		// Return singleton if already instantiated.
 		if ( isset( $this->singletons[ $key ] ) ) {
 			return $this->singletons[ $key ];
@@ -105,7 +104,7 @@ class Container {
 			return $this->services[ $key ];
 		}
 
-		throw new Exception( sprintf('Service %s not found in container', $key ) );
+		throw new Exception( sprintf( 'Service %s not found in container', $key ) );
 	}
 
 	/**
@@ -138,7 +137,7 @@ class Container {
 	 * @param mixed  $instance Service instance.
 	 * @return void
 	 */
-	public function set(string $key, mixed $instance ): void {
+	public function set( string $key, mixed $instance ): void {
 		$this->services[ $key ] = $instance;
 	}
 
@@ -167,11 +166,11 @@ class Container {
 		// Prevent cloning.
 	}
 
-    /**
-     * Prevent unserialization of the instance.
-     *
-     * @throws Exception
-     */
+	/**
+	 * Prevent unserialization of the instance.
+	 *
+	 * @throws Exception
+	 */
 	public function __wakeup() {
 		throw new Exception( 'Cannot unserialize singleton' );
 	}
