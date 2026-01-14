@@ -20,7 +20,7 @@
       "Bash(ls:*)",
       "Bash(make format:*)"
     ],
-    "defaultMode": "default",
+
     "additionalDirectories": [
       "/Volumes/DevExtreme/Aucteeno/wordpress/woocommerce",
       "/Volumes/DevExtreme/Aucteeno/wordpress/dokan"

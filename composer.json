@@ -67,7 +67,7 @@
 		"phpcs": "phpcs",
 		"phpcbf": "phpcbf",
 		"test": "phpunit",
-		"mozart-build": "mozart compose -d dependencies/Composer"
+		"mozart-build": "mozart compose"
 	}
 }
 

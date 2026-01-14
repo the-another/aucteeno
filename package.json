@@ -8,7 +8,9 @@
     "start": "wp-scripts start --config webpack.config.js",
     "lint:js": "wp-scripts lint-js blocks/*/src/*.js",
     "lint:css": "wp-scripts lint-style blocks/*/src/*.css",
-    "format": "wp-scripts format blocks/*/src/*.js"
+    "format": "wp-scripts format blocks/*/src/*.js",
+    "plugin-zip": "composer install --no-dev && npm run build && wp-scripts plugin-zip",
+    "version": "node scripts/version-bump.js"
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.4",
@@ -16,5 +18,22 @@
   },
   "dependencies": {
     "@wordpress/interactivity": "^6.0.0"
-  }
+  },
+  "files": [
+    "aucteeno.php",
+    "composer.json",
+    "README.md",
+    "assets",
+    "build/**",
+    "blocks/**/block.json",
+    "blocks/**/render.php",
+    "includes/**",
+    "languages",
+    "templates/**",
+    "!blocks/**/index.js",
+    "!blocks/**/editor.scss",
+    "vendor/autoload.php",
+    "vendor/composer"
+
+  ]
 }
