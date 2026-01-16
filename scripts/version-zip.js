@@ -11,8 +11,8 @@ const version = packageJson.version;
 // Define paths
 const rootDir = path.join(__dirname, '/../');
 const buildDir = path.join(rootDir, 'build');
-const sourceZip = path.join(rootDir, 'aucteeno-nexus.zip');
-const targetZip = path.join(buildDir, `aucteeno-nexus-${version}.zip`);
+const sourceZip = path.join(rootDir, 'aucteeno.zip');
+const targetZip = path.join(buildDir, `aucteeno-${version}.zip`);
 
 // Check if source zip exists
 if (!fs.existsSync(sourceZip)) {
