@@ -3,14 +3,48 @@
 const fs = require('fs');
 const path = require('path');
 
-// Get the new version from package.json
-const packageJson = require('../package.json');
-const newVersion = packageJson.version;
+// Configuration
+const MAIN_PLUGIN_FILE = 'aucteeno.php';
+const VERSION_CONSTANT_NAME = 'AUCTEENO_VERSION';
+
+// Get version type argument (patch, minor, major)
+const versionType = process.argv[2];
+const validTypes = ['patch', 'minor', 'major'];
+
+// Load package.json
+const packageJsonPath = path.join(__dirname, '../package.json');
+const packageJson = require(packageJsonPath);
+let newVersion = packageJson.version;
+
+// If version type is provided, increment the version
+if (versionType && validTypes.includes(versionType)) {
+  const [major, minor, patch] = newVersion.split('.').map(Number);
+
+  switch (versionType) {
+    case 'major':
+      newVersion = `${major + 1}.0.0`;
+      break;
+    case 'minor':
+      newVersion = `${major}.${minor + 1}.0`;
+      break;
+    case 'patch':
+      newVersion = `${major}.${minor}.${patch + 1}`;
+      break;
+  }
+
+  // Update package.json with new version
+  packageJson.version = newVersion;
+  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
+  console.log(`✓ Bumped version to ${newVersion} (${versionType})`);
+} else if (versionType) {
+  console.error(`Invalid version type: ${versionType}. Use: patch, minor, or major`);
+  process.exit(1);
+}
 
 console.log(`Updating version to ${newVersion}...`);
 
-// Update aucteeno.php
-const pluginFile = path.join(__dirname, '../aucteeno.php');
+// Update main plugin file
+const pluginFile = path.join(__dirname, '..', MAIN_PLUGIN_FILE);
 let pluginContent = fs.readFileSync(pluginFile, 'utf8');
 
 // Update Version in header comment
@@ -19,14 +53,14 @@ pluginContent = pluginContent.replace(
   `$1${newVersion}`
 );
 
-// Update AUCTEENO_VERSION constant
+// Update version constant
 pluginContent = pluginContent.replace(
-  /(define\(\s*'AUCTEENO_VERSION',\s*')[\d.]+('\s*\);)/,
+  new RegExp(`(define\\(\\s*'${VERSION_CONSTANT_NAME}',\\s*')[\\d.]+('\\s*\\);)`),
   `$1${newVersion}$2`
 );
 
 fs.writeFileSync(pluginFile, pluginContent, 'utf8');
-console.log('✓ Updated aucteeno.php');
+console.log(`✓ Updated ${MAIN_PLUGIN_FILE}`);
 
 // Update readme.txt
 const readmeFile = path.join(__dirname, '../readme.txt');
