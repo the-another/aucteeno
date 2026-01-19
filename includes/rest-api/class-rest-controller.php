@@ -93,6 +93,16 @@ class REST_Controller extends WP_REST_Controller {
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
+						'search'         => array(
+							'description'       => 'Search keyword to filter by post title.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => function ( $param ) {
+								// Limit search length for security.
+								return strlen( $param ) <= 200;
+							},
+						),
 						'sort'           => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
@@ -109,7 +119,7 @@ class REST_Controller extends WP_REST_Controller {
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
 							'type'              => 'string',
 							'default'           => '',
-							'sanitize_callback' => 'wp_kses_post',
+							'sanitize_callback' => array( $this, 'sanitize_block_template_json' ),
 						),
 						'page_url'       => array(
 							'description'       => 'Original page URL for pagination link generation.',
@@ -217,6 +227,16 @@ class REST_Controller extends WP_REST_Controller {
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
+						'search'         => array(
+							'description'       => 'Search keyword to filter by post title.',
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => function ( $param ) {
+								// Limit search length for security.
+								return strlen( $param ) <= 200;
+							},
+						),
 						'sort'           => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
@@ -233,7 +253,7 @@ class REST_Controller extends WP_REST_Controller {
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
 							'type'              => 'string',
 							'default'           => '',
-							'sanitize_callback' => 'wp_kses_post',
+							'sanitize_callback' => array( $this, 'sanitize_block_template_json' ),
 						),
 						'page_url'       => array(
 							'description'       => 'Original page URL for pagination link generation.',
@@ -277,21 +297,25 @@ class REST_Controller extends WP_REST_Controller {
 	/**
 	 * Check if user can get items.
 	 *
+	 * Allows public access since auctions/items are public listings.
+	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return bool|WP_Error
 	 */
 	public function get_items_permissions_check( $request ) {
-		return current_user_can( 'read' );
+		return true;
 	}
 
 	/**
 	 * Check if user can get a single item.
 	 *
+	 * Allows public access since auctions/items are public listings.
+	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return bool|WP_Error
 	 */
 	public function get_item_permissions_check( $request ) {
-		return current_user_can( 'read' );
+		return true;
 	}
 
 	/**
@@ -390,6 +414,33 @@ class REST_Controller extends WP_REST_Controller {
 	}
 
 	/**
+	 * Sanitize block template JSON parameter.
+	 *
+	 * Validates that the value is valid JSON and returns the sanitized string.
+	 * Does not use wp_kses_post as that corrupts JSON strings containing HTML.
+	 *
+	 * @param string $value Block template JSON string.
+	 * @return string Sanitized JSON string or empty string if invalid.
+	 */
+	public function sanitize_block_template_json( $value ) {
+		if ( empty( $value ) || ! is_string( $value ) ) {
+			return '';
+		}
+
+		// Validate that it's valid JSON by attempting to decode.
+		$decoded = json_decode( $value, true );
+
+		// If JSON is invalid, return empty string.
+		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
+			return '';
+		}
+
+		// Return the original string (already validated as JSON).
+		// We don't use wp_kses_post because it corrupts JSON strings with HTML content.
+		return $value;
+	}
+
+	/**
 	 * Get auctions.
 	 *
 	 * Returns HTML fragments by default, or JSON data if format=json.
@@ -466,6 +517,7 @@ class REST_Controller extends WP_REST_Controller {
 			'user_id'     => $request->get_param( 'user_id' ) ?? 0,
 			'country'     => $request->get_param( 'country' ) ?? '',
 			'subdivision' => $request->get_param( 'subdivision' ) ?? '',
+			'search'      => $request->get_param( 'search' ) ?? '',
 		);
 
 		$result = Database_Auctions::query_for_listing( $args );
@@ -684,6 +736,7 @@ class REST_Controller extends WP_REST_Controller {
 			'country'     => $request->get_param( 'country' ) ?? '',
 			'subdivision' => $request->get_param( 'subdivision' ) ?? '',
 			'auction_id'  => $request->get_param( 'auction_id' ) ?? 0,
+			'search'      => $request->get_param( 'search' ) ?? '',
 		);
 
 		$result = Database_Items::query_for_listing( $args );

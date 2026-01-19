@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,17 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+
+= 1.0.3 - 2026-01-17 =
+* Fixed template loading issues when loading new pages with ajax
+* Improved location field generation and add option for `city, state, country` format
+* Added option to generate links to location terms from location block
+* Improvements of countdown block and fixed
+* Some of the field blocks can now be used outside of card block
+* Aucteeno Query Loop can now read data about parent ID if loaded on item page
+* Added search context to Aucteeno Query Loop block
+* Fixed issue where location context was not included in Aucteeno Query Loop block
 
 = 1.0.2 - 2026-01-16 =
 * Fix issue with missing blocks, templates and styles

@@ -4,7 +4,6 @@
 	"name": "aucteeno/field-current-bid",
 	"title": "Aucteeno Current Bid",
 	"category": "aucteeno",
-	"parent": [ "aucteeno/card" ],
 	"icon": "money-alt",
 	"description": "Display the current bid amount.",
 	"keywords": [ "aucteeno", "bid", "price", "current" ],

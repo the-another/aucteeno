@@ -4,7 +4,6 @@
 	"name": "aucteeno/field-countdown",
 	"title": "Aucteeno Countdown",
 	"category": "aucteeno",
-	"parent": [ "aucteeno/card" ],
 	"icon": "clock",
 	"description": "Display countdown timer for auction/item bidding.",
 	"keywords": [ "aucteeno", "countdown", "timer", "time", "ends" ],
@@ -21,6 +20,10 @@
 		"showLabel": {
 			"type": "boolean",
 			"default": true
+		},
+		"dateFormat": {
+			"type": "string",
+			"default": "default"
 		}
 	},
 	"editorScript": "file:../../dist/blocks/field-countdown/editor.js",

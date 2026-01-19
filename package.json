@@ -1,6 +1,6 @@
 {
   "name": "aucteeno",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Aucteeno WordPress Plugin - Gutenberg Blocks",
   "private": true,
   "scripts": {
@@ -17,7 +17,8 @@
     "@wordpress/scripts": "^28.0.0"
   },
   "dependencies": {
-    "@wordpress/interactivity": "^6.0.0"
+    "@wordpress/interactivity": "^6.0.0",
+    "jquery": "^3.7.1"
   },
   "files": [
     "aucteeno.php",

@@ -30,14 +30,18 @@ $use_image_as_background = $attributes['useImageAsBackground'] ?? false;
 $background_overlay      = $attributes['backgroundOverlay'] ?? 0.5;
 $card_width              = $attributes['cardWidth'] ?? '20rem';
 
-// Map bidding_status to class name.
-$status_map = array(
-	10 => 'running',
-	20 => 'upcoming',
-	30 => 'expired',
-);
-$bidding_status = $item_data['bidding_status'] ?? 10;
-$status_class   = $status_map[ $bidding_status ] ?? 'running';
+// Calculate current state based on timestamps (not database status).
+$bidding_starts = $item_data['bidding_starts_at'] ?? 0;
+$bidding_ends   = $item_data['bidding_ends_at'] ?? 0;
+$now            = time();
+
+if ( $now < $bidding_starts ) {
+	$status_class = 'upcoming';
+} elseif ( $now >= $bidding_starts && $now < $bidding_ends ) {
+	$status_class = 'running';
+} else {
+	$status_class = 'expired';
+}
 
 // Build wrapper classes.
 $wrapper_classes = array(

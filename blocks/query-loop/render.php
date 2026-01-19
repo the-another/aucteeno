@@ -26,6 +26,7 @@ $display_layout  = $attributes['displayLayout'] ?? 'grid';
 $per_page        = absint( $attributes['perPage'] ?? 12 );
 $order_by        = $attributes['orderBy'] ?? 'ending_soon';
 $infinite_scroll = $attributes['infiniteScroll'] ?? false;
+$update_url      = $attributes['updateUrl'] ?? true;
 $gap             = $attributes['gap'] ?? '1.5rem';
 
 // Determine user ID from attribute or context (attribute takes priority).
@@ -36,9 +37,9 @@ if ( ! empty( $attributes['userId'] ) ) {
 	$user_id = absint( $block->context['userId'] );
 } else {
 	// Fallback: Try to get vendor ID from current page context (for seller pages).
-	// Try Dokan Blocks Context_Detector if available.
-	if ( class_exists( '\DokanBlocks\Helpers\Context_Detector' ) ) {
-		$vendor_id = \DokanBlocks\Helpers\Context_Detector::get_vendor_id();
+	// Try Another Blocks for Dokan Context_Detector.
+	if ( class_exists( '\The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector' ) ) {
+		$vendor_id = \The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector::get_vendor_id();
 		if ( $vendor_id ) {
 			$user_id = absint( $vendor_id );
 		}
@@ -60,6 +61,27 @@ if ( ! empty( $attributes['userId'] ) ) {
 			if ( $store_user && function_exists( 'dokan_is_user_seller' ) && dokan_is_user_seller( $store_user->ID ) ) {
 				$user_id = absint( $store_user->ID );
 			}
+		}
+	}
+}
+
+ // Determine auction ID from context (for filtering items by parent auction).
+$auction_id = 0;
+if ( 'items' === $query_type ) {
+	// Check if we have a postId from context (i.e., we're on a single product page).
+	$post_id = 0;
+	if ( ! empty( $block->context['postId'] ) ) {
+		$post_id = absint( $block->context['postId'] );
+	} elseif ( is_singular( 'product' ) ) {
+		// Fallback: Get current post ID if we're on a single product page.
+		$post_id = get_the_ID();
+	}
+
+	// If we have a post ID, check if it's an auction product.
+	if ( $post_id > 0 ) {
+		$product = wc_get_product( $post_id );
+		if ( $product && 'aucteeno-ext-auction' === $product->get_type() ) {
+			$auction_id = $post_id;
 		}
 	}
 }
@@ -96,6 +118,22 @@ if ( $page < 1 ) {
 	$page = 1;
 }
 
+// Extract search parameter from URL (overrides block attributes).
+$search_query = '';
+
+// 1. Check direct query argument.
+if ( isset( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$search_query = sanitize_text_field( wp_unslash( $_GET['s'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+}
+
+// 2. Check WordPress query var (if WordPress already parsed it).
+if ( empty( $search_query ) && get_query_var( 's' ) ) {
+	$search_query = sanitize_text_field( get_query_var( 's' ) );
+}
+
+// Trim whitespace and limit length for security.
+$search_query = trim( substr( $search_query, 0, 200 ) );
+
 // Context overrides for query params.
 if ( ! empty( $block->context['query/perPage'] ) ) {
 	$per_page = absint( $block->context['query/perPage'] );
@@ -109,14 +147,67 @@ $query_args = array(
 	'per_page' => min( 50, max( 1, $per_page ) ),
 	'sort'     => $order_by,
 	'user_id'  => $user_id,
+	'search'   => $search_query,
 );
 
-// Add location filters from context (if provided by parent block).
-if ( ! empty( $block->context['locationCountry'] ) ) {
-	$query_args['country'] = sanitize_text_field( $block->context['locationCountry'] );
+// Add auction filter for items query (if auction context is available).
+if ( $auction_id > 0 ) {
+	$query_args['auction_id'] = $auction_id;
 }
-if ( ! empty( $block->context['locationSubdivision'] ) ) {
-	$query_args['subdivision'] = sanitize_text_field( $block->context['locationSubdivision'] );
+
+// Detect location from current taxonomy archive page (if viewing aucteeno-location archive).
+$archive_location_country     = '';
+$archive_location_subdivision = '';
+
+if ( is_tax( 'aucteeno-location' ) ) {
+	$queried_object = get_queried_object();
+	if ( $queried_object && isset( $queried_object->term_id ) ) {
+		$location_code = get_term_meta( $queried_object->term_id, 'code', true );
+		if ( ! empty( $location_code ) ) {
+			// Parse code: "CA" for countries, "US:KS" for subdivisions.
+			if ( strpos( $location_code, ':' ) !== false ) {
+				// Subdivision format: COUNTRY:STATE.
+				$parts                        = explode( ':', $location_code, 2 );
+				$archive_location_country     = isset( $parts[0] ) ? sanitize_text_field( $parts[0] ) : '';
+				$archive_location_subdivision = ! empty( $parts[0] ) && ! empty( $parts[1] ) ? sanitize_text_field( $location_code ) : '';
+			} else {
+				// Country format: just the code.
+				$archive_location_country = sanitize_text_field( $location_code );
+			}
+		}
+	}
+}
+
+// Add location filters from attributes (with context as fallback, then archive context).
+// Priority: attributes > block context > taxonomy archive context.
+$location_country = '';
+if ( ! empty( $attributes['locationCountry'] ) ) {
+	$location_country = sanitize_text_field( $attributes['locationCountry'] );
+} elseif ( ! empty( $block->context['locationCountry'] ) ) {
+	$location_country = sanitize_text_field( $block->context['locationCountry'] );
+} elseif ( ! empty( $archive_location_country ) ) {
+	$location_country = $archive_location_country;
+}
+
+$location_subdivision = '';
+if ( ! empty( $attributes['locationSubdivision'] ) ) {
+	$location_subdivision = sanitize_text_field( $attributes['locationSubdivision'] );
+} elseif ( ! empty( $block->context['locationSubdivision'] ) ) {
+	$location_subdivision = sanitize_text_field( $block->context['locationSubdivision'] );
+} elseif ( ! empty( $archive_location_subdivision ) ) {
+	$location_subdivision = $archive_location_subdivision;
+}
+
+if ( ! empty( $location_country ) ) {
+	$query_args['country'] = $location_country;
+}
+if ( ! empty( $location_subdivision ) ) {
+	$query_args['subdivision'] = $location_subdivision;
+}
+
+// Add product IDs filter from context (for wishlist and other filtered views).
+if ( ! empty( $block->context['productIds'] ) && is_array( $block->context['productIds'] ) ) {
+	$query_args['product_ids'] = array_map( 'absint', $block->context['productIds'] );
 }
 
 // Query HPS tables directly.
@@ -143,6 +234,7 @@ if ( 'grid' === $display_layout ) {
 // Separate template blocks (card) from query-level blocks (pagination).
 $template_blocks   = array();
 $pagination_blocks = array();
+$pattern_slug      = null;
 
 if ( ! empty( $block->inner_blocks ) ) {
 	foreach ( $block->inner_blocks as $inner_block ) {
@@ -150,7 +242,44 @@ if ( ! empty( $block->inner_blocks ) ) {
 			$pagination_blocks[] = $inner_block;
 		} elseif ( 'aucteeno/card' === $inner_block->name ) {
 			$template_blocks[] = $inner_block;
+		} elseif ( 'core/pattern' === $inner_block->name && ! empty( $inner_block->parsed_block['attrs']['slug'] ) ) {
+			// Store pattern slug for later loading.
+			$pattern_slug = $inner_block->parsed_block['attrs']['slug'];
 		}
+	}
+}
+
+// If no card blocks found but we have a pattern reference, load the pattern content.
+if ( empty( $template_blocks ) && ! empty( $pattern_slug ) ) {
+	// Get pattern content from theme.
+	$pattern_file = get_theme_file_path( 'patterns/' . basename( str_replace( '/', '-', $pattern_slug ) ) . '.php' );
+
+	if ( file_exists( $pattern_file ) ) {
+		// Load pattern content.
+		ob_start();
+		include $pattern_file;
+		$pattern_content = ob_get_clean();
+
+		// Trim any whitespace from the pattern content.
+		$pattern_content = trim( $pattern_content );
+
+		// Parse blocks from pattern content.
+		$pattern_blocks = parse_blocks( $pattern_content );
+
+		// Extract card blocks from parsed pattern (including nested search).
+		$extract_cards = function( $blocks ) use ( &$extract_cards, &$template_blocks, $block ) {
+			foreach ( $blocks as $pattern_block ) {
+				if ( 'aucteeno/card' === ( $pattern_block['blockName'] ?? '' ) ) {
+					// Create a WP_Block instance from the parsed block.
+					$template_blocks[] = new WP_Block( $pattern_block, array( 'aucteeno/query-loop' => $block->context ) );
+				} elseif ( ! empty( $pattern_block['innerBlocks'] ) ) {
+					// Recursively search inner blocks.
+					$extract_cards( $pattern_block['innerBlocks'] );
+				}
+			}
+		};
+
+		$extract_cards( $pattern_blocks );
 	}
 }
 
@@ -168,6 +297,7 @@ if ( ! empty( $template_blocks ) ) {
 }
 
 // Get current page URL without paged param for pagination base.
+// Preserve search parameter if present.
 // Use home_url() to ensure absolute URL (remove_query_arg returns relative path).
 $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 $current_url = home_url( remove_query_arg( 'paged', $request_uri ) );
@@ -181,11 +311,14 @@ $interactivity_context = array(
 	'hasMore'        => $page < $total_pages,
 	'queryType'      => $query_type,
 	'userId'         => $user_id,
+	'auctionId'      => $auction_id,
 	'perPage'        => $per_page,
 	'orderBy'        => $order_by,
 	'country'        => $query_args['country'] ?? '',
 	'subdivision'    => $query_args['subdivision'] ?? '',
+	'search'         => $search_query,
 	'infiniteScroll' => $infinite_scroll,
+	'updateUrl'      => $update_url,
 	'restUrl'        => rest_url( 'aucteeno/v1/' . ( 'auctions' === $query_type ? 'auctions' : 'items' ) ),
 	'restNonce'      => wp_create_nonce( 'wp_rest' ),
 	'blockTemplate'  => $card_template_json,

@@ -216,11 +216,14 @@ class Query_Orderer {
 		FROM (
 			(
 				-- Running items (status = 10) - ordered and limited early
+				-- Only include items that have actually started and not yet ended
 				SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 1 as sort_group
 				FROM {$items_table} i
 				INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
 				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
 				WHERE i.bidding_status = 10
+					AND i.bidding_starts_at <= UNIX_TIMESTAMP()
+					AND i.bidding_ends_at > UNIX_TIMESTAMP()
 					AND p.post_status = 'publish'
 					AND p.post_type = 'product'
 					{$where_conditions}
@@ -230,11 +233,13 @@ class Query_Orderer {
 			UNION ALL
 			(
 				-- Upcoming items (status = 20) - ordered and limited early
+				-- Only include items that haven't started yet
 				SELECT i.item_id, i.bidding_starts_at as sort_time, i.lot_sort_key, 2 as sort_group
 				FROM {$items_table} i
 				INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
 				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
 				WHERE i.bidding_status = 20
+					AND i.bidding_starts_at > UNIX_TIMESTAMP()
 					AND p.post_status = 'publish'
 					AND p.post_type = 'product'
 					{$where_conditions}
@@ -244,11 +249,13 @@ class Query_Orderer {
 			UNION ALL
 			(
 				-- Expired items (status = 30) - ordered and limited early
+				-- Only include items that have already ended
 				SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 3 as sort_group
 				FROM {$items_table} i
 				INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
 				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
 				WHERE i.bidding_status = 30
+					AND i.bidding_ends_at <= UNIX_TIMESTAMP()
 					AND p.post_status = 'publish'
 					AND p.post_type = 'product'
 					{$where_conditions}
@@ -256,7 +263,7 @@ class Query_Orderer {
 				LIMIT %d
 			)
 		) AS ordered
-		ORDER BY 
+		ORDER BY
 			ordered.sort_group ASC,
 			CASE ordered.sort_group
 				WHEN 1 THEN ordered.sort_time
@@ -315,11 +322,14 @@ class Query_Orderer {
 		FROM (
 			(
 				-- Running auctions (status = 10) - ordered and limited early
+				-- Only include auctions that have actually started and not yet ended
 				SELECT a.auction_id, a.bidding_ends_at as sort_time, 1 as sort_group
 				FROM {$auctions_table} a
 				INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
 				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
 				WHERE a.bidding_status = 10
+					AND a.bidding_starts_at <= UNIX_TIMESTAMP()
+					AND a.bidding_ends_at > UNIX_TIMESTAMP()
 					AND p.post_status = 'publish'
 					AND p.post_type = 'product'
 					{$where_conditions}
@@ -329,11 +339,13 @@ class Query_Orderer {
 			UNION ALL
 			(
 				-- Upcoming auctions (status = 20) - ordered and limited early
+				-- Only include auctions that haven't started yet
 				SELECT a.auction_id, a.bidding_starts_at as sort_time, 2 as sort_group
 				FROM {$auctions_table} a
 				INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
 				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
 				WHERE a.bidding_status = 20
+					AND a.bidding_starts_at > UNIX_TIMESTAMP()
 					AND p.post_status = 'publish'
 					AND p.post_type = 'product'
 					{$where_conditions}
@@ -343,11 +355,13 @@ class Query_Orderer {
 			UNION ALL
 			(
 				-- Expired auctions (status = 30) - ordered and limited early
+				-- Only include auctions that have already ended
 				SELECT a.auction_id, a.bidding_ends_at as sort_time, 3 as sort_group
 				FROM {$auctions_table} a
 				INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
 				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
 				WHERE a.bidding_status = 30
+					AND a.bidding_ends_at <= UNIX_TIMESTAMP()
 					AND p.post_status = 'publish'
 					AND p.post_type = 'product'
 					{$where_conditions}
@@ -355,7 +369,7 @@ class Query_Orderer {
 				LIMIT %d
 			)
 		) AS ordered
-		ORDER BY 
+		ORDER BY
 			ordered.sort_group ASC,
 			CASE ordered.sort_group
 				WHEN 1 THEN ordered.sort_time
@@ -458,7 +472,7 @@ class Query_Orderer {
 
 		$where_conditions = $this->build_where_conditions( $query, $order_type );
 
-		// Optimized count query with minimal join.
+		// Optimized count query with minimal join and timestamp validation.
 		$sql = "
 		SELECT COUNT(*)
 		FROM (
@@ -466,7 +480,11 @@ class Query_Orderer {
 			FROM {$table_name} t
 			INNER JOIN {$wpdb->posts} p ON t.{$id_column} = p.ID
 			INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-			WHERE t.bidding_status IN (10, 20, 30)
+			WHERE (
+					(t.bidding_status = 10 AND t.bidding_starts_at <= UNIX_TIMESTAMP() AND t.bidding_ends_at > UNIX_TIMESTAMP())
+					OR (t.bidding_status = 20 AND t.bidding_starts_at > UNIX_TIMESTAMP())
+					OR (t.bidding_status = 30 AND t.bidding_ends_at <= UNIX_TIMESTAMP())
+				)
 				AND p.post_status = 'publish'
 				AND p.post_type = 'product'
 				{$where_conditions}

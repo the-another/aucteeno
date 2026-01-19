@@ -104,6 +104,7 @@ class Database_Auctions {
 	 *     @type int    $user_id     Filter by user/vendor ID.
 	 *     @type string $country     Filter by location country.
 	 *     @type string $subdivision Filter by location subdivision.
+	 *     @type string $search      Search keyword for post title.
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -124,6 +125,7 @@ class Database_Auctions {
 			'user_id'     => 0,
 			'country'     => '',
 			'subdivision' => '',
+			'search'      => '',
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -137,7 +139,17 @@ class Database_Auctions {
 		$posts_table = $wpdb->posts;
 
 		// Build WHERE clauses.
-		$where_clauses = array( 'a.bidding_status IN (10, 20, 30)' ); // Running, Upcoming, Expired.
+		// Filter by status with timestamp validation to ensure accurate real-time filtering:
+		// - Running (10): started and not yet ended
+		// - Upcoming (20): not yet started
+		// - Expired (30): already ended
+		$where_clauses = array(
+			'(
+				(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
+				OR (a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP())
+				OR (a.bidding_status = 30 AND a.bidding_ends_at <= UNIX_TIMESTAMP())
+			)',
+		);
 		$where_values  = array();
 
 		// User filter.
@@ -154,6 +166,12 @@ class Database_Auctions {
 		if ( ! empty( $args['subdivision'] ) ) {
 			$where_clauses[] = 'a.location_subdivision = %s';
 			$where_values[]  = sanitize_text_field( $args['subdivision'] );
+		}
+
+		// Search filter (requires posts table join which is already present).
+		if ( ! empty( $args['search'] ) ) {
+			$where_clauses[] = 'p.post_title LIKE %s';
+			$where_values[]  = '%' . $wpdb->esc_like( sanitize_text_field( $args['search'] ) ) . '%';
 		}
 
 		$where_sql = implode( ' AND ', $where_clauses );
@@ -180,7 +198,7 @@ class Database_Auctions {
 		}
 
 		// Count query.
-		$count_sql = "SELECT COUNT(*) FROM {$table_name} a WHERE {$where_sql}";
+		$count_sql = "SELECT COUNT(*) FROM {$table_name} a INNER JOIN {$posts_table} p ON a.auction_id = p.ID AND p.post_status = 'publish' WHERE {$where_sql}";
 		if ( ! empty( $where_values ) ) {
 			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}

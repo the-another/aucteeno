@@ -44,6 +44,11 @@ const ALLOWED_BLOCKS = [
 	'aucteeno/field-bidding-status',
 	'core/group',
 	'core/columns',
+	'core/column',
+	'core/row',
+	'core/stack',
+	'core/cover',
+	'core/media-text',
 	'core/spacer',
 ];
 

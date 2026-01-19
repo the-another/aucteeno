@@ -4,7 +4,6 @@
 	"name": "aucteeno/field-reserve-price",
 	"title": "Aucteeno Reserve Price",
 	"category": "aucteeno",
-	"parent": [ "aucteeno/card" ],
 	"icon": "tag",
 	"description": "Display the reserve price.",
 	"keywords": [ "aucteeno", "reserve", "price" ],

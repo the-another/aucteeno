@@ -117,6 +117,8 @@ class Database_Items {
 	 *     @type int    $auction_id  Filter by parent auction ID.
 	 *     @type string $country     Filter by location country.
 	 *     @type string $subdivision Filter by location subdivision.
+	 *     @type string $search      Search keyword for post title.
+	 *     @type array  $product_ids Array of product IDs to filter by.
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -138,6 +140,8 @@ class Database_Items {
 			'auction_id'  => 0,
 			'country'     => '',
 			'subdivision' => '',
+			'search'      => '',
+			'product_ids' => array(),
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -174,7 +178,17 @@ class Database_Items {
 		$posts_table = $wpdb->posts;
 
 		// Build WHERE clauses.
-		$where_clauses = array( 'i.bidding_status IN (10, 20, 30)' );
+		// Filter by status with timestamp validation to ensure accurate real-time filtering:
+		// - Running (10): started and not yet ended
+		// - Upcoming (20): not yet started
+		// - Expired (30): already ended
+		$where_clauses = array(
+			'(
+				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
+				OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
+				OR (i.bidding_status = 30 AND i.bidding_ends_at <= UNIX_TIMESTAMP())
+			)',
+		);
 		$where_values  = self::build_where_values( $args );
 
 		if ( ! empty( $args['user_id'] ) ) {
@@ -190,10 +204,29 @@ class Database_Items {
 			$where_clauses[] = 'i.location_subdivision = %s';
 		}
 
+		// Product IDs filter.
+		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
+			$product_ids         = array_map( 'absint', $args['product_ids'] );
+			$product_ids         = array_filter( $product_ids );
+			$placeholders        = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$where_clauses[]     = "i.item_id IN ($placeholders)";
+			$where_values        = array_merge( $where_values, $product_ids );
+		}
+
+		// Search filter (requires posts table join which is already present).
+		if ( ! empty( $args['search'] ) ) {
+			$where_clauses[] = 'p.post_title LIKE %s';
+		}
+
 		$where_sql = implode( ' AND ', $where_clauses );
 
 		// Count query.
-		$count_sql = "SELECT COUNT(*) FROM {$table_name} i WHERE {$where_sql}";
+		$count_sql = "
+			SELECT COUNT(*)
+			FROM {$table_name} i
+			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
+			WHERE {$where_sql}
+		";
 		if ( ! empty( $where_values ) ) {
 			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
@@ -268,6 +301,20 @@ class Database_Items {
 		}
 		if ( ! empty( $args['subdivision'] ) ) {
 			$base_where_clauses[] = 'i.location_subdivision = %s';
+		}
+
+		// Product IDs filter.
+		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
+			$product_ids         = array_map( 'absint', $args['product_ids'] );
+			$product_ids         = array_filter( $product_ids );
+			$placeholders        = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$base_where_clauses[] = "i.item_id IN ($placeholders)";
+			$where_values        = array_merge( $where_values, $product_ids );
+		}
+
+		// Search filter (requires posts table join).
+		if ( ! empty( $args['search'] ) ) {
+			$base_where_clauses[] = 'p.post_title LIKE %s';
 		}
 
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
@@ -363,14 +410,21 @@ class Database_Items {
 	private static function get_status_counts( string $table_name, string $base_where_sql, array $where_values ): array {
 		global $wpdb;
 
+		$posts_table = $wpdb->posts;
+
 		$count_sql = "
 			SELECT
-				bidding_status,
+				i.bidding_status,
 				COUNT(*) as cnt
 			FROM {$table_name} i
+			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
 			WHERE {$base_where_sql}
-			  AND bidding_status IN (10, 20, 30)
-			GROUP BY bidding_status
+			  AND (
+				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
+				OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
+				OR (i.bidding_status = 30 AND i.bidding_ends_at <= UNIX_TIMESTAMP())
+			  )
+			GROUP BY i.bidding_status
 		";
 
 		if ( ! empty( $where_values ) ) {
@@ -425,6 +479,19 @@ class Database_Items {
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
 
+		// Add timestamp validation based on status.
+		$timestamp_condition = '';
+		if ( 10 === $status ) {
+			// Running: started and not yet ended.
+			$timestamp_condition = 'AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP()';
+		} elseif ( 20 === $status ) {
+			// Upcoming: not yet started.
+			$timestamp_condition = 'AND i.bidding_starts_at > UNIX_TIMESTAMP()';
+		} elseif ( 30 === $status ) {
+			// Expired: already ended.
+			$timestamp_condition = 'AND i.bidding_ends_at <= UNIX_TIMESTAMP()';
+		}
+
 		$query_sql = "
 			SELECT
 				i.item_id,
@@ -444,6 +511,7 @@ class Database_Items {
 			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
 			WHERE {$base_where_sql}
 			  AND i.bidding_status = %d
+			  {$timestamp_condition}
 			ORDER BY {$order_sql}
 			LIMIT %d OFFSET %d
 		";
@@ -474,6 +542,12 @@ class Database_Items {
 		}
 		if ( ! empty( $args['subdivision'] ) ) {
 			$where_values[] = sanitize_text_field( $args['subdivision'] );
+		}
+
+		// NEW: Add search value with LIKE wildcards.
+		if ( ! empty( $args['search'] ) ) {
+			global $wpdb;
+			$where_values[] = '%' . $wpdb->esc_like( sanitize_text_field( $args['search'] ) ) . '%';
 		}
 
 		return $where_values;

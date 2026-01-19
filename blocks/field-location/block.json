@@ -4,7 +4,6 @@
 	"name": "aucteeno/field-location",
 	"title": "Aucteeno Location",
 	"category": "aucteeno",
-	"parent": [ "aucteeno/card" ],
 	"icon": "location",
 	"description": "Display the auction or item location.",
 	"keywords": [ "aucteeno", "location", "city", "country" ],
@@ -12,11 +11,25 @@
 	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
 	"supports": {
 		"html": false,
-		"spacing": { "margin": true, "padding": true }
+		"spacing": { "margin": true, "padding": true },
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"fontWeight": true,
+			"fontStyle": true,
+			"textTransform": true,
+			"letterSpacing": true
+		},
+		"color": {
+			"text": true,
+			"background": true,
+			"link": true
+		}
 	},
 	"attributes": {
 		"showIcon": { "type": "boolean", "default": true },
-		"format": { "type": "string", "default": "city_country" }
+		"format": { "type": "string", "default": "smart" },
+		"showLinks": { "type": "boolean", "default": false }
 	},
 	"editorScript": "file:../../dist/blocks/field-location/editor.js",
 	"style": "file:../../dist/blocks/field-location/style-editor.css",

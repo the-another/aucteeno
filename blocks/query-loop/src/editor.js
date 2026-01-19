@@ -46,7 +46,17 @@ const TEMPLATE = [
 ];
 
 // Allowed blocks inside query loop.
-const ALLOWED_BLOCKS = [ 'aucteeno/card', 'aucteeno/pagination' ];
+const ALLOWED_BLOCKS = [
+	'aucteeno/card',
+	'aucteeno/pagination',
+	'core/group',
+	'core/columns',
+	'core/column',
+	'core/row',
+	'core/stack',
+	'core/cover',
+	'core/media-text',
+];
 
 /**
  * Placeholder item data for when no real items are available.
@@ -86,7 +96,10 @@ function Edit( { attributes, setAttributes, context } ) {
 		displayLayout = 'grid',
 		orderBy = 'ending_soon',
 		infiniteScroll = false,
+		updateUrl = true,
 		gap = '1.5rem',
+		locationCountry = '',
+		locationSubdivision = '',
 	} = attributes;
 
 	// Determine effective userId from attribute or context.
@@ -265,6 +278,44 @@ function Edit( { attributes, setAttributes, context } ) {
 				</PanelBody>
 
 				<PanelBody
+					title={ __( 'Location Filters', 'aucteeno' ) }
+					initialOpen={ false }
+				>
+					<TextControl
+						label={ __( 'Country Code', 'aucteeno' ) }
+						help={ __(
+							'Filter by country using 2-letter code (e.g., CA, US, GB). Leave empty for all countries.',
+							'aucteeno'
+						) }
+						value={ locationCountry }
+						onChange={ ( value ) =>
+							setAttributes( {
+								locationCountry: value.toUpperCase(),
+								locationSubdivision: value ? locationSubdivision : '',
+							} )
+						}
+						placeholder="CA"
+						maxLength={ 2 }
+					/>
+					{ locationCountry && (
+						<TextControl
+							label={ __( 'Subdivision Code', 'aucteeno' ) }
+							help={ __(
+								'Filter by subdivision using COUNTRY:CODE format (e.g., CA:ON, US:NY). Leave empty to show all subdivisions in the country.',
+								'aucteeno'
+							) }
+							value={ locationSubdivision }
+							onChange={ ( value ) =>
+								setAttributes( {
+									locationSubdivision: value.toUpperCase(),
+								} )
+							}
+							placeholder={ `${ locationCountry }:ON` }
+						/>
+					) }
+				</PanelBody>
+
+				<PanelBody
 					title={ __( 'Layout Settings', 'aucteeno' ) }
 					initialOpen={ true }
 				>
@@ -279,6 +330,19 @@ function Edit( { attributes, setAttributes, context } ) {
 							setAttributes( { infiniteScroll: value } )
 						}
 					/>
+					{ infiniteScroll && (
+						<ToggleControl
+							label={ __( 'Update URL on Scroll', 'aucteeno' ) }
+							help={ __(
+								'Update the browser URL as more items are loaded. Disable to keep the URL unchanged.',
+								'aucteeno'
+							) }
+							checked={ updateUrl }
+							onChange={ ( value ) =>
+								setAttributes( { updateUrl: value } )
+							}
+						/>
+					) }
 					<UnitControl
 						label={ __( 'Gap Between Cards', 'aucteeno' ) }
 						help={ __(

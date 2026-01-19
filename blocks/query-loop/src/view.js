@@ -25,11 +25,17 @@ async function fetchItems( context, page ) {
 	if ( context.userId ) {
 		url.searchParams.set( 'user_id', context.userId );
 	}
+	if ( context.auctionId ) {
+		url.searchParams.set( 'auction_id', context.auctionId );
+	}
 	if ( context.country ) {
 		url.searchParams.set( 'country', context.country );
 	}
 	if ( context.subdivision ) {
 		url.searchParams.set( 'subdivision', context.subdivision );
+	}
+	if ( context.search ) {
+		url.searchParams.set( 'search', context.search );
 	}
 
 	// Pass block template so REST API can render cards with same structure.
@@ -69,6 +75,10 @@ function updateURL( page ) {
 	let baseUrl = window.location.origin + window.location.pathname;
 	baseUrl = baseUrl.replace( /\/page\/\d+\/?$/, '/' );
 
+	// Preserve search query parameter.
+	const urlParams = new URLSearchParams( window.location.search );
+	const searchParam = urlParams.get( 's' );
+
 	let newUrl;
 	if ( page > 1 ) {
 		// Build URL with /page/X/ format (clean permalink).
@@ -76,6 +86,11 @@ function updateURL( page ) {
 	} else {
 		// Page 1: just the base URL without pagination.
 		newUrl = baseUrl;
+	}
+
+	// Re-add search parameter if present.
+	if ( searchParam ) {
+		newUrl += '?s=' + encodeURIComponent( searchParam );
 	}
 
 	window.history.pushState( { page }, '', newUrl );
@@ -135,6 +150,9 @@ function replaceItems( context, data, ref ) {
 	if ( data.pagination ) {
 		replacePagination( container, data.pagination );
 	}
+
+	// Dispatch event for other scripts to re-initialize on new content
+	document.dispatchEvent( new CustomEvent( 'aucteeno:contentLoaded' ) );
 }
 
 /**
@@ -170,6 +188,9 @@ function appendItems( context, data, ref ) {
 	context.pages = data.pages;
 	context.total = data.total;
 	context.hasMore = data.page < data.pages;
+
+	// Dispatch event for other scripts to re-initialize on new content
+	document.dispatchEvent( new CustomEvent( 'aucteeno:contentLoaded' ) );
 }
 
 // Store reference for use in callbacks.
@@ -211,7 +232,11 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 			try {
 				const data = yield fetchItems( context, page );
 				replaceItems( context, data, element.ref );
-				updateURL( page );
+
+				// Update URL only if enabled
+				if ( context.updateUrl ) {
+					updateURL( page );
+				}
 
 				// Scroll to top of query loop container with offset
 				if ( container ) {
@@ -247,7 +272,11 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 			try {
 				const data = yield fetchItems( context, nextPage );
 				appendItems( context, data, element.ref );
-				updateURL( nextPage );
+
+				// Update URL only if enabled
+				if ( context.updateUrl ) {
+					updateURL( nextPage );
+				}
 			} catch ( error ) {
 				context.error = error.message;
 				console.error( 'Failed to load more items:', error );
@@ -284,7 +313,11 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 						fetchItems( context, nextPage )
 							.then( ( data ) => {
 								appendItems( context, data, container );
-								updateURL( nextPage );
+
+								// Update URL only if enabled
+								if ( context.updateUrl ) {
+									updateURL( nextPage );
+								}
 							} )
 							.catch( ( error ) => {
 								context.error = error.message;
@@ -343,7 +376,11 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 				fetchItems( context, page )
 					.then( ( data ) => {
 						replaceItems( context, data, container );
-						updateURL( page );
+
+						// Update URL only if enabled
+						if ( context.updateUrl ) {
+							updateURL( page );
+						}
 
 						// Scroll to top of query loop container with offset.
 						const offset = 50;

@@ -221,4 +221,100 @@ class Location_Helper {
 	public static function get_country_code_from_subdivision_term( int $term_id ): string {
 		return self::get_country_code_from_term( $term_id );
 	}
+
+	/**
+	 * Get formatted location string with smart display logic.
+	 *
+	 * Display logic:
+	 * - City + Subdivision + Country: "Tulsa, Oklahoma, US"
+	 * - Subdivision + Country (no city): "Oklahoma, US"
+	 * - City + Country (no subdivision): "Leeds, United Kingdom" (full country name)
+	 * - Country only: "United Kingdom" (full country name)
+	 *
+	 * @param string $city         City name.
+	 * @param string $subdivision  Subdivision code (e.g., "US:OK" or extracted "OK").
+	 * @param string $country_code Two-letter country code.
+	 * @return string Formatted location string, or empty string if no data.
+	 */
+	public static function format_smart_location( string $city = '', string $subdivision = '', string $country_code = '' ): string {
+		$parts = array();
+
+		// Get WooCommerce country/state data.
+		$countries = WC()->countries->get_countries();
+
+		// Extract subdivision code from "COUNTRY:SUBDIVISION" format if needed.
+		$subdivision_code = $subdivision;
+		if ( strpos( $subdivision, ':' ) !== false ) {
+			$sub_parts        = explode( ':', $subdivision, 2 );
+			$subdivision_code = isset( $sub_parts[1] ) ? $sub_parts[1] : '';
+		}
+
+		// Get human-readable names.
+		$country_name     = isset( $countries[ $country_code ] ) ? $countries[ $country_code ] : $country_code;
+		$subdivision_name = '';
+		if ( $subdivision_code && $country_code ) {
+			$states = WC()->countries->get_states( $country_code );
+			if ( $states && isset( $states[ $subdivision_code ] ) ) {
+				$subdivision_name = $states[ $subdivision_code ];
+			}
+		}
+
+		// Build location string based on available data.
+		if ( $city ) {
+			$parts[] = $city;
+		}
+
+		if ( $subdivision_name ) {
+			$parts[] = $subdivision_name;
+			// Use country code when subdivision is present.
+			$parts[] = $country_code;
+		} elseif ( $country_name ) {
+			// Use full country name when no subdivision.
+			$parts[] = $country_name;
+		}
+
+		return implode( ', ', $parts );
+	}
+
+	/**
+	 * Get country name from country code.
+	 *
+	 * @param string $country_code Two-letter country code.
+	 * @return string Country name, or country code if not found.
+	 */
+	public static function get_country_name( string $country_code ): string {
+		if ( empty( $country_code ) ) {
+			return '';
+		}
+
+		$countries = WC()->countries->get_countries();
+		return isset( $countries[ $country_code ] ) ? $countries[ $country_code ] : $country_code;
+	}
+
+	/**
+	 * Get subdivision name from country code and subdivision code.
+	 *
+	 * @param string $country_code    Two-letter country code.
+	 * @param string $subdivision_code Subdivision code (can be "COUNTRY:CODE" or just "CODE").
+	 * @return string Subdivision name, or subdivision code if not found.
+	 */
+	public static function get_subdivision_name( string $country_code, string $subdivision_code ): string {
+		if ( empty( $country_code ) || empty( $subdivision_code ) ) {
+			return '';
+		}
+
+		// Extract subdivision code from "COUNTRY:SUBDIVISION" format if needed.
+		$code = $subdivision_code;
+		if ( strpos( $subdivision_code, ':' ) !== false ) {
+			$parts = explode( ':', $subdivision_code, 2 );
+			$code  = isset( $parts[1] ) ? $parts[1] : '';
+		}
+
+		$states = WC()->countries->get_states( $country_code );
+		if ( $states && isset( $states[ $code ] ) ) {
+			return $states[ $code ];
+		}
+
+		return $subdivision_code;
+	}
 }
