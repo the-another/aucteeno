@@ -43,6 +43,15 @@ if (versionType && validTypes.includes(versionType)) {
 
 console.log(`Updating version to ${newVersion}...`);
 
+// Update composer.json if it exists
+const composerJsonPath = path.join(__dirname, '../composer.json');
+if (fs.existsSync(composerJsonPath)) {
+  const composerJson = JSON.parse(fs.readFileSync(composerJsonPath, 'utf8'));
+  composerJson.version = newVersion;
+  fs.writeFileSync(composerJsonPath, JSON.stringify(composerJson, null, 2) + '\n', 'utf8');
+  console.log('✓ Updated composer.json');
+}
+
 // Update main plugin file
 const pluginFile = path.join(__dirname, '..', MAIN_PLUGIN_FILE);
 let pluginContent = fs.readFileSync(pluginFile, 'utf8');
