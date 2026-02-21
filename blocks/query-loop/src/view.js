@@ -37,6 +37,9 @@ async function fetchItems( context, page ) {
 	if ( context.search ) {
 		url.searchParams.set( 'search', context.search );
 	}
+	if ( context.productIds && context.productIds.length ) {
+		url.searchParams.set( 'product_ids', context.productIds.join( ',' ) );
+	}
 
 	// Pass block template so REST API can render cards with same structure.
 	if ( context.blockTemplate ) {

@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -164,6 +164,14 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 == Changelog ==
 
+= 1.0.4 - 2026-02-21 =
+* Added product IDs filtering support to Query Loop block, REST API, and HPS database queries (e.g., for wishlists)
+* When querying by product IDs, inherited filters (user, location, search, pagination) are now stripped so only the specified products are returned
+* Product IDs queries now preserve the original ID order using FIELD() ordering
+* Fixed vendor auto-detection to only trigger on actual Dokan store pages, preventing unintended user filtering on search results and shop pages
+* Changed countdown block to use viewScriptModule for WordPress script modules API compatibility
+* Fixed image retrieval in auctions, items, and block data helper to use WooCommerce product image method instead of post thumbnail, respecting image overrides
+* Minor build script cleanup
 
 = 1.0.3 - 2026-01-17 =
 * Fixed template loading issues when loading new pages with ajax

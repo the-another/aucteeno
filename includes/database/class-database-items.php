@@ -567,11 +567,13 @@ class Database_Items {
 			$product = wc_get_product( $item_id );
 
 			$image_url = '';
-			$image_id  = get_post_thumbnail_id( $item_id );
-			if ( $image_id ) {
-				$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
-				if ( $image_src ) {
-					$image_url = $image_src[0];
+			if ( $product ) {
+				$image_id = $product->get_image_id();
+				if ( $image_id ) {
+					$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
+					if ( $image_src ) {
+						$image_url = $image_src[0];
+					}
 				}
 			}
 

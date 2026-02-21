@@ -27,7 +27,7 @@
 		}
 	},
 	"editorScript": "file:../../dist/blocks/field-countdown/editor.js",
-	"viewScript": "file:../../dist/blocks/field-countdown/view.js",
+	"viewScriptModule": "file:../../dist/blocks/field-countdown/view.js",
 	"style": "file:../../dist/blocks/field-countdown/style-editor.css",
 	"render": "file:./render.php"
 }

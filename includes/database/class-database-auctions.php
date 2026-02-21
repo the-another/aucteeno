@@ -105,6 +105,7 @@ class Database_Auctions {
 	 *     @type string $country     Filter by location country.
 	 *     @type string $subdivision Filter by location subdivision.
 	 *     @type string $search      Search keyword for post title.
+	 *     @type array  $product_ids Array of product IDs to filter by.
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -126,6 +127,7 @@ class Database_Auctions {
 			'country'     => '',
 			'subdivision' => '',
 			'search'      => '',
+			'product_ids' => array(),
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -174,10 +176,27 @@ class Database_Auctions {
 			$where_values[]  = '%' . $wpdb->esc_like( sanitize_text_field( $args['search'] ) ) . '%';
 		}
 
+		// Product IDs filter.
+		$use_product_ids_order = false;
+		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
+			$product_ids  = array_map( 'absint', $args['product_ids'] );
+			$product_ids  = array_filter( $product_ids );
+			if ( ! empty( $product_ids ) ) {
+				$placeholders    = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+				$where_clauses[] = "a.auction_id IN ($placeholders)";
+				$where_values    = array_merge( $where_values, $product_ids );
+				$use_product_ids_order = true;
+			}
+		}
+
 		$where_sql = implode( ' AND ', $where_clauses );
 
 		// Build ORDER BY.
-		if ( 'newest' === $sort ) {
+		if ( $use_product_ids_order ) {
+			// Preserve the order of the provided product IDs array.
+			$field_placeholders = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$order_sql          = $wpdb->prepare( "FIELD(a.auction_id, $field_placeholders)", $product_ids ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		} elseif ( 'newest' === $sort ) {
 			$order_sql = 'p.post_date DESC, a.auction_id DESC';
 		} else {
 			// ending_soon: Running first (by ends_at ASC), then Upcoming (by starts_at ASC), then Expired (by ends_at DESC).
@@ -235,11 +254,13 @@ class Database_Auctions {
 			$product    = wc_get_product( $auction_id );
 
 			$image_url = '';
-			$image_id  = get_post_thumbnail_id( $auction_id );
-			if ( $image_id ) {
-				$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
-				if ( $image_src ) {
-					$image_url = $image_src[0];
+			if ( $product ) {
+				$image_id = $product->get_image_id();
+				if ( $image_id ) {
+					$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
+					if ( $image_src ) {
+						$image_url = $image_src[0];
+					}
 				}
 			}
 

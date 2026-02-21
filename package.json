@@ -1,6 +1,6 @@
 {
   "name": "aucteeno",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Aucteeno WordPress Plugin - Gutenberg Blocks",
   "private": true,
   "scripts": {
@@ -10,7 +10,10 @@
     "lint:css": "wp-scripts lint-style blocks/*/src/*.css",
     "format": "wp-scripts format blocks/*/src/*.js",
     "plugin-zip": "composer build && npm run build && wp-scripts plugin-zip > /dev/null 2>&1 && node scripts/version-zip.js",
-    "version": "node scripts/version-bump.js"
+    "version": "node scripts/version-bump.js",
+    "version:patch": "node scripts/version-bump.js patch",
+    "version:minor": "node scripts/version-bump.js minor",
+    "version:major": "node scripts/version-bump.js major"
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.4",

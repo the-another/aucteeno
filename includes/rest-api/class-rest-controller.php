@@ -520,6 +520,12 @@ class REST_Controller extends WP_REST_Controller {
 			'search'      => $request->get_param( 'search' ) ?? '',
 		);
 
+		// Add product IDs filter (comma-separated list from query param).
+		$product_ids_param = $request->get_param( 'product_ids' ) ?? '';
+		if ( ! empty( $product_ids_param ) ) {
+			$args['product_ids'] = array_map( 'absint', explode( ',', $product_ids_param ) );
+		}
+
 		$result = Database_Auctions::query_for_listing( $args );
 
 		// Parse block template if provided.
@@ -738,6 +744,12 @@ class REST_Controller extends WP_REST_Controller {
 			'auction_id'  => $request->get_param( 'auction_id' ) ?? 0,
 			'search'      => $request->get_param( 'search' ) ?? '',
 		);
+
+		// Add product IDs filter (comma-separated list from query param).
+		$product_ids_param = $request->get_param( 'product_ids' ) ?? '';
+		if ( ! empty( $product_ids_param ) ) {
+			$args['product_ids'] = array_map( 'absint', explode( ',', $product_ids_param ) );
+		}
 
 		$result = Database_Items::query_for_listing( $args );
 

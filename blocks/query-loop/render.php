@@ -29,6 +29,10 @@ $infinite_scroll = $attributes['infiniteScroll'] ?? false;
 $update_url      = $attributes['updateUrl'] ?? true;
 $gap             = $attributes['gap'] ?? '1.5rem';
 
+// When specific product IDs are provided, this is a direct query for those posts.
+// Do not inherit page, location, user, auction, or search from the main query context.
+$has_product_ids = ! empty( $block->context['productIds'] ) && is_array( $block->context['productIds'] );
+
 // Determine user ID from attribute or context (attribute takes priority).
 $user_id = 0;
 if ( ! empty( $attributes['userId'] ) ) {
@@ -37,26 +41,31 @@ if ( ! empty( $attributes['userId'] ) ) {
 	$user_id = absint( $block->context['userId'] );
 } else {
 	// Fallback: Try to get vendor ID from current page context (for seller pages).
-	// Try Another Blocks for Dokan Context_Detector.
-	if ( class_exists( '\The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector' ) ) {
-		$vendor_id = \The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector::get_vendor_id();
-		if ( $vendor_id ) {
-			$user_id = absint( $vendor_id );
-		}
-	}
+	// Only auto-detect vendor on actual store pages to prevent unintended filtering
+	// on search results, shop pages, or other non-store pages.
+	$store_name    = get_query_var( 'store', '' );
+	$is_store_page = ! empty( $store_name )
+		|| ( function_exists( 'dokan_is_store_page' ) && dokan_is_store_page() );
 
-	// Try Dokan's native function if still no vendor ID.
-	if ( ! $user_id && function_exists( 'dokan_get_current_seller_id' ) ) {
-		$vendor_id = dokan_get_current_seller_id();
-		if ( $vendor_id > 0 ) {
-			$user_id = absint( $vendor_id );
+	if ( $is_store_page ) {
+		// Try Another Blocks for Dokan Context_Detector.
+		if ( class_exists( '\The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector' ) ) {
+			$vendor_id = \The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector::get_vendor_id();
+			if ( $vendor_id ) {
+				$user_id = absint( $vendor_id );
+			}
 		}
-	}
 
-	// Try to get from 'store' query var (Dokan store page URL).
-	if ( ! $user_id ) {
-		$store_name = get_query_var( 'store', '' );
-		if ( ! empty( $store_name ) ) {
+		// Try Dokan's native function if still no vendor ID.
+		if ( ! $user_id && function_exists( 'dokan_get_current_seller_id' ) ) {
+			$vendor_id = dokan_get_current_seller_id();
+			if ( $vendor_id > 0 ) {
+				$user_id = absint( $vendor_id );
+			}
+		}
+
+		// Try to get from 'store' query var (Dokan store page URL).
+		if ( ! $user_id && ! empty( $store_name ) ) {
 			$store_user = get_user_by( 'slug', $store_name );
 			if ( $store_user && function_exists( 'dokan_is_user_seller' ) && dokan_is_user_seller( $store_user->ID ) ) {
 				$user_id = absint( $store_user->ID );
@@ -206,8 +215,23 @@ if ( ! empty( $location_subdivision ) ) {
 }
 
 // Add product IDs filter from context (for wishlist and other filtered views).
-if ( ! empty( $block->context['productIds'] ) && is_array( $block->context['productIds'] ) ) {
+if ( $has_product_ids ) {
 	$query_args['product_ids'] = array_map( 'absint', $block->context['productIds'] );
+
+	// When specific post IDs are defined, show exactly those posts.
+	// Strip all inherited filters — product_ids IS the query.
+	$user_id      = 0;
+	$auction_id   = 0;
+	$page         = 1;
+	$search_query = '';
+	$query_args   = array(
+		'page'        => 1,
+		'per_page'    => $query_args['per_page'],
+		'sort'        => $query_args['sort'],
+		'user_id'     => 0,
+		'search'      => '',
+		'product_ids' => $query_args['product_ids'],
+	);
 }
 
 // Query HPS tables directly.
@@ -323,6 +347,7 @@ $interactivity_context = array(
 	'restNonce'      => wp_create_nonce( 'wp_rest' ),
 	'blockTemplate'  => $card_template_json,
 	'pageUrl'        => $current_url,
+	'productIds'     => $has_product_ids ? array_map( 'absint', $block->context['productIds'] ) : array(),
 );
 
 // Get wrapper attributes with Interactivity API directives.

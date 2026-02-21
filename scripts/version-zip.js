@@ -3,11 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load package.json to get current version and package name
+// Load package.json to get name and version
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = require(packageJsonPath);
-const version = packageJson.version;
 const packageName = packageJson.name;
+const version = packageJson.version;
 
 // Define paths
 const rootDir = path.join(__dirname, '/../');
@@ -22,15 +22,10 @@ if (!fs.existsSync(sourceZip)) {
   process.exit(1);
 }
 
-// Ensure build directory exists
-if (!fs.existsSync(buildDir)) {
-  fs.mkdirSync(buildDir, { recursive: true });
-}
-
-// Move source zip to versioned zip in build directory
+// Move source zip to versioned zip (historical)
 fs.renameSync(sourceZip, versionedZip);
 console.log(`✓ Created ${path.basename(versionedZip)} in build directory`);
 
-// Copy versioned zip to latest zip (always overwrites)
+// Copy versioned zip to latest zip
 fs.copyFileSync(versionedZip, latestZip);
-console.log(`✓ Created ${path.basename(latestZip)} in build directory (latest version)`);
+console.log(`✓ Created ${path.basename(latestZip)} in build directory (latest)`);

@@ -8,8 +8,7 @@ const path = require("path");
 
 const projectRoot = path.resolve(__dirname, "..");
 
-const moves = [
-];
+const moves = [];
 
 const REMOVE_SOURCE = true; // set false if you want to copy but keep vendor intact
 

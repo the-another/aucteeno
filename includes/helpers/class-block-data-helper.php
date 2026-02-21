@@ -105,13 +105,16 @@ class Block_Data_Helper {
 			return null;
 		}
 
-		// Get image URL.
+		// Get image URL via WooCommerce product (respects Nexus image overrides).
 		$image_url = '';
-		$image_id  = get_post_thumbnail_id( $post_id );
-		if ( $image_id ) {
-			$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
-			if ( $image_src ) {
-				$image_url = $image_src[0];
+		$product   = wc_get_product( $post_id );
+		if ( $product ) {
+			$image_id = $product->get_image_id();
+			if ( $image_id ) {
+				$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
+				if ( $image_src ) {
+					$image_url = $image_src[0];
+				}
 			}
 		}
 
