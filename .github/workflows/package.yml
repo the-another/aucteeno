@@ -12,10 +12,7 @@ permissions:
 jobs:
   test:
     name: Test Gate
-    runs-on:
-      labels:
-        - depot-ubuntu-24.04
-        - depot
+    runs-on: depot-ubuntu-24.04
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true)
@@ -57,10 +54,7 @@ jobs:
 
   release:
     name: Build & Release
-    runs-on:
-      labels:
-        - depot-ubuntu-24.04
-        - depot
+    runs-on: depot-ubuntu-24.04
     needs: [test]
     if: >-
       github.event_name == 'workflow_dispatch' ||

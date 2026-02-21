@@ -11,10 +11,7 @@ permissions:
 jobs:
   phpunit:
     name: PHPUnit Tests
-    runs-on:
-      labels:
-        - depot-ubuntu-24.04
-        - depot
+    runs-on: depot-ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -35,10 +32,7 @@ jobs:
 
   phpcs:
     name: PHP Code Standards
-    runs-on:
-      labels:
-        - depot-ubuntu-24.04
-        - depot
+    runs-on: depot-ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -59,10 +53,7 @@ jobs:
 
   lint-js:
     name: JS & CSS Lint
-    runs-on:
-      labels:
-        - depot-ubuntu-24.04
-        - depot
+    runs-on: depot-ubuntu-24.04
 
     steps:
       - name: Checkout code
