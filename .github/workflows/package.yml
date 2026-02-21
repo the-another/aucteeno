@@ -1,56 +1,126 @@
-name: Package Plugin for WordPress.org
+name: Release Plugin
 
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
+    types: [closed]
+    branches: [master]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Plugin version (e.g., 1.0.0)'
-        required: true
-        type: string
+
+permissions:
+  contents: write
 
 jobs:
-  package:
-    name: Package Plugin
-    runs-on: ubuntu-latest
-    
+  test:
+    name: Test Gate
+    runs-on:
+      labels:
+        - depot-ubuntu-24.04
+        - depot
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true)
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Extract version from plugin file
-        id: get_version
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION=$(grep "Version:" aucteeno.php | sed 's/.*Version: *\([0-9.]*\).*/\1/')
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Plugin version: $VERSION"
-      
-      - name: Create release package
-        run: make release
-      
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: plugin-package
-          path: build/aucteeno-${{ steps.get_version.outputs.version }}.zip
-          retention-days: 30
-      
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: build/aucteeno-${{ steps.get_version.outputs.version }}.zip
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, zip, curl, dom, tokenizer, intl, iconv
+          tools: composer:v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run PHPUnit
+        run: ./vendor/bin/phpunit
+
+      - name: Run PHPCS
+        run: ./vendor/bin/phpcs
+
+      - name: Lint JavaScript
+        run: npm run lint:js
+
+      - name: Lint CSS
+        run: npm run lint:css
+
+  release:
+    name: Build & Release
+    runs-on:
+      labels:
+        - depot-ubuntu-24.04
+        - depot
+    needs: [test]
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "::warning::Tag $TAG already exists — skipping release."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up PHP
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, zip, curl, dom, tokenizer, intl, iconv
+          tools: composer:v2
+
+      - name: Set up Node.js
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies and build
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          npm ci
+          npm run plugin-zip
+
+      - name: Create and push tag
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: build/aucteeno-${{ steps.version.outputs.version }}.zip
