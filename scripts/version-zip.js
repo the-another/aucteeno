@@ -22,6 +22,9 @@ if (!fs.existsSync(sourceZip)) {
   process.exit(1);
 }
 
+// Ensure build directory exists
+fs.mkdirSync(buildDir, { recursive: true });
+
 // Move source zip to versioned zip (historical)
 fs.renameSync(sourceZip, versionedZip);
 console.log(`✓ Created ${path.basename(versionedZip)} in build directory`);
