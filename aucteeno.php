@@ -3,7 +3,7 @@
  * Plugin Name: Aucteeno
  * Plugin URI: https://theanother.org/plugin/aucteeno/
  * Description: Custom WooCommerce plugin for auction and item management with high-performance database tables and REST API for auction and item management.
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: The Another
  * Author URI: https://theanother.org
  * Requires at least: 6.9
@@ -20,18 +20,18 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 // Exit if accessed directly.
 use Exception;
-use TheAnother\Plugin\Aucteeno\Installer\Install;
+use The_Another\Plugin\Aucteeno\Installer\Install;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 // Define plugin constants.
-define( 'AUCTEENO_VERSION', '1.0.6' );
+define( 'AUCTEENO_VERSION', '1.0.7' );
 define( 'AUCTEENO_PLUGIN_FILE', __FILE__ );
 define( 'AUCTEENO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUCTEENO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -70,7 +70,7 @@ if ( version_compare( get_bloginfo( 'version' ), '6.9', '<' ) ) {
 }
 
 // Load autoloader.
-require_once AUCTEENO_PLUGIN_DIR . 'vendor/autoload.php';
+require_once AUCTEENO_PLUGIN_DIR . '/vendor/autoload.php';
 
 // Load plugin textdomain on init hook with early priority (required for WordPress 6.7.0+).
 // This ensures translations are loaded before any translation functions are called.

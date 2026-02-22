@@ -8,12 +8,12 @@
  * @since 2.2.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Tests;
+namespace The_Another\Plugin\Aucteeno\Tests;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
-use TheAnother\Plugin\Aucteeno\Database\Query_Orderer;
+use The_Another\Plugin\Aucteeno\Database\Query_Orderer;
 use WP_Query;
 
 /**

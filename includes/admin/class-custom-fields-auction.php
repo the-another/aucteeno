@@ -8,11 +8,11 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Admin;
+namespace The_Another\Plugin\Aucteeno\Admin;
 
-use TheAnother\Plugin\Aucteeno\Helpers\Location_Helper;
-use TheAnother\Plugin\Aucteeno\Hook_Manager;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
+use The_Another\Plugin\Aucteeno\Helpers\Location_Helper;
+use The_Another\Plugin\Aucteeno\Hook_Manager;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 
 /**
  * Class Meta_Fields_Auction

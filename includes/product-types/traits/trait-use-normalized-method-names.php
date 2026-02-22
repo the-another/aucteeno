@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Product_Types\Traits;
+namespace The_Another\Plugin\Aucteeno\Product_Types\Traits;
 
 use BadMethodCallException;
 

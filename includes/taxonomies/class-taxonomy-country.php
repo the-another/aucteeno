@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Taxonomies;
+namespace The_Another\Plugin\Aucteeno\Taxonomies;
 
 /**
  * Class Taxonomy_Country

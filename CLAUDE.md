@@ -292,7 +292,7 @@ tests/                      # PHPUnit tests
 - **PHP Version:** 8.3+ (use modern PHP features: typed properties, return types, union types, etc.)
 - **Linting:** PHPCS configuration in `.phpcs.xml.dist`
 - **WooCommerce Integration:** Always check WooCommerce 10.4.3 compatibility
-- **Namespace:** `TheAnother\Plugin\Aucteeno`
+- **Namespace:** `The_Another\Plugin\Aucteeno`
 
 ## Database Schema
 

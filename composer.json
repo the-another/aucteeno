@@ -3,7 +3,7 @@
   "description": "Custom WooCommerce plugin for auction and item management",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": {
     "name": "The Another",
     "email": "hello@theanother.org",
@@ -40,7 +40,7 @@
   },
   "autoload": {
     "psr-4": {
-      "TheAnother\\Plugin\\Aucteeno\\Dependencies\\": "dependencies/"
+      "The_Another\\Plugin\\Aucteeno\\Dependencies\\": "dependencies/"
     },
     "classmap": [
       "includes/"
@@ -49,7 +49,7 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "TheAnother\\Plugin\\Aucteeno\\Tests\\": "tests/"
+      "The_Another\\Plugin\\Aucteeno\\Tests\\": "tests/"
     }
   },
   "config": {
@@ -60,10 +60,10 @@
   },
   "extra": {
     "mozart": {
-      "dep_namespace": "TheAnother\\Plugin\\Aucteeno\\Dependencies\\",
+      "dep_namespace": "The_Another\\Plugin\\Aucteeno\\Dependencies\\",
       "dep_directory": "/dependencies/",
       "classmap_directory": "/includes/classes/",
-      "classmap_prefix": "TheAnother_Plugin_Aucteeno_",
+      "classmap_prefix": "The_Another_Plugin_Aucteeno_",
       "packages": []
     }
   },

@@ -8,7 +8,7 @@
  * @since 2.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Helpers;
+namespace The_Another\Plugin\Aucteeno\Helpers;
 
 /**
  * Class Bidding_Status_Mapper

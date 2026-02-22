@@ -8,11 +8,11 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Product_Types\Datastores;
+namespace The_Another\Plugin\Aucteeno\Product_Types\Datastores;
 
 use WC_Product_Data_Store_CPT;
-use TheAnother\Plugin\Aucteeno\Helpers\Location_Helper;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
+use The_Another\Plugin\Aucteeno\Helpers\Location_Helper;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
 
 /**
  * Class Datastore_Item

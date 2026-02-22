@@ -9,7 +9,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 /**
  * EXAMPLE 1: Modified Meta_Fields_Auction with Hook Manager

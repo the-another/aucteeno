@@ -8,11 +8,11 @@
  * @since 2.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Services;
+namespace The_Another\Plugin\Aucteeno\Services;
 
-use TheAnother\Plugin\Aucteeno\Database\Database_Items;
-use TheAnother\Plugin\Aucteeno\Helpers\Bidding_Status_Mapper;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
+use The_Another\Plugin\Aucteeno\Database\Database_Items;
+use The_Another\Plugin\Aucteeno\Helpers\Bidding_Status_Mapper;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
 
 /**
  * Class HPS_Sync_Item
@@ -227,7 +227,7 @@ class HPS_Sync_Item {
 		$lot_no = substr( sanitize_text_field( $lot_no ), 0, 50 );
 
 		// Compute lot_sort_key from lot_no.
-		$lot_sort_key = \TheAnother\Plugin\Aucteeno\Database\Lot_Sort_Helper::compute_lot_sort_key( $lot_no, $product_id );
+		$lot_sort_key = \The_Another\Plugin\Aucteeno\Database\Lot_Sort_Helper::compute_lot_sort_key( $lot_no, $product_id );
 
 		// Get user_id (post_author).
 		$user_id = get_post_field( 'post_author', $product_id );

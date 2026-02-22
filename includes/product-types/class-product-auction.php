@@ -8,10 +8,10 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Product_Types;
+namespace The_Another\Plugin\Aucteeno\Product_Types;
 
 use WC_Product_External;
-use TheAnother\Plugin\Aucteeno\Product_Types\Datastores\Datastore_Auction;
+use The_Another\Plugin\Aucteeno\Product_Types\Datastores\Datastore_Auction;
 
 /**
  * Class Product_Auction

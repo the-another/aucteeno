@@ -8,9 +8,9 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Admin;
+namespace The_Another\Plugin\Aucteeno\Admin;
 
-use TheAnother\Plugin\Aucteeno\Hook_Manager;
+use The_Another\Plugin\Aucteeno\Hook_Manager;
 
 /**
  * Class Settings

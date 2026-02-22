@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\REST_API;
+namespace The_Another\Plugin\Aucteeno\REST_API;
 
 use WP_REST_Controller;
 use WP_REST_Server;
@@ -17,12 +17,12 @@ use WP_REST_Response;
 use WP_Error;
 use WP_Query;
 use WP_Block;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
-use TheAnother\Plugin\Aucteeno\Helpers\DateTime_Helper;
-use TheAnother\Plugin\Aucteeno\Database\Status_Mapper;
-use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
-use TheAnother\Plugin\Aucteeno\Database\Database_Items;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
+use The_Another\Plugin\Aucteeno\Helpers\DateTime_Helper;
+use The_Another\Plugin\Aucteeno\Database\Status_Mapper;
+use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
+use The_Another\Plugin\Aucteeno\Database\Database_Items;
 
 /**
  * Class REST_Controller

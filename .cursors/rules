@@ -159,9 +159,9 @@ $hook_manager->deregister_all();
 Services that use the container pattern should follow this structure:
 
 ```php
-namespace TheAnother\Plugin\Aucteeno\Admin;
+namespace The_Another\Plugin\Aucteeno\Admin;
 
-use TheAnother\Plugin\Aucteeno\Hook_Manager;
+use The_Another\Plugin\Aucteeno\Hook_Manager;
 
 class My_Service {
     /**
@@ -283,7 +283,7 @@ When migrating existing classes to use the container pattern:
 1. **Add Hook_Manager dependency**:
    ```php
    private $hook_manager;
-   
+
    public function __construct( Hook_Manager $hook_manager ) {
        $this->hook_manager = $hook_manager;
    }
@@ -293,7 +293,7 @@ When migrating existing classes to use the container pattern:
    ```php
    // OLD
    add_action( 'hook', [ $this, 'callback' ] );
-   
+
    // NEW
    $this->hook_manager->register_action( 'hook', [ $this, 'callback' ] );
    ```

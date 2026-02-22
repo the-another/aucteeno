@@ -8,10 +8,10 @@
  * @since 1.0.3
  */
 
-namespace TheAnother\Plugin\Aucteeno\Helpers;
+namespace The_Another\Plugin\Aucteeno\Helpers;
 
-use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
-use TheAnother\Plugin\Aucteeno\Database\Database_Items;
+use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
+use The_Another\Plugin\Aucteeno\Database\Database_Items;
 
 /**
  * Class Block_Data_Helper

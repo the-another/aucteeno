@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Database;
+namespace The_Another\Plugin\Aucteeno\Database;
 
 /**
  * Class Database_Items

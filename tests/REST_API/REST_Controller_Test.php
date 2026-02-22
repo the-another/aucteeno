@@ -9,7 +9,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Tests\REST_API;
+namespace The_Another\Plugin\Aucteeno\Tests\REST_API;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
@@ -19,11 +19,11 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 use WP_Query;
-use TheAnother\Plugin\Aucteeno\REST_API\REST_Controller;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
-use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
-use TheAnother\Plugin\Aucteeno\Database\Database_Items;
+use The_Another\Plugin\Aucteeno\REST_API\REST_Controller;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
+use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
+use The_Another\Plugin\Aucteeno\Database\Database_Items;
 
 /**
  * Test class for REST_Controller.

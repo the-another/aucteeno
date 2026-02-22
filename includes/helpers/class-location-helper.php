@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Helpers;
+namespace The_Another\Plugin\Aucteeno\Helpers;
 
 /**
  * Class Location_Helper

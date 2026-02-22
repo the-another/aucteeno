@@ -23,8 +23,8 @@ The container pattern provides:
 ### Basic Usage
 
 ```php
-use TheAnother\Plugin\Aucteeno\Container;
-use TheAnother\Plugin\Aucteeno\Hook_Manager;
+use The_Another\Plugin\Aucteeno\Container;
+use The_Another\Plugin\Aucteeno\Hook_Manager;
 
 // Get container instance
 $container = Container::get_instance();

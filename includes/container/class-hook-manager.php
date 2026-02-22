@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 /**
  * Class Hook_Manager

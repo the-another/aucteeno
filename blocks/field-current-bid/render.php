@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use TheAnother\Plugin\Aucteeno\Helpers\Block_Data_Helper;
+use The_Another\Plugin\Aucteeno\Helpers\Block_Data_Helper;
 
 // Get item data from context or current post.
 $item_data = $block->context['aucteeno/item'] ?? null;

@@ -6,14 +6,14 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Tests\Product_Types\Datastores;
+namespace The_Another\Plugin\Aucteeno\Tests\Product_Types\Datastores;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\TestCase;
-use TheAnother\Plugin\Aucteeno\Product_Types\Datastores\Datastore_Auction;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
+use The_Another\Plugin\Aucteeno\Product_Types\Datastores\Datastore_Auction;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 use WC_Product;
 use WC_Product_Data_Store_CPT;
 

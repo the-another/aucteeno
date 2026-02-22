@@ -8,10 +8,10 @@
  * @since 2.2.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Database;
+namespace The_Another\Plugin\Aucteeno\Database;
 
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Item;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
 use WP_Query;
 
 /**

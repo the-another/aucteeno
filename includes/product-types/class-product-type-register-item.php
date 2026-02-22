@@ -8,9 +8,9 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Product_Types;
+namespace The_Another\Plugin\Aucteeno\Product_Types;
 
-use TheAnother\Plugin\Aucteeno\Hook_Manager;
+use The_Another\Plugin\Aucteeno\Hook_Manager;
 
 /**
  * Class Product_Type_Register_Item

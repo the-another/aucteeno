@@ -24,7 +24,7 @@ This is the most lightweight approach, similar to WooCommerce's early container 
 ### Implementation:
 
 ```php
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 class Container {
     private static $instance = null;
@@ -112,7 +112,7 @@ More sophisticated approach with dedicated hook management.
 ### Implementation:
 
 ```php
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 class Hook_Manager {
     private $registered_hooks = [];
@@ -253,7 +253,7 @@ WooCommerce uses a PSR-11 compliant container. This is the most professional app
 ### Implementation:
 
 ```php
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -334,7 +334,7 @@ This pattern separates service registration from the container itself.
 ### Implementation:
 
 ```php
-namespace TheAnother\Plugin\Aucteeno;
+namespace The_Another\Plugin\Aucteeno;
 
 interface Service_Provider_Interface {
     public function register( Container $container ): void;

@@ -8,7 +8,7 @@
  * @since 2.2.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Database;
+namespace The_Another\Plugin\Aucteeno\Database;
 
 /**
  * Class Lot_Sort_Helper

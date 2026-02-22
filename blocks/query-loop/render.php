@@ -16,8 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
-use TheAnother\Plugin\Aucteeno\Database\Database_Items;
+use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
+use The_Another\Plugin\Aucteeno\Database\Database_Items;
 
 // Parse attributes with defaults.
 $query_type      = $attributes['queryType'] ?? 'auctions';

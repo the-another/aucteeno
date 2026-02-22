@@ -8,11 +8,11 @@
  * @since 2.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Services;
+namespace The_Another\Plugin\Aucteeno\Services;
 
-use TheAnother\Plugin\Aucteeno\Database\Database_Auctions;
-use TheAnother\Plugin\Aucteeno\Helpers\Bidding_Status_Mapper;
-use TheAnother\Plugin\Aucteeno\Product_Types\Product_Auction;
+use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
+use The_Another\Plugin\Aucteeno\Helpers\Bidding_Status_Mapper;
+use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 
 /**
  * Class HPS_Sync_Auction

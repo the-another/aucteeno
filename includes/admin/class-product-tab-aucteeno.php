@@ -318,9 +318,9 @@
  * @since 1.0.0
  */
 
-namespace TheAnother\Plugin\Aucteeno\Admin;
+namespace The_Another\Plugin\Aucteeno\Admin;
 
-use TheAnother\Plugin\Aucteeno\Hook_Manager;
+use The_Another\Plugin\Aucteeno\Hook_Manager;
 
 /**
  * Class Product_Tab_Aucteeno
@@ -477,7 +477,7 @@ class Product_Tab_Aucteeno {
 	public function get_tab_classes(): array {
 		$default_classes = array(
 			'show_if_aucteeno-ext-auction',
-			'show_if_' . \TheAnother\Plugin\Aucteeno\Product_Types\Product_Item::PRODUCT_TYPE,
+			'show_if_' . \The_Another\Plugin\Aucteeno\Product_Types\Product_Item::PRODUCT_TYPE,
 		);
 
 		/**
