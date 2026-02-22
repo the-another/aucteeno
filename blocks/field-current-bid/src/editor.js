@@ -16,7 +16,9 @@ function Edit( { attributes, setAttributes, context } ) {
 	const currentBid = itemData.current_bid || 0;
 	const displayLabel = label || __( 'Current Bid', 'aucteeno' );
 
-	const blockProps = useBlockProps( { className: 'aucteeno-field-current-bid' } );
+	const blockProps = useBlockProps( {
+		className: 'aucteeno-field-current-bid',
+	} );
 
 	return (
 		<>
@@ -25,21 +27,31 @@ function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Show label', 'aucteeno' ) }
 						checked={ showLabel }
-						onChange={ ( value ) => setAttributes( { showLabel: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showLabel: value } )
+						}
 					/>
 					{ showLabel && (
 						<TextControl
 							label={ __( 'Custom label', 'aucteeno' ) }
 							value={ label }
-							onChange={ ( value ) => setAttributes( { label: value } ) }
+							onChange={ ( value ) =>
+								setAttributes( { label: value } )
+							}
 							placeholder={ __( 'Current Bid', 'aucteeno' ) }
 						/>
 					) }
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ showLabel && <span className="aucteeno-field-current-bid__label">{ displayLabel }</span> }
-				<span className="aucteeno-field-current-bid__value">${ currentBid.toFixed( 2 ) }</span>
+				{ showLabel && (
+					<span className="aucteeno-field-current-bid__label">
+						{ displayLabel }
+					</span>
+				) }
+				<span className="aucteeno-field-current-bid__value">
+					${ currentBid.toFixed( 2 ) }
+				</span>
 			</div>
 		</>
 	);

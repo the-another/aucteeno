@@ -2,8 +2,6 @@
  * Aucteeno Query Loop Block - Editor Script
  *
  * Editor interface for the query loop block with inner blocks support.
- *
- * @package Aucteeno
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -22,6 +20,7 @@ import {
 	Placeholder,
 	Spinner,
 	Notice,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -140,6 +139,7 @@ function Edit( { attributes, setAttributes, context } ) {
 				}
 			} )
 			.catch( ( err ) => {
+				// eslint-disable-next-line no-console
 				console.error( 'Failed to fetch items:', err );
 				setError(
 					err.message || __( 'Failed to load items', 'aucteeno' )
@@ -202,6 +202,77 @@ function Edit( { attributes, setAttributes, context } ) {
 			renderAppender: InnerBlocks.ButtonBlockAppender,
 		}
 	);
+
+	/**
+	 * Render the main content area based on loading/error state.
+	 *
+	 * @return {JSX.Element} Content for the current state.
+	 */
+	function renderContent() {
+		if ( isLoading ) {
+			return (
+				<div { ...blockProps }>
+					<Placeholder
+						icon="grid-view"
+						label={
+							queryType === 'auctions'
+								? __(
+										'Aucteeno Query Loop (Auctions)',
+										'aucteeno'
+								  )
+								: __(
+										'Aucteeno Query Loop (Items)',
+										'aucteeno'
+								  )
+						}
+					>
+						<Spinner />
+						<span>{ __( 'Loading preview…', 'aucteeno' ) }</span>
+					</Placeholder>
+				</div>
+			);
+		}
+
+		if ( error ) {
+			return (
+				<div { ...blockProps }>
+					<Placeholder
+						icon="grid-view"
+						label={ __( 'Aucteeno Query Loop', 'aucteeno' ) }
+					>
+						<Notice status="warning" isDismissible={ false }>
+							{ error }
+						</Notice>
+						<p>
+							{ __(
+								'Preview unavailable. The block will work on the frontend.',
+								'aucteeno'
+							) }
+						</p>
+					</Placeholder>
+				</div>
+			);
+		}
+
+		return (
+			<div { ...blockProps }>
+				{ items.length === 0 && (
+					<Notice status="info" isDismissible={ false }>
+						{ queryType === 'auctions'
+							? __(
+									'No auctions found. Showing placeholder.',
+									'aucteeno'
+							  )
+							: __(
+									'No items found. Showing placeholder.',
+									'aucteeno'
+							  ) }
+					</Notice>
+				) }
+				<ul { ...innerBlocksProps } />
+			</div>
+		);
+	}
 
 	return (
 		<>
@@ -291,7 +362,9 @@ function Edit( { attributes, setAttributes, context } ) {
 						onChange={ ( value ) =>
 							setAttributes( {
 								locationCountry: value.toUpperCase(),
-								locationSubdivision: value ? locationSubdivision : '',
+								locationSubdivision: value
+									? locationSubdivision
+									: '',
 							} )
 						}
 						placeholder="CA"
@@ -345,10 +418,7 @@ function Edit( { attributes, setAttributes, context } ) {
 					) }
 					<UnitControl
 						label={ __( 'Gap Between Cards', 'aucteeno' ) }
-						help={ __(
-							'Spacing between cards',
-							'aucteeno'
-						) }
+						help={ __( 'Spacing between cards', 'aucteeno' ) }
 						value={ gap || '1.5rem' }
 						onChange={ ( value ) =>
 							setAttributes( { gap: value || '1.5rem' } )
@@ -385,10 +455,7 @@ function Edit( { attributes, setAttributes, context } ) {
 						initialOpen={ false }
 					>
 						<p>
-							{ __(
-								'Filtering by User ID:',
-								'aucteeno'
-							) }{ ' ' }
+							{ __( 'Filtering by User ID:', 'aucteeno' ) }{ ' ' }
 							<strong>{ effectiveUserId }</strong>
 							{ userId > 0
 								? ` (${ __( 'from attribute', 'aucteeno' ) })`
@@ -398,55 +465,7 @@ function Edit( { attributes, setAttributes, context } ) {
 				) }
 			</InspectorControls>
 
-			{ isLoading ? (
-				<div { ...blockProps }>
-					<Placeholder
-						icon="grid-view"
-						label={
-							queryType === 'auctions'
-								? __( 'Aucteeno Query Loop (Auctions)', 'aucteeno' )
-								: __( 'Aucteeno Query Loop (Items)', 'aucteeno' )
-						}
-					>
-						<Spinner />
-						<span>{ __( 'Loading preview...', 'aucteeno' ) }</span>
-					</Placeholder>
-				</div>
-			) : error ? (
-				<div { ...blockProps }>
-					<Placeholder
-						icon="grid-view"
-						label={ __( 'Aucteeno Query Loop', 'aucteeno' ) }
-					>
-						<Notice status="warning" isDismissible={ false }>
-							{ error }
-						</Notice>
-						<p>
-							{ __(
-								'Preview unavailable. The block will work on the frontend.',
-								'aucteeno'
-							) }
-						</p>
-					</Placeholder>
-				</div>
-			) : (
-				<div { ...blockProps }>
-					{ items.length === 0 && (
-						<Notice status="info" isDismissible={ false }>
-							{ queryType === 'auctions'
-								? __(
-										'No auctions found. Showing placeholder.',
-										'aucteeno'
-								  )
-								: __(
-										'No items found. Showing placeholder.',
-										'aucteeno'
-								  ) }
-						</Notice>
-					) }
-					<ul { ...innerBlocksProps } />
-				</div>
-			) }
+			{ renderContent() }
 		</>
 	);
 }

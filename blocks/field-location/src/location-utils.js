@@ -2,8 +2,6 @@
  * Aucteeno Field Location Block - Pure Utility Functions
  *
  * Extracted from editor.js for testability and reuse.
- *
- * @package Aucteeno
  */
 
 // Common country names for editor preview
@@ -87,6 +85,8 @@ export const US_STATES = {
 
 /**
  * Get subdivision name from code
+ * @param {string} countryCode
+ * @param {string} subdivisionCode
  */
 export function getSubdivisionName( countryCode, subdivisionCode ) {
 	if ( ! subdivisionCode ) {
@@ -111,6 +111,9 @@ export function getSubdivisionName( countryCode, subdivisionCode ) {
 
 /**
  * Format location with smart display logic
+ * @param {string} city
+ * @param {string} subdivision
+ * @param {string} countryCode
  */
 export function formatSmartLocation( city, subdivision, countryCode ) {
 	const parts = [];
@@ -145,6 +148,10 @@ export function formatSmartLocation( city, subdivision, countryCode ) {
 
 /**
  * Format location based on selected format
+ * @param {string} format
+ * @param {string} city
+ * @param {string} subdivision
+ * @param {string} countryCode
  */
 export function formatLocation( format, city, subdivision, countryCode ) {
 	const parts = [];
@@ -164,7 +171,10 @@ export function formatLocation( format, city, subdivision, countryCode ) {
 				parts.push( city );
 			}
 			if ( subdivision ) {
-				const subdivisionName = getSubdivisionName( countryCode, subdivision );
+				const subdivisionName = getSubdivisionName(
+					countryCode,
+					subdivision
+				);
 				if ( subdivisionName ) {
 					parts.push( subdivisionName );
 				}

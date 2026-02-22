@@ -2,8 +2,6 @@
  * Aucteeno Card Block - Editor Script
  *
  * Editor interface for the card block with inner blocks support.
- *
- * @package Aucteeno
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -17,6 +15,7 @@ import {
 	PanelBody,
 	ToggleControl,
 	RangeControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -133,10 +132,7 @@ function Edit( { attributes, setAttributes, context } ) {
 				>
 					<UnitControl
 						label={ __( 'Card Width', 'aucteeno' ) }
-						help={ __(
-							'Fixed width for this card',
-							'aucteeno'
-						) }
+						help={ __( 'Fixed width for this card', 'aucteeno' ) }
 						value={ cardWidth || '20rem' }
 						onChange={ ( value ) =>
 							setAttributes( { cardWidth: value || '20rem' } )

@@ -6,11 +6,12 @@
   "scripts": {
     "build": "wp-scripts build --config webpack.config.js",
     "start": "wp-scripts start --config webpack.config.js",
+    "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "wp-scripts lint-js blocks/*/src/*.js",
     "lint:css": "wp-scripts lint-style blocks/*/src/*.css",
     "test": "wp-scripts test-unit-js --passWithNoTests",
     "format": "wp-scripts format blocks/*/src/*.js",
-    "plugin-zip": "composer build && npm run build && wp-scripts plugin-zip > /dev/null 2>&1 && node scripts/version-zip.js",
+    "plugin-zip": "composer build && npm run build && npm install && wp-scripts plugin-zip > /dev/null 2>&1 && node scripts/version-zip.js",
     "version": "node scripts/version-bump.js && npm install",
     "version:patch": "node scripts/version-bump.js patch && npm install",
     "version:minor": "node scripts/version-bump.js minor && npm install",

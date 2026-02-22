@@ -1,3 +1,5 @@
+/* global MutationObserver, Node */
+
 /**
  * Aucteeno Field Countdown Block - Frontend Script
  *
@@ -24,12 +26,9 @@
  * - User in EST (UTC-5): Sees "January 16, 2026" (2026-01-16 19:00:00 EST)
  * - User in JST (UTC+9): Sees "January 17, 2026" (2026-01-17 09:00:00 JST)
  * - Both users see the SAME moment in time, just in their local timezone
- *
- * @package Aucteeno
  */
 
 import {
-	formatDate,
 	calculateState,
 	formatCountdown,
 	getUpdateInterval,

@@ -1,7 +1,5 @@
 /**
  * Aucteeno Field Image Block - Editor Script
- *
- * @package Aucteeno
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -31,7 +29,9 @@ function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Link to item', 'aucteeno' ) }
 						checked={ isLink }
-						onChange={ ( value ) => setAttributes( { isLink: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { isLink: value } )
+						}
 					/>
 					<SelectControl
 						label={ __( 'Aspect Ratio', 'aucteeno' ) }
@@ -42,7 +42,9 @@ function Edit( { attributes, setAttributes, context } ) {
 							{ label: '1:1', value: '1/1' },
 							{ label: '3:2', value: '3/2' },
 						] }
-						onChange={ ( value ) => setAttributes( { aspectRatio: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { aspectRatio: value } )
+						}
 					/>
 				</PanelBody>
 			</InspectorControls>

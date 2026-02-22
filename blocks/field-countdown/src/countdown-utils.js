@@ -2,8 +2,6 @@
  * Aucteeno Field Countdown Block - Pure Utility Functions
  *
  * Extracted from view.js for testability and reuse.
- *
- * @package Aucteeno
  */
 
 /**
@@ -11,8 +9,8 @@
  *
  * The timestamp is in UTC (Unix timestamp). We convert it to the user's local timezone for display.
  *
- * @param {number} timestamp   Unix timestamp in seconds (UTC-based).
- * @param {string} dateFormat  Date format setting.
+ * @param {number} timestamp  Unix timestamp in seconds (UTC-based).
+ * @param {string} dateFormat Date format setting.
  * @return {string} Formatted date string in user's local timezone.
  */
 export function formatDate( timestamp, dateFormat ) {
@@ -62,7 +60,6 @@ export function formatDate( timestamp, dateFormat ) {
 	const year = date.getFullYear();
 	const month = date.getMonth();
 	const day = date.getDate();
-	const dayOfWeek = date.getDay();
 
 	switch ( dateFormat ) {
 		case 'mdy':
@@ -82,10 +79,12 @@ export function formatDate( timestamp, dateFormat ) {
 			return `${ months[ month ] } ${ day }, ${ year }`;
 		case 'long_eu':
 			return `${ day } ${ months[ month ] } ${ year }`;
-		case 'full':
+		case 'full': {
+			const dayOfWeek = date.getDay();
 			return `${ days[ dayOfWeek ] }, ${ months[ month ] } ${
 				day + getOrdinalSuffix( day )
 			} ${ year }`;
+		}
 		case 'default':
 		default:
 			return date.toLocaleDateString();
@@ -96,9 +95,9 @@ export function formatDate( timestamp, dateFormat ) {
  * Calculate current state based on start and end times.
  * All timestamps are in UTC (Unix timestamps), so comparisons are timezone-agnostic.
  *
- * @param {number} now        Current UTC timestamp in seconds.
- * @param {number} startsAt   Start UTC timestamp in seconds.
- * @param {number} endsAt     End UTC timestamp in seconds.
+ * @param {number} now      Current UTC timestamp in seconds.
+ * @param {number} startsAt Start UTC timestamp in seconds.
+ * @param {number} endsAt   End UTC timestamp in seconds.
  * @return {Object} State object with state and timestamp.
  */
 export function calculateState( now, startsAt, endsAt ) {
@@ -141,10 +140,14 @@ export function formatCountdown( diff, timestamp, state, dateFormat ) {
 			const parts = [];
 
 			if ( minutes > 0 ) {
-				parts.push( `${ minutes } ${ minutes === 1 ? 'minute' : 'minutes' }` );
+				parts.push(
+					`${ minutes } ${ minutes === 1 ? 'minute' : 'minutes' }`
+				);
 			}
 
-			parts.push( `${ seconds } ${ seconds === 1 ? 'second' : 'seconds' }` );
+			parts.push(
+				`${ seconds } ${ seconds === 1 ? 'second' : 'seconds' }`
+			);
 
 			return {
 				displayValue: `${ parts.join( ' ' ) } ago`,
@@ -155,7 +158,9 @@ export function formatCountdown( diff, timestamp, state, dateFormat ) {
 			// Less than 1 day ago - show hours elapsed.
 			const hours = Math.floor( elapsed / 3600 );
 			return {
-				displayValue: `${ hours } ${ hours === 1 ? 'hour' : 'hours' } ago`,
+				displayValue: `${ hours } ${
+					hours === 1 ? 'hour' : 'hours'
+				} ago`,
 				isShowingDate: false,
 			};
 		}
@@ -188,7 +193,9 @@ export function formatCountdown( diff, timestamp, state, dateFormat ) {
 		const parts = [];
 
 		if ( minutes > 0 ) {
-			parts.push( `${ minutes } ${ minutes === 1 ? 'minute' : 'minutes' }` );
+			parts.push(
+				`${ minutes } ${ minutes === 1 ? 'minute' : 'minutes' }`
+			);
 		}
 
 		parts.push( `${ seconds } ${ seconds === 1 ? 'second' : 'seconds' }` );

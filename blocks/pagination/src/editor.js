@@ -30,30 +30,46 @@ function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Show page numbers', 'aucteeno' ) }
 						checked={ showPageNumbers }
-						onChange={ ( value ) => setAttributes( { showPageNumbers: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showPageNumbers: value } )
+						}
 					/>
 					<ToggleControl
 						label={ __( 'Show Previous/Next', 'aucteeno' ) }
 						checked={ showPrevNext }
-						onChange={ ( value ) => setAttributes( { showPrevNext: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showPrevNext: value } )
+						}
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<nav { ...blockProps } aria-label={ __( 'Pagination', 'aucteeno' ) }>
+			<nav
+				{ ...blockProps }
+				aria-label={ __( 'Pagination', 'aucteeno' ) }
+			>
 				<div className="aucteeno-pagination__inner">
 					{ showPrevNext && currentPage > 1 && (
-						<span className="aucteeno-pagination__prev">{ __( '← Previous', 'aucteeno' ) }</span>
-					) }
-					{ showPageNumbers && pageNumbers.map( ( num ) => (
-						<span
-							key={ num }
-							className={ `aucteeno-pagination__page${ num === currentPage ? ' aucteeno-pagination__page--current' : '' }` }
-						>
-							{ num }
+						<span className="aucteeno-pagination__prev">
+							{ __( '← Previous', 'aucteeno' ) }
 						</span>
-					) ) }
+					) }
+					{ showPageNumbers &&
+						pageNumbers.map( ( num ) => (
+							<span
+								key={ num }
+								className={ `aucteeno-pagination__page${
+									num === currentPage
+										? ' aucteeno-pagination__page--current'
+										: ''
+								}` }
+							>
+								{ num }
+							</span>
+						) ) }
 					{ showPrevNext && currentPage < totalPages && (
-						<span className="aucteeno-pagination__next">{ __( 'Next →', 'aucteeno' ) }</span>
+						<span className="aucteeno-pagination__next">
+							{ __( 'Next →', 'aucteeno' ) }
+						</span>
 					) }
 				</div>
 			</nav>

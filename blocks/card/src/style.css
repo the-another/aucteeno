@@ -2,8 +2,6 @@
  * Aucteeno Card Block - Frontend Styles
  *
  * Includes bidding status color variations.
- *
- * @package Aucteeno
  */
 
 .aucteeno-card {
@@ -107,19 +105,6 @@
 	border-top: 1px solid #eee;
 }
 
-/* Status-specific styling adjustments */
-.aucteeno-card--running .aucteeno-card__countdown {
-	color: #28a745;
-}
-
-.aucteeno-card--upcoming .aucteeno-card__countdown {
-	color: #856404;
-}
-
-.aucteeno-card--expired .aucteeno-card__countdown {
-	color: #6c757d;
-}
-
 /* Countdown component */
 .aucteeno-card__countdown {
 	display: flex;
@@ -137,6 +122,19 @@
 .aucteeno-card__countdown-value {
 	font-size: 0.875rem;
 	font-weight: 600;
+}
+
+/* Status-specific countdown colors */
+.aucteeno-card--running .aucteeno-card__countdown {
+	color: #28a745;
+}
+
+.aucteeno-card--upcoming .aucteeno-card__countdown {
+	color: #856404;
+}
+
+.aucteeno-card--expired .aucteeno-card__countdown {
+	color: #6c757d;
 }
 
 /* Expired card overlay effect */

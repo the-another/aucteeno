@@ -2,9 +2,9 @@
  * Aucteeno Query Loop Block - Interactivity API
  *
  * Handles pagination and infinite scroll with WordPress Interactivity API.
- *
- * @package Aucteeno
  */
+
+/* global IntersectionObserver */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
@@ -196,8 +196,7 @@ function appendItems( context, data, ref ) {
 	document.dispatchEvent( new CustomEvent( 'aucteeno:contentLoaded' ) );
 }
 
-// Store reference for use in callbacks.
-const { state, actions } = store( 'aucteeno/query-loop', {
+store( 'aucteeno/query-loop', {
 	state: {
 		/**
 		 * Computed state - can load more items
@@ -220,12 +219,13 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 			event.preventDefault();
 
 			const context = getContext();
-			const element = getElement();
 			const page = parseInt( event.target.dataset.page, 10 );
 
 			if ( ! page || page === context.page || context.isLoading ) {
 				return;
 			}
+
+			const element = getElement();
 
 			// Find container BEFORE replacing items (element may be detached after DOM updates).
 			const container = findContainer( element.ref );
@@ -244,7 +244,10 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 				// Scroll to top of query loop container with offset
 				if ( container ) {
 					const offset = 50;
-					const top = container.getBoundingClientRect().top + window.scrollY - offset;
+					const top =
+						container.getBoundingClientRect().top +
+						window.scrollY -
+						offset;
 					window.scrollTo( {
 						top,
 						behavior: 'smooth',
@@ -252,6 +255,7 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 				}
 			} catch ( error ) {
 				context.error = error.message;
+				// eslint-disable-next-line no-console
 				console.error( 'Failed to load page:', error );
 			} finally {
 				context.isLoading = false;
@@ -263,12 +267,12 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 		 */
 		*loadMore() {
 			const context = getContext();
-			const element = getElement();
 
 			if ( ! context.hasMore || context.isLoading ) {
 				return;
 			}
 
+			const element = getElement();
 			const nextPage = context.page + 1;
 			context.isLoading = true;
 
@@ -282,6 +286,7 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 				}
 			} catch ( error ) {
 				context.error = error.message;
+				// eslint-disable-next-line no-console
 				console.error( 'Failed to load more items:', error );
 			} finally {
 				context.isLoading = false;
@@ -398,6 +403,7 @@ const { state, actions } = store( 'aucteeno/query-loop', {
 					} )
 					.catch( ( error ) => {
 						context.error = error.message;
+						// eslint-disable-next-line no-console
 						console.error( 'Failed to load page:', error );
 					} )
 					.finally( () => {

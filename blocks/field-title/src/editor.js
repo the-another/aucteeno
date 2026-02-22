@@ -1,7 +1,5 @@
 /**
  * Aucteeno Field Title Block - Editor Script
- *
- * @package Aucteeno
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -40,16 +38,21 @@ function Edit( { attributes, setAttributes, context } ) {
 							{ label: 'P', value: 'p' },
 							{ label: 'Span', value: 'span' },
 						] }
-						onChange={ ( value ) => setAttributes( { tagName: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { tagName: value } )
+						}
 					/>
 					<ToggleControl
 						label={ __( 'Link to item', 'aucteeno' ) }
 						checked={ isLink }
-						onChange={ ( value ) => setAttributes( { isLink: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { isLink: value } )
+						}
 					/>
 				</PanelBody>
 			</InspectorControls>
 			<TagName { ...blockProps }>
+				{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 				{ isLink ? <a href="#">{ title }</a> : title }
 			</TagName>
 		</>

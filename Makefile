@@ -1,4 +1,4 @@
-.PHONY: install install-dev update build mozart-build dump-autoload dump-autoload-dev lint format test docker-build docker-run docker-shell release all clean
+.PHONY: install install-dev update build mozart-build dump-autoload dump-autoload-dev lint lint-php lint-js format test docker-build docker-run docker-shell release all clean
 
 # Docker image name
 DOCKER_IMAGE = aucteeno-runner:latest
@@ -28,7 +28,10 @@ update: docker-build
 
 # Build Mozart dependencies (runs in Docker)
 build: docker-build
-	$(DOCKER_RUN) composer mozart-build
+	$(DOCKER_RUN) composer install
+	$(DOCKER_RUN) npm install
+	$(DOCKER_RUN) composer build
+	$(DOCKER_RUN) npm run build
 
 # Build Mozart dependencies in parallel (alias for build)
 mozart-build: build
@@ -41,9 +44,16 @@ dump-autoload: docker-build
 dump-autoload-dev: docker-build
 	$(DOCKER_RUN) composer dump-autoload
 
+# Run all linters (PHP and JS)
+lint: lint-php lint-js
+
 # Run PHPCS linter (runs in Docker)
-lint: docker-build
+lint-php: docker-build
 	$(DOCKER_RUN) ./vendor/bin/phpcs --standard=.phpcs.xml.dist
+
+# Run JS and CSS linters (runs in Docker)
+lint-js: docker-build
+	$(DOCKER_RUN) npm run lint
 
 # Format code using PHPCBF (runs in Docker)
 format: docker-build

@@ -16,7 +16,9 @@ function Edit( { attributes, setAttributes, context } ) {
 	const itemType = context?.[ 'aucteeno/itemType' ] || 'auctions';
 	const lotNo = itemData.lot_no || '001';
 
-	const blockProps = useBlockProps( { className: 'aucteeno-field-lot-number' } );
+	const blockProps = useBlockProps( {
+		className: 'aucteeno-field-lot-number',
+	} );
 
 	// Only relevant for items.
 	if ( itemType !== 'items' ) {
@@ -34,20 +36,30 @@ function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Show prefix', 'aucteeno' ) }
 						checked={ showLabel }
-						onChange={ ( value ) => setAttributes( { showLabel: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showLabel: value } )
+						}
 					/>
 					{ showLabel && (
 						<TextControl
 							label={ __( 'Prefix', 'aucteeno' ) }
 							value={ prefix }
-							onChange={ ( value ) => setAttributes( { prefix: value } ) }
+							onChange={ ( value ) =>
+								setAttributes( { prefix: value } )
+							}
 						/>
 					) }
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ showLabel && prefix && <span className="aucteeno-field-lot-number__prefix">{ prefix }</span> }
-				<span className="aucteeno-field-lot-number__value">{ lotNo }</span>
+				{ showLabel && prefix && (
+					<span className="aucteeno-field-lot-number__prefix">
+						{ prefix }
+					</span>
+				) }
+				<span className="aucteeno-field-lot-number__value">
+					{ lotNo }
+				</span>
 			</div>
 		</>
 	);

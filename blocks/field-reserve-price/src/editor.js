@@ -15,7 +15,9 @@ function Edit( { attributes, setAttributes, context } ) {
 	const itemData = context?.[ 'aucteeno/item' ] || {};
 	const reservePrice = itemData.reserve_price || 500;
 
-	const blockProps = useBlockProps( { className: 'aucteeno-field-reserve-price' } );
+	const blockProps = useBlockProps( {
+		className: 'aucteeno-field-reserve-price',
+	} );
 
 	return (
 		<>
@@ -24,18 +26,28 @@ function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Show label', 'aucteeno' ) }
 						checked={ showLabel }
-						onChange={ ( value ) => setAttributes( { showLabel: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showLabel: value } )
+						}
 					/>
 					<ToggleControl
 						label={ __( 'Hide if zero', 'aucteeno' ) }
 						checked={ hideIfZero }
-						onChange={ ( value ) => setAttributes( { hideIfZero: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { hideIfZero: value } )
+						}
 					/>
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ showLabel && <span className="aucteeno-field-reserve-price__label">{ __( 'Reserve', 'aucteeno' ) }</span> }
-				<span className="aucteeno-field-reserve-price__value">${ reservePrice.toFixed( 2 ) }</span>
+				{ showLabel && (
+					<span className="aucteeno-field-reserve-price__label">
+						{ __( 'Reserve', 'aucteeno' ) }
+					</span>
+				) }
+				<span className="aucteeno-field-reserve-price__value">
+					${ reservePrice.toFixed( 2 ) }
+				</span>
 			</div>
 		</>
 	);

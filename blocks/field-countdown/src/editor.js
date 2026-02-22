@@ -1,7 +1,5 @@
 /**
  * Aucteeno Field Countdown Block - Editor Script
- *
- * @package Aucteeno
  */
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -18,7 +16,7 @@ import './style.css';
  *
  * Timestamps are UTC-based (Unix timestamps). Date objects automatically convert to local timezone.
  *
- * @param {number} diff    Difference in seconds.
+ * @param {number} diff      Difference in seconds.
  * @param {number} timestamp Unix timestamp (UTC-based).
  * @return {string} Formatted display value in user's local timezone.
  */
@@ -45,11 +43,11 @@ function formatCountdown( diff, timestamp ) {
 function Edit( { attributes, setAttributes, context } ) {
 	const { showLabel = true, dateFormat = 'default' } = attributes;
 	const itemData = context?.[ 'aucteeno/item' ] || {};
-	
+
 	const biddingStatus = itemData.bidding_status || 10;
 	const biddingStarts = itemData.bidding_starts_at || 0;
 	const biddingEnds = itemData.bidding_ends_at || 0;
-	
+
 	const isUpcoming = biddingStatus === 20;
 	const timestamp = isUpcoming ? biddingStarts : biddingEnds;
 
@@ -91,30 +89,80 @@ function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Show label', 'aucteeno' ) }
 						checked={ showLabel }
-						onChange={ ( value ) => setAttributes( { showLabel: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { showLabel: value } )
+						}
 					/>
 					<SelectControl
 						label={ __( 'Date Format', 'aucteeno' ) }
 						value={ dateFormat }
 						options={ [
-							{ label: __( 'WordPress Default', 'aucteeno' ), value: 'default' },
-							{ label: __( 'MM/DD/YYYY (01/27/2026)', 'aucteeno' ), value: 'mdy' },
-							{ label: __( 'DD/MM/YYYY (27/01/2026)', 'aucteeno' ), value: 'dmy' },
-							{ label: __( 'YYYY-MM-DD (2026-01-27)', 'aucteeno' ), value: 'ymd' },
-							{ label: __( 'Month D, YYYY (January 27, 2026)', 'aucteeno' ), value: 'long' },
-							{ label: __( 'D Month YYYY (27 January 2026)', 'aucteeno' ), value: 'long_eu' },
-							{ label: __( 'Day, Month Dth YYYY (Wednesday, January 28th 2026)', 'aucteeno' ), value: 'full' },
+							{
+								label: __( 'WordPress Default', 'aucteeno' ),
+								value: 'default',
+							},
+							{
+								label: __(
+									'MM/DD/YYYY (01/27/2026)',
+									'aucteeno'
+								),
+								value: 'mdy',
+							},
+							{
+								label: __(
+									'DD/MM/YYYY (27/01/2026)',
+									'aucteeno'
+								),
+								value: 'dmy',
+							},
+							{
+								label: __(
+									'YYYY-MM-DD (2026-01-27)',
+									'aucteeno'
+								),
+								value: 'ymd',
+							},
+							{
+								label: __(
+									'Month D, YYYY (January 27, 2026)',
+									'aucteeno'
+								),
+								value: 'long',
+							},
+							{
+								label: __(
+									'D Month YYYY (27 January 2026)',
+									'aucteeno'
+								),
+								value: 'long_eu',
+							},
+							{
+								label: __(
+									'Day, Month Dth YYYY (Wednesday, January 28th 2026)',
+									'aucteeno'
+								),
+								value: 'full',
+							},
 						] }
-						onChange={ ( value ) => setAttributes( { dateFormat: value } ) }
-						help={ __( 'Format to display when showing dates (more than 1 week)', 'aucteeno' ) }
+						onChange={ ( value ) =>
+							setAttributes( { dateFormat: value } )
+						}
+						help={ __(
+							'Format to display when showing dates (more than 1 week)',
+							'aucteeno'
+						) }
 					/>
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
 				{ showLabel && (
-					<span className="aucteeno-field-countdown__label">{ label }</span>
+					<span className="aucteeno-field-countdown__label">
+						{ label }
+					</span>
 				) }
-				<span className="aucteeno-field-countdown__value">{ displayValue }</span>
+				<span className="aucteeno-field-countdown__value">
+					{ displayValue }
+				</span>
 			</div>
 		</>
 	);

@@ -3,7 +3,6 @@
  */
 
 .aucteeno-pagination {
-	/* Force pagination to appear on its own row in flexbox parent */
 	flex-basis: 100%;
 	width: 100%;
 	margin-top: 2rem;

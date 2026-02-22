@@ -54,6 +54,7 @@
 
 /* Responsive breakpoints for editor */
 @media (max-width: 782px) {
+
 	.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-grid > .wp-block {
 		flex: 0 0 calc(50% - (var(--gap, 1.5rem) / 2));
 		max-width: calc(50% - (var(--gap, 1.5rem) / 2));
@@ -61,6 +62,7 @@
 }
 
 @media (max-width: 600px) {
+
 	.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-grid > .wp-block {
 		flex: 0 0 100%;
 		max-width: 100%;

@@ -27,6 +27,8 @@ RUN apk add --no-cache \
 	php83-iconv \
 	php83-intl \
 	composer \
+	nodejs \
+	npm \
 	make \
 	git \
 	rsync \

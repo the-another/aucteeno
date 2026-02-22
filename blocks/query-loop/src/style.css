@@ -2,8 +2,6 @@
  * Aucteeno Query Loop Block - Frontend Styles
  *
  * Mobile-first responsive grid layout.
- *
- * @package Aucteeno
  */
 
 .aucteeno-query-loop {
@@ -39,6 +37,7 @@
 
 /* Responsive breakpoints */
 @media (max-width: 782px) {
+
 	.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-grid .aucteeno-query-loop__item {
 		flex: 0 0 calc(50% - (var(--gap, 1.5rem) / 2));
 		max-width: calc(50% - (var(--gap, 1.5rem) / 2));
@@ -46,6 +45,7 @@
 }
 
 @media (max-width: 600px) {
+
 	.aucteeno-query-loop .aucteeno-items-wrap.aucteeno-items-grid .aucteeno-query-loop__item {
 		flex: 0 0 100%;
 		max-width: 100%;
