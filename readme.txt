@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,9 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.0.6 - 2026-02-22 =
+* Adds specific Git Updater headers
 
 = 1.0.5 - 2026-02-22 =
 * Added JavaScript test suite for all 11 Gutenberg blocks (104 tests)

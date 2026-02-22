@@ -3,7 +3,7 @@
  * Plugin Name: Aucteeno
  * Plugin URI: https://theanother.org/plugin/aucteeno/
  * Description: Custom WooCommerce plugin for auction and item management with high-performance database tables and REST API for auction and item management.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: The Another
  * Author URI: https://theanother.org
  * Requires at least: 6.9
@@ -12,6 +12,9 @@
  * Domain Path: /languages
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * GitHub Plugin URI: https://github.com/the-another/aucteeno
+ * Primary Branch: master
+ * Release Asset: true
  *
  * @package Aucteeno
  * @since 1.0.0
@@ -28,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'AUCTEENO_VERSION', '1.0.5' );
+define( 'AUCTEENO_VERSION', '1.0.6' );
 define( 'AUCTEENO_PLUGIN_FILE', __FILE__ );
 define( 'AUCTEENO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUCTEENO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
