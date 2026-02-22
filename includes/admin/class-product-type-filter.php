@@ -175,9 +175,6 @@ class Product_Type_Filter {
 				'field'    => 'slug',
 				'terms'    => $product_type,
 			);
-		} else {
-			// For other product types, WooCommerce handles it via taxonomy automatically.
-			// We don't need to do anything special here.
 		}
 
 		return $vars;

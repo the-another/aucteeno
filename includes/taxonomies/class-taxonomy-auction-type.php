@@ -71,10 +71,10 @@ class Taxonomy_Auction_Type {
 		foreach ( $terms as $term ) {
 			if ( ! term_exists( $term, self::TAXONOMY ) ) {
 				wp_insert_term(
-					ucfirst( $term ), // Name: capitalized version
+					ucfirst( $term ), // Name: capitalized version.
 					self::TAXONOMY,
 					array(
-						'slug' => $term, // Slug: lowercase version
+						'slug' => $term, // Slug: lowercase version.
 					)
 				);
 			}

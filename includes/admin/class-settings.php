@@ -110,6 +110,7 @@ class Settings {
 		$tabs = apply_filters( 'aucteeno_settings_tabs', array( 'general' => __( 'General', 'aucteeno' ) ) );
 
 		// Get active tab from query parameter.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab parameter is used for display only, not for data modification.
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '';
 		if ( empty( $active_tab ) || ! isset( $tabs[ $active_tab ] ) ) {
 			$active_tab = array_key_first( $tabs );

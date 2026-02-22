@@ -45,8 +45,10 @@ class HPS_Sync_Item {
 		$table_name = Database_Items::get_table_name();
 
 		// Check if record exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$exists = $wpdb->get_var(
 			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name.
 				"SELECT ID FROM {$table_name} WHERE item_id = %d",
 				$product_id
 			)
@@ -54,6 +56,7 @@ class HPS_Sync_Item {
 
 		if ( $exists ) {
 			// Update existing record.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$result = $wpdb->update(
 				$table_name,
 				$data,
@@ -65,6 +68,7 @@ class HPS_Sync_Item {
 			return false !== $result;
 		} else {
 			// Insert new record.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$result = $wpdb->insert(
 				$table_name,
 				$data,
@@ -85,6 +89,7 @@ class HPS_Sync_Item {
 		global $wpdb;
 		$table_name = Database_Items::get_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->delete(
 			$table_name,
 			array( 'item_id' => $product_id ),

@@ -144,7 +144,7 @@ class Database_Auctions {
 		// Filter by status with timestamp validation to ensure accurate real-time filtering:
 		// - Running (10): started and not yet ended
 		// - Upcoming (20): not yet started
-		// - Expired (30): already ended
+		// - Expired (30): already ended.
 		$where_clauses = array(
 			'(
 				(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
@@ -179,12 +179,12 @@ class Database_Auctions {
 		// Product IDs filter.
 		$use_product_ids_order = false;
 		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
-			$product_ids  = array_map( 'absint', $args['product_ids'] );
-			$product_ids  = array_filter( $product_ids );
+			$product_ids = array_map( 'absint', $args['product_ids'] );
+			$product_ids = array_filter( $product_ids );
 			if ( ! empty( $product_ids ) ) {
-				$placeholders    = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
-				$where_clauses[] = "a.auction_id IN ($placeholders)";
-				$where_values    = array_merge( $where_values, $product_ids );
+				$placeholders          = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+				$where_clauses[]       = "a.auction_id IN ($placeholders)";
+				$where_values          = array_merge( $where_values, $product_ids );
 				$use_product_ids_order = true;
 			}
 		}
@@ -195,7 +195,7 @@ class Database_Auctions {
 		if ( $use_product_ids_order ) {
 			// Preserve the order of the provided product IDs array.
 			$field_placeholders = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
-			$order_sql          = $wpdb->prepare( "FIELD(a.auction_id, $field_placeholders)", $product_ids ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$order_sql      = $wpdb->prepare( "FIELD(a.auction_id, $field_placeholders)", $product_ids ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		} elseif ( 'newest' === $sort ) {
 			$order_sql = 'p.post_date DESC, a.auction_id DESC';
 		} else {
@@ -221,7 +221,7 @@ class Database_Auctions {
 		if ( ! empty( $where_values ) ) {
 			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
-		$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Main query.
 		$query_sql = "
@@ -245,7 +245,7 @@ class Database_Auctions {
 
 		$query_values   = array_merge( $where_values, array( $per_page, $offset ) );
 		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Transform results to include additional data.
 		$items = array();

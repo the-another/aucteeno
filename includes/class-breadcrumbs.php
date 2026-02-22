@@ -57,7 +57,7 @@ class Breadcrumbs {
 	 * @param object                         $breadcrumb Breadcrumb object (unused).
 	 * @return array<int, array<int, string>> Modified breadcrumb array.
 	 */
-	public function customize_breadcrumbs( array $crumbs, $breadcrumb ): array {
+	public function customize_breadcrumbs( array $crumbs, $breadcrumb ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		// Only modify breadcrumbs on single product pages.
 		if ( ! is_product() ) {
 			return $crumbs;

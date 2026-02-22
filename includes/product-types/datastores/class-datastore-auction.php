@@ -101,7 +101,7 @@ class Datastore_Auction extends WC_Product_Data_Store_CPT {
 		$product_id      = $product->get_id();
 		$extra_data_keys = $product->get_extra_data_keys();
 
-		// Load all meta for product
+		// Load all meta for product.
 		$all_meta = get_post_meta( $product_id );
 
 		foreach ( $extra_data_keys as $key ) {

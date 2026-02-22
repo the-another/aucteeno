@@ -70,6 +70,7 @@ class Bidding_Status_Mapper {
 			array(
 				'taxonomy'   => self::TAXONOMY,
 				'hide_empty' => false,
+				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'meta_query' => array(
 					array(
 						'key'   => 'order_sequence',

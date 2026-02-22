@@ -89,6 +89,7 @@ class Item_Parent_Relationship {
 		global $wpdb;
 		$table_name = Database_Items::get_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$table_name,
 			array( 'auction_id' => $parent_id ),
@@ -122,6 +123,7 @@ class Item_Parent_Relationship {
 		}
 
 		// Skip validation if we're in a delete context.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified by WordPress before save_post fires.
 		$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';
 		if ( in_array( $action, array( 'delete', 'trash' ), true ) ) {
 			return;
@@ -129,8 +131,9 @@ class Item_Parent_Relationship {
 
 		// Check if parent is being set.
 		// Use aucteeno_item_parent_auction_id to avoid confusion with WordPress default parent_id.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified by WordPress before save_post fires.
 		if ( isset( $_POST['aucteeno_item_parent_auction_id'] ) ) {
-			$parent_id = absint( $_POST['aucteeno_item_parent_auction_id'] );
+			$parent_id = absint( $_POST['aucteeno_item_parent_auction_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			if ( $parent_id <= 0 ) {
 				// Prevent saving without parent.
 				wp_die( esc_html__( 'Items must belong to exactly one auction. Please select a parent auction.', 'aucteeno' ) );
@@ -165,14 +168,17 @@ class Item_Parent_Relationship {
 
 		// Update items table.
 		$table_name = Database_Items::get_table_name();
-		$existing   = $wpdb->get_var(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$existing = $wpdb->get_var(
 			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name.
 				"SELECT ID FROM {$table_name} WHERE item_id = %d",
 				$item_id
 			)
 		);
 
 		if ( $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table_name,
 				array( 'auction_id' => $auction_id ),
@@ -181,6 +187,7 @@ class Item_Parent_Relationship {
 				array( '%d' )
 			);
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert(
 				$table_name,
 				array(

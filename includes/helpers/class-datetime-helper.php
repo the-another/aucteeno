@@ -29,7 +29,7 @@ class DateTime_Helper {
 		}
 
 		$timestamp = strtotime( $datetime . ' GMT' );
-		return $timestamp !== false ? $timestamp : null;
+		return false !== $timestamp ? $timestamp : null;
 	}
 
 	/**

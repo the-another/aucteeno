@@ -106,7 +106,7 @@ class Custom_Fields_Item {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_link_tab( int $post_id, string $post_type = '' ): void {
+	public function render_link_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for item products.
@@ -174,7 +174,7 @@ class Custom_Fields_Item {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_location_tab( int $post_id, string $post_type = '' ): void {
+	public function render_location_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for item products.
@@ -204,7 +204,7 @@ class Custom_Fields_Item {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_times_tab( int $post_id, string $post_type = '' ): void {
+	public function render_times_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for item products.
@@ -234,7 +234,7 @@ class Custom_Fields_Item {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_details_tab( int $post_id, string $post_type = '' ): void {
+	public function render_details_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for item products.
@@ -275,7 +275,7 @@ class Custom_Fields_Item {
 				'limit'     => -1,
 				'orderby'   => 'title',
 				'order'     => 'ASC',
-				'tax_query' => array(
+				'tax_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Required for taxonomy filtering.
 					array(
 						'taxonomy' => 'auction-bidding-status',
 						'field'    => 'slug',
@@ -298,6 +298,7 @@ class Custom_Fields_Item {
 				}
 				$auction_id = $auction_product->get_id();
 				$selected   = selected( $parent_id, $auction_id, false );
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $selected is output from WordPress selected() function, which returns safe HTML attribute.
 				echo '<option value="' . esc_attr( $auction_id ) . '" ' . $selected . '>' . esc_html( $auction_product->get_name() ) . '</option>';
 			}
 		}
@@ -568,13 +569,15 @@ class Custom_Fields_Item {
 	/**
 	 * Save meta fields.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param mixed $product Product object to save meta fields for.
 	 * @return void
 	 */
 	public function process_product_object( mixed $product ): void {
 		if ( ! ( $product instanceof Product_Item ) ) {
 			return;
 		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce verified by WooCommerce before this hook fires.
 
 		// Save parent auction (mandatory).
 		if ( isset( $_POST['aucteeno_item_parent_auction_id'] ) ) {
@@ -673,5 +676,7 @@ class Custom_Fields_Item {
 		if ( isset( $_POST['menu_order'] ) ) {
 			$product->set_menu_order( absint( $_POST['menu_order'] ) );
 		}
+
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 }

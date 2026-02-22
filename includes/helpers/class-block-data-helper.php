@@ -57,6 +57,7 @@ class Block_Data_Helper {
 		$is_auction = 'aucteeno-ext-auction' === $product_type;
 
 		// Get data from HPS tables.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		if ( $is_auction ) {
 			$table_name = Database_Auctions::get_table_name();
 			$query      = $wpdb->prepare(
@@ -93,7 +94,8 @@ class Block_Data_Helper {
 			);
 		}
 
-		$row = $wpdb->get_row( $query, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$row = $wpdb->get_row( $query, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		if ( ! $row ) {
 			return null;

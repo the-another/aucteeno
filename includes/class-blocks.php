@@ -67,7 +67,7 @@ class Blocks {
 	 * @param \WP_Block_Editor_Context $context    Block editor context.
 	 * @return array Modified array of block categories.
 	 */
-	public static function register_block_category( array $categories, $context ): array {
+	public static function register_block_category( array $categories, $context ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		// Add Aucteeno category at the beginning.
 		array_unshift(
 			$categories,

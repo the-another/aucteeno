@@ -132,7 +132,7 @@ class Disable_Reviews_Comments {
 	 * @param \WP_Post $post Post object.
 	 * @return void
 	 */
-	public function disable_comments_on_save( int $post_id, $post ): void {
+	public function disable_comments_on_save( int $post_id, $post ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		if ( ! $this->is_auction_or_item_product( $post_id ) ) {
 			return;
 		}
@@ -160,7 +160,7 @@ class Disable_Reviews_Comments {
 	 * @param ?string $comment_type Comment type.
 	 * @return string Comment status.
 	 */
-	public function force_comment_status_closed( string $status, string $post_type, ?string $comment_type = null ): string {
+	public function force_comment_status_closed( string $status, string $post_type, ?string $comment_type = null ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		if ( 'product' !== $post_type ) {
 			return $status;
 		}
@@ -258,13 +258,14 @@ class Disable_Reviews_Comments {
 	 * @param \WP_Comment_Query     $query Comment query object.
 	 * @return array<string, string> Modified comment query clauses.
 	 */
-	public function exclude_product_comments( array $clauses, $query ): array {
+	public function exclude_product_comments( array $clauses, $query ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $wpdb;
 
 		// Get post IDs for auction and item products.
 		$auction_type = Product_Auction::PRODUCT_TYPE;
 		$item_type    = Product_Item::PRODUCT_TYPE;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$product_ids = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT p.ID FROM {$wpdb->posts} p

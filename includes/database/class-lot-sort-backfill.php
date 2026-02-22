@@ -48,17 +48,19 @@ class Lot_Sort_Backfill {
 		$batch_size = self::BATCH_SIZE;
 
 		// Get batch of items.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name.
 		$items = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ID, item_id, lot_no 
-				FROM {$table_name} 
-				WHERE ID > %d 
-				ORDER BY ID ASC 
+				"SELECT ID, item_id, lot_no
+				FROM {$table_name}
+				WHERE ID > %d
+				ORDER BY ID ASC
 				LIMIT %d",
 				$last_id,
 				$batch_size
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		if ( empty( $items ) ) {
 			// Done - clean up option.
@@ -76,6 +78,7 @@ class Lot_Sort_Backfill {
 		foreach ( $items as $item ) {
 			$sort_key = Lot_Sort_Helper::compute_lot_sort_key( $item->lot_no, $item->item_id );
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$updated = $wpdb->update(
 				$table_name,
 				array( 'lot_sort_key' => $sort_key ),
@@ -117,13 +120,15 @@ class Lot_Sort_Backfill {
 		$table_name = Database_Items::get_table_name();
 
 		// Check if there are any items with lot_sort_key = 0 and non-empty lot_no.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$count = $wpdb->get_var(
-			"SELECT COUNT(*) 
-			FROM {$table_name} 
-			WHERE lot_sort_key = 0 
-				AND lot_no != '' 
+			"SELECT COUNT(*)
+			FROM {$table_name}
+			WHERE lot_sort_key = 0
+				AND lot_no != ''
 				AND lot_no IS NOT NULL"
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		return (int) $count > 0;
 	}
@@ -144,21 +149,25 @@ class Lot_Sort_Backfill {
 		$table_name = Database_Items::get_table_name();
 
 		// Total items that need backfilling.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$total = (int) $wpdb->get_var(
-			"SELECT COUNT(*) 
-			FROM {$table_name} 
-			WHERE lot_no != '' 
+			"SELECT COUNT(*)
+			FROM {$table_name}
+			WHERE lot_no != ''
 				AND lot_no IS NOT NULL"
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Items already processed (have non-zero lot_sort_key).
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$processed = (int) $wpdb->get_var(
-			"SELECT COUNT(*) 
-			FROM {$table_name} 
-			WHERE lot_sort_key != 0 
-				AND lot_no != '' 
+			"SELECT COUNT(*)
+			FROM {$table_name}
+			WHERE lot_sort_key != 0
+				AND lot_no != ''
 				AND lot_no IS NOT NULL"
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$remaining  = max( 0, $total - $processed );
 		$percentage = $total > 0 ? ( $processed / $total ) * 100 : 100.0;

@@ -75,10 +75,10 @@ class Taxonomy_Auction_Bidding_Status {
 		foreach ( $terms as $term_slug => $order_sequence ) {
 			if ( ! term_exists( $term_slug, self::TAXONOMY ) ) {
 				$term_result = wp_insert_term(
-					ucfirst( $term_slug ), // Name: capitalized version
+					ucfirst( $term_slug ), // Name: capitalized version.
 					self::TAXONOMY,
 					array(
-						'slug' => $term_slug, // Slug: lowercase version
+						'slug' => $term_slug, // Slug: lowercase version.
 					)
 				);
 

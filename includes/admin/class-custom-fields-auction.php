@@ -105,7 +105,7 @@ class Custom_Fields_Auction {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_link_tab( int $post_id, string $post_type = '' ): void {
+	public function render_link_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for auction products.
@@ -158,7 +158,7 @@ class Custom_Fields_Auction {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_location_tab( int $post_id, string $post_type = '' ): void {
+	public function render_location_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for auction products.
@@ -188,7 +188,7 @@ class Custom_Fields_Auction {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_times_tab( int $post_id, string $post_type = '' ): void {
+	public function render_times_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for auction products.
@@ -218,7 +218,7 @@ class Custom_Fields_Auction {
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
-	public function render_details_tab( int $post_id, string $post_type = '' ): void {
+	public function render_details_tab( int $post_id, string $post_type = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
 		global $post;
 
 		// Only render for auction products.
@@ -449,13 +449,15 @@ class Custom_Fields_Auction {
 	/**
 	 * Save meta fields.
 	 *
-	 * @param mixed $product
+	 * @param mixed $product Product object to save meta fields for.
 	 * @return void
 	 */
 	public function process_product_object( mixed $product ): void {
 		if ( ! ( $product instanceof Product_Auction ) ) {
 			return;
 		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce verified by WooCommerce before this hook fires.
 
 		// Save bidding start datetime (prioritize local if provided, otherwise use UTC).
 		if ( isset( $_POST['aucteeno_auction_bidding_starts_at_local'] ) && ! empty( $_POST['aucteeno_auction_bidding_starts_at_local'] ) ) {
@@ -527,5 +529,7 @@ class Custom_Fields_Auction {
 		if ( isset( $_POST['aucteeno_auction_button_text'] ) ) {
 			$product->set_button_text( sanitize_text_field( wp_unslash( $_POST['aucteeno_auction_button_text'] ) ) );
 		}
+
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 }

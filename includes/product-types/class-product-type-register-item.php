@@ -86,11 +86,12 @@ class Product_Type_Register_Item {
 	/**
 	 * Force type resolution during the save request (fixes first-save fallback to simple).
 	 *
-	 * @param string $override
-	 * @param int    $product_id
+	 * @param string $override Current product type override value.
+	 * @param int    $product_id Product ID being saved.
 	 * @return string
 	 */
-	public function register_product_type_query( string $override, int $product_id ): string {
+	public function register_product_type_query( string $override, int $product_id ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by hook signature.
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce verified by WooCommerce before this hook fires.
 		if (
 			is_admin()
 			&& isset( $_POST['product-type'] )
@@ -98,6 +99,7 @@ class Product_Type_Register_Item {
 		) {
 			return Product_Item::PRODUCT_TYPE;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 		return $override;
 	}
 

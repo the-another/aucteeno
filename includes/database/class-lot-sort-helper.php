@@ -69,9 +69,11 @@ class Lot_Sort_Helper {
 			// Handle single character suffixes (A-Z, 0-9).
 			$first_char = strtoupper( $suffix[0] );
 			if ( ctype_alpha( $first_char ) ) {
+				// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 				// A=1, B=2, ..., Z=26.
 				$suffix_ordinal = ord( $first_char ) - ord( 'A' ) + 1;
 			} elseif ( ctype_digit( $first_char ) ) {
+				// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 				// Numeric suffix: 0=0, 1=27, 2=28, ..., 9=35.
 				$suffix_ordinal = (int) $first_char + 27;
 			}

@@ -181,7 +181,7 @@ class Database_Items {
 		// Filter by status with timestamp validation to ensure accurate real-time filtering:
 		// - Running (10): started and not yet ended
 		// - Upcoming (20): not yet started
-		// - Expired (30): already ended
+		// - Expired (30): already ended.
 		$where_clauses = array(
 			'(
 				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
@@ -206,11 +206,11 @@ class Database_Items {
 
 		// Product IDs filter.
 		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
-			$product_ids         = array_map( 'absint', $args['product_ids'] );
-			$product_ids         = array_filter( $product_ids );
-			$placeholders        = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
-			$where_clauses[]     = "i.item_id IN ($placeholders)";
-			$where_values        = array_merge( $where_values, $product_ids );
+			$product_ids     = array_map( 'absint', $args['product_ids'] );
+			$product_ids     = array_filter( $product_ids );
+			$placeholders    = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$where_clauses[] = "i.item_id IN ($placeholders)";
+			$where_values    = array_merge( $where_values, $product_ids );
 		}
 
 		// Search filter (requires posts table join which is already present).
@@ -230,7 +230,7 @@ class Database_Items {
 		if ( ! empty( $where_values ) ) {
 			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
-		$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Main query.
 		$query_sql = "
@@ -257,7 +257,7 @@ class Database_Items {
 
 		$query_values   = array_merge( $where_values, array( $per_page, $offset ) );
 		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		return array(
 			'items' => self::transform_results( $results ),
@@ -305,11 +305,11 @@ class Database_Items {
 
 		// Product IDs filter.
 		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
-			$product_ids         = array_map( 'absint', $args['product_ids'] );
-			$product_ids         = array_filter( $product_ids );
-			$placeholders        = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$product_ids          = array_map( 'absint', $args['product_ids'] );
+			$product_ids          = array_filter( $product_ids );
+			$placeholders         = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
 			$base_where_clauses[] = "i.item_id IN ($placeholders)";
-			$where_values        = array_merge( $where_values, $product_ids );
+			$where_values         = array_merge( $where_values, $product_ids );
 		}
 
 		// Search filter (requires posts table join).
@@ -431,7 +431,7 @@ class Database_Items {
 			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		$count_results = $wpdb->get_results( $count_sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$count_results = $wpdb->get_results( $count_sql, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		$counts = array(
 			'running'  => 0,
@@ -519,7 +519,7 @@ class Database_Items {
 		$query_values   = array_merge( $where_values, array( $status, $limit, $offset ) );
 		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
-		return $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**
@@ -544,7 +544,7 @@ class Database_Items {
 			$where_values[] = sanitize_text_field( $args['subdivision'] );
 		}
 
-		// NEW: Add search value with LIKE wildcards.
+		// Add search value with LIKE wildcards.
 		if ( ! empty( $args['search'] ) ) {
 			global $wpdb;
 			$where_values[] = '%' . $wpdb->esc_like( sanitize_text_field( $args['search'] ) ) . '%';

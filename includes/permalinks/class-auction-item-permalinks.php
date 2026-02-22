@@ -213,7 +213,7 @@ class Auction_Item_Permalinks {
 			'top'
 		);
 
-		// Auction URL: /{auction_base}/{auction_slug}/
+		// Auction URL: /{auction_base}/{auction_slug}/.
 		add_rewrite_rule(
 			'^' . preg_quote( $auction_base, '/' ) . '/([^/]+)/?$',
 			'index.php?post_type=product&name=$matches[1]&' . self::QUERY_VAR_AUCTION_SLUG . '=$matches[1]',
@@ -295,20 +295,20 @@ class Auction_Item_Permalinks {
 
 		// If no parent, fallback to original permalink (avoid recursive get_permalink call).
 		if ( ! $parent_auction_id ) {
-			return $permalink ?: home_url( '?p=' . $post->ID );
+			return $permalink ? $permalink : home_url( '?p=' . $post->ID );
 		}
 
 		// Get parent auction post.
 		$parent_auction = get_post( $parent_auction_id );
 		if ( ! $parent_auction || 'product' !== $parent_auction->post_type ) {
 			// Invalid parent, use original permalink.
-			return $permalink ?: home_url( '?p=' . $post->ID );
+			return $permalink ? $permalink : home_url( '?p=' . $post->ID );
 		}
 
 		// Verify parent is actually an auction type.
 		$parent_product = wc_get_product( $parent_auction_id );
 		if ( ! $parent_product || Product_Auction::PRODUCT_TYPE !== $parent_product->get_type() ) {
-			return $permalink ?: home_url( '?p=' . $post->ID );
+			return $permalink ? $permalink : home_url( '?p=' . $post->ID );
 		}
 
 		$auction_base = self::get_auction_base();

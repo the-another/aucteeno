@@ -251,7 +251,8 @@ class Product_Item extends WC_Product_External {
 	 * @return string Sold at UTC datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_sold_at_utc( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_sold_at_utc', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_sold_at_utc', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -283,7 +284,8 @@ class Product_Item extends WC_Product_External {
 	 * @return string Sold at local datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_sold_at_local( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_sold_at_local', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_sold_at_local', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -403,7 +405,8 @@ class Product_Item extends WC_Product_External {
 	 * @return string Bidding starts at UTC datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_starts_at_utc( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_starts_at_utc', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_starts_at_utc', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -435,7 +438,8 @@ class Product_Item extends WC_Product_External {
 	 * @return string Bidding starts at local datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_starts_at_local( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_starts_at_local', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_starts_at_local', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -483,7 +487,8 @@ class Product_Item extends WC_Product_External {
 	 * @return string Bidding ends at UTC datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_ends_at_utc( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_ends_at_utc', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_ends_at_utc', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -515,7 +520,8 @@ class Product_Item extends WC_Product_External {
 	 * @return string Bidding ends at local datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_ends_at_local( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_ends_at_local', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_ends_at_local', $context );
+		return $value ? $value : '';
 	}
 
 	/**

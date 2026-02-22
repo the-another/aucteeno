@@ -104,7 +104,7 @@ class Container {
 			return $this->services[ $key ];
 		}
 
-		throw new Exception( sprintf( 'Service %s not found in container', $key ) );
+		throw new Exception( sprintf( 'Service %s not found in container', $key ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message is not rendered as HTML.
 	}
 
 	/**
@@ -169,7 +169,7 @@ class Container {
 	/**
 	 * Prevent unserialization of the instance.
 	 *
-	 * @throws Exception
+	 * @throws Exception Always, to prevent unserialization of the singleton.
 	 */
 	public function __wakeup() {
 		throw new Exception( 'Cannot unserialize singleton' );

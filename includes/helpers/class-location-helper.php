@@ -44,6 +44,7 @@ class Location_Helper {
 				'taxonomy'   => self::TAXONOMY,
 				'hide_empty' => false,
 				'parent'     => 0,
+				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'meta_query' => array(
 					array(
 						'key'   => 'code',
@@ -115,6 +116,7 @@ class Location_Helper {
 				'taxonomy'   => self::TAXONOMY,
 				'hide_empty' => false,
 				'parent'     => $country_term_id,
+				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'meta_query' => array(
 					array(
 						'key'   => 'code',

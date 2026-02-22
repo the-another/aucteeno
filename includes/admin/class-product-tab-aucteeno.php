@@ -398,7 +398,7 @@ class Product_Tab_Aucteeno {
 		global $post_type;
 
 		// Only enqueue on product edit pages.
-		if ( 'product' !== $post_type || 'post.php' !== $hook && 'post-new.php' !== $hook ) {
+		if ( 'product' !== $post_type || ( 'post.php' !== $hook && 'post-new.php' !== $hook ) ) {
 			return;
 		}
 
@@ -425,10 +425,6 @@ class Product_Tab_Aucteeno {
 		if ( class_exists( 'WooCommerce' ) ) {
 			wp_enqueue_script( 'select2' );
 			wp_enqueue_style( 'select2' );
-		} else {
-			// Fallback: Use WordPress core Select2 if WooCommerce is not available.
-			// WordPress doesn't include Select2 by default, so we'll rely on WooCommerce.
-			// If needed, we could enqueue a CDN version here.
 		}
 
 		// Enqueue auction search JavaScript.

@@ -187,7 +187,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Notice.
 	 */
 	public function get_notice( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_notice', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_notice', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -207,7 +208,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Bidding notice.
 	 */
 	public function get_bidding_notice( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_notice', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_notice', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -227,7 +229,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Directions.
 	 */
 	public function get_directions( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_directions', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_directions', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -247,7 +250,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Terms and conditions.
 	 */
 	public function get_terms_conditions( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_terms_conditions', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_terms_conditions', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -283,7 +287,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Bidding starts at UTC datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_starts_at_utc( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_starts_at_utc', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_starts_at_utc', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -315,7 +320,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Bidding starts at local datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_starts_at_local( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_starts_at_local', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_starts_at_local', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -363,7 +369,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Bidding ends at UTC datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_ends_at_utc( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_ends_at_utc', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_ends_at_utc', $context );
+		return $value ? $value : '';
 	}
 
 	/**
@@ -395,7 +402,8 @@ class Product_Auction extends WC_Product_External {
 	 * @return string Bidding ends at local datetime string (Y-m-d H:i:s format).
 	 */
 	public function get_bidding_ends_at_local( string $context = 'view' ): string {
-		return $this->get_prop( 'aucteeno_bidding_ends_at_local', $context ) ?: '';
+		$value = $this->get_prop( 'aucteeno_bidding_ends_at_local', $context );
+		return $value ? $value : '';
 	}
 
 	/**

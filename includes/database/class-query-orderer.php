@@ -112,19 +112,25 @@ class Query_Orderer {
 		}
 
 		// Flag this query for custom ordering.
+		// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 		$query->set( 'aucteeno_custom_order', true );
+		// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 		$query->set( 'aucteeno_order_type', Product_Item::PRODUCT_TYPE === $product_type ? 'items' : 'auctions' );
 
 		// Get ordered IDs and set post__in + orderby=post__in.
 		// This is simpler and more reliable than custom JOIN + GROUP BY.
 		$ordered_ids = $this->get_ordered_ids( $query );
 		if ( ! empty( $ordered_ids ) ) {
+			// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 			$query->set( 'post__in', $ordered_ids );
+			// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 			$query->set( 'orderby', 'post__in' );
 			// Store for found_posts calculation.
+			// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 			$query->set( 'aucteeno_ordered_ids', $ordered_ids );
 		} else {
 			// No results - set impossible condition.
+			// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 			$query->set( 'post__in', array( 0 ) );
 		}
 	}
@@ -178,6 +184,7 @@ class Query_Orderer {
 		}
 
 		// Cache the result.
+		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined
 		wp_cache_set( $cache_key, $ordered_ids, self::CACHE_GROUP, self::CACHE_TTL );
 
 		return $ordered_ids;
@@ -274,9 +281,10 @@ class Query_Orderer {
 			ordered.item_id ASC
 		LIMIT %d OFFSET %d";
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_col(
 			$wpdb->prepare(
-				$sql,
+				$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
 				$ttid,
 				$fetch_per_group,
 				$ttid,
@@ -379,9 +387,10 @@ class Query_Orderer {
 			ordered.auction_id ASC
 		LIMIT %d OFFSET %d";
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_col(
 			$wpdb->prepare(
-				$sql,
+				$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
 				$ttid,
 				$fetch_per_group,
 				$ttid,
@@ -413,6 +422,7 @@ class Query_Orderer {
 		if ( 'items' === $type ) {
 			$auction_id = $query->get( 'post_parent' );
 			if ( $auction_id > 0 ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table alias.
 				$conditions[] = $wpdb->prepare( "{$table_alias}.auction_id = %d", $auction_id );
 			}
 		}
@@ -426,6 +436,7 @@ class Query_Orderer {
 					// Location filtering via taxonomy - would need additional joins.
 					// For now, skip location taxonomy filtering in custom SQL.
 					// This will be handled by WP_Query's tax_query after our custom ordering.
+					continue;
 				}
 			}
 		}
@@ -491,9 +502,11 @@ class Query_Orderer {
 			LIMIT 1
 		) AS count_check";
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
 		$count = (int) $wpdb->get_var( $wpdb->prepare( $sql, $ttid ) );
 
 		// Cache the result.
+		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined
 		wp_cache_set( $cache_key, $count, self::CACHE_GROUP, self::COUNT_CACHE_TTL );
 
 		return $count;
@@ -515,6 +528,7 @@ class Query_Orderer {
 		global $wpdb;
 
 		// Get term_taxonomy_id directly without joins.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$ttid = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT tt.term_taxonomy_id
@@ -531,6 +545,7 @@ class Query_Orderer {
 
 		// Cache the result.
 		if ( $ttid > 0 ) {
+			// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined
 			wp_cache_set( $cache_key, $ttid, self::CACHE_GROUP, self::TTID_CACHE_TTL );
 		}
 
@@ -554,9 +569,11 @@ class Query_Orderer {
 			'per_page'   => $per_page,
 			'parent'     => $query->get( 'post_parent' ),
 			'search'     => $query->get( 's' ),
+			// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 			'tax_query'  => $query->get( 'tax_query' ),
 		);
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Required for cache key generation.
 		$key = 'aucteeno_ordered_' . md5( serialize( $filters ) ) . '_' . $suffix;
 		return $key;
 	}

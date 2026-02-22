@@ -463,6 +463,7 @@ class REST_Controller extends WP_REST_Controller {
 				'post_status'    => 'publish',
 				'posts_per_page' => $per_page,
 				'paged'          => $page,
+				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'tax_query'      => array(
 					array(
 						'taxonomy' => 'product_type',
@@ -535,6 +536,7 @@ class REST_Controller extends WP_REST_Controller {
 		// Render HTML for each auction using block template or fallback.
 		ob_start();
 		foreach ( $result['items'] as $item_data ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is pre-escaped HTML from render_card().
 			echo $this->render_card( $item_data, 'auctions', $block_template );
 		}
 		$html = ob_get_clean();
@@ -679,6 +681,7 @@ class REST_Controller extends WP_REST_Controller {
 				'post_status'    => 'publish',
 				'posts_per_page' => $per_page,
 				'paged'          => $page,
+				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'tax_query'      => array(
 					array(
 						'taxonomy' => 'product_type',
@@ -760,6 +763,7 @@ class REST_Controller extends WP_REST_Controller {
 		// Render HTML for each item using block template or fallback.
 		ob_start();
 		foreach ( $result['items'] as $item_data ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is pre-escaped HTML from render_card().
 			echo $this->render_card( $item_data, 'items', $block_template );
 		}
 		$html = ob_get_clean();
@@ -982,11 +986,11 @@ class REST_Controller extends WP_REST_Controller {
 			'/<a([^>]*)href=["\']([^"\']*)\?paged=(\d+)[^"\']*["\'](([^>]*)>)/i',
 			function ( $matches ) {
 				$before_href = $matches[1];
-				$base_href   = $matches[2]; // URL before ?paged=
+				$base_href   = $matches[2]; // URL before ?paged=.
 				$page_num    = $matches[3];
 				$after_attrs = $matches[5];
 				// Build URL with /page/X/?paged=X format.
-				$clean_href  = trailingslashit( $base_href ) . 'page/' . $page_num . '/?paged=' . $page_num;
+				$clean_href = trailingslashit( $base_href ) . 'page/' . $page_num . '/?paged=' . $page_num;
 				return '<a' . $before_href . 'href="' . esc_url( $clean_href ) . '"' . $after_attrs . ' data-wp-on--click="actions.loadPage" data-page="' . esc_attr( $page_num ) . '">';
 			},
 			$pagination

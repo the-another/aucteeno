@@ -55,7 +55,7 @@ class Aucteeno {
 	/**
 	 * Start the plugin initialization.
 	 *
-	 * @throws Exception
+	 * @throws Exception If a service cannot be registered or retrieved from the container.
 	 *
 	 * @since 1.0.0
 	 */
@@ -118,7 +118,7 @@ class Aucteeno {
 	/**
 	 * Register product types.
 	 *
-	 * @throws Exception
+	 * @throws Exception If product type services cannot be registered or instantiated.
 	 *
 	 * @since 1.0.0
 	 */
@@ -194,7 +194,7 @@ class Aucteeno {
 	/**
 	 * Register admin fields.
 	 *
-	 * @throws Exception
+	 * @throws Exception If admin field services cannot be registered or instantiated.
 	 *
 	 * @since 1.0.0
 	 */
@@ -276,7 +276,7 @@ class Aucteeno {
 	/**
 	 * Register settings.
 	 *
-	 * @throws Exception
+	 * @throws Exception If the settings service cannot be registered or instantiated.
 	 *
 	 * @since 1.0.0
 	 */
@@ -298,7 +298,7 @@ class Aucteeno {
 	/**
 	 * Register permalinks.
 	 *
-	 * @throws Exception
+	 * @throws Exception If the permalinks service cannot be registered or instantiated.
 	 *
 	 * @since 1.0.0
 	 */
@@ -319,7 +319,7 @@ class Aucteeno {
 	/**
 	 * Register breadcrumbs.
 	 *
-	 * @throws Exception
+	 * @throws Exception If the breadcrumbs service cannot be registered or instantiated.
 	 *
 	 * @since 1.0.0
 	 */
@@ -362,7 +362,7 @@ class Aucteeno {
 	 *
 	 * @return Admin\Custom_Fields_Auction|null Meta fields auction instance.
 	 *
-	 * @throws Exception
+	 * @throws Exception If the meta_fields_auction service is not found in the container.
 	 *
 	 * @since 1.0.0
 	 */
@@ -375,7 +375,7 @@ class Aucteeno {
 	 *
 	 * @return Admin\Custom_Fields_Item|null Meta fields item instance.
 	 *
-	 * @throws Exception
+	 * @throws Exception If the meta_fields_item service is not found in the container.
 	 *
 	 * @since 1.0.0
 	 */
@@ -393,7 +393,7 @@ class Aucteeno {
 	/**
 	 * Prevent unserialization of the instance.
 	 *
-	 * @throws Exception
+	 * @throws Exception Always, to prevent unserialization of the singleton.
 	 */
 	public function __wakeup() {
 		throw new Exception( 'Cannot unserialize singleton' );
