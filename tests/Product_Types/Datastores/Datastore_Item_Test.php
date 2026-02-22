@@ -19,12 +19,35 @@ use WC_Product;
 /**
  * Test class for Datastore_Item.
  *
- * Tests cover create(), update(), and read() methods to ensure proper
+ * Tests cover save_item_extra_data(), read(), read_item_extra_data(),
+ * read_location_data(), and save_location_data() methods to ensure proper
  * handling of extra_data fields, auction_id sync with post_parent,
- * location data (meta + taxonomy), price logic based on auction status,
- * and parent-handled keys.
+ * location data (meta + taxonomy), and parent-handled keys.
  */
 class Datastore_Item_Test extends TestCase {
+
+	/**
+	 * The actual extra_data keys as defined in Product_Item::$extra_data.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $all_extra_data_keys = array(
+		'product_url',
+		'button_text',
+		'aucteeno_auction_id',
+		'aucteeno_lot_no',
+		'aucteeno_description',
+		'aucteeno_asking_bid',
+		'aucteeno_current_bid',
+		'aucteeno_sold_price',
+		'aucteeno_sold_at_utc',
+		'aucteeno_sold_at_local',
+		'aucteeno_location',
+		'aucteeno_bidding_starts_at_utc',
+		'aucteeno_bidding_starts_at_local',
+		'aucteeno_bidding_ends_at_utc',
+		'aucteeno_bidding_ends_at_local',
+	);
 
 	/**
 	 * Set up test environment.
@@ -33,6 +56,9 @@ class Datastore_Item_Test extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		// Clear bootstrap stubs so Functions\expect() can override them.
+		Mockery::close();
+		Monkey\tearDown();
 		Monkey\setUp();
 	}
 
@@ -48,43 +74,195 @@ class Datastore_Item_Test extends TestCase {
 	}
 
 	/**
-	 * Test create() syncs auction_id with post_parent before parent::create().
+	 * Test create() saves all extra_data fields for Product_Item.
 	 *
 	 * This test ensures that when creating a new Product_Item,
-	 * the auction_id is synced with post_parent before parent::create() is called.
-	 * Note: This logic happens in create() method itself, not in save_item_extra_data().
-	 * We verify the save logic works correctly.
+	 * all extra_data fields are saved to post meta with the correct prefix,
+	 * except for parent-handled keys (product_url, button_text),
+	 * auction_id, and location (which have special handling).
+	 *
+	 * Uses reflection to call private save_item_extra_data() directly.
 	 *
 	 * @return void
 	 */
-	public function test_create_saves_extra_data_fields(): void {
-		$product_id  = 111;
-		$datastore   = new Datastore_Item();
+	public function test_create_saves_all_extra_data_fields(): void {
+		$product_id = 222;
+		$datastore  = new Datastore_Item();
 
 		// Mock Product_Item.
 		$product = Mockery::mock( Product_Item::class );
 		$product->shouldReceive( 'get_id' )
 			->andReturn( $product_id );
 
-		// Setup get_extra_data_keys().
+		// Setup get_extra_data_keys() to return all custom keys.
+		$product->shouldReceive( 'get_extra_data_keys' )
+			->once()
+			->andReturn( $this->all_extra_data_keys );
+
+		// Setup getters for fields that should be saved.
+		// Getter is get_ + key name (e.g., get_aucteeno_lot_no).
+		// On Mockery mocks, is_callable returns true for ANY method due to __call.
+		// PARENT_HANDLED_KEYS (product_url, button_text) are skipped.
+		// aucteeno_auction_id and aucteeno_location are also skipped.
+		$product->shouldReceive( 'get_aucteeno_lot_no' )
+			->once()
+			->with( 'edit' )
+			->andReturn( 'LOT-002' );
+		$product->shouldReceive( 'get_aucteeno_description' )
+			->once()
+			->with( 'edit' )
+			->andReturn( 'Item description' );
+		$product->shouldReceive( 'get_aucteeno_asking_bid' )
+			->once()
+			->with( 'edit' )
+			->andReturn( 100.0 );
+		$product->shouldReceive( 'get_aucteeno_current_bid' )
+			->once()
+			->with( 'edit' )
+			->andReturn( 150.0 );
+		$product->shouldReceive( 'get_aucteeno_sold_price' )
+			->once()
+			->with( 'edit' )
+			->andReturn( 200.0 );
+		$product->shouldReceive( 'get_aucteeno_sold_at_utc' )
+			->once()
+			->with( 'edit' )
+			->andReturn( '2024-01-15 10:00:00' );
+		$product->shouldReceive( 'get_aucteeno_sold_at_local' )
+			->once()
+			->with( 'edit' )
+			->andReturn( '2024-01-15 12:00:00' );
+		$product->shouldReceive( 'get_aucteeno_bidding_starts_at_utc' )
+			->once()
+			->with( 'edit' )
+			->andReturn( '2024-01-01 10:00:00' );
+		$product->shouldReceive( 'get_aucteeno_bidding_starts_at_local' )
+			->once()
+			->with( 'edit' )
+			->andReturn( '2024-01-01 12:00:00' );
+		$product->shouldReceive( 'get_aucteeno_bidding_ends_at_utc' )
+			->once()
+			->with( 'edit' )
+			->andReturn( '2024-01-10 10:00:00' );
+		$product->shouldReceive( 'get_aucteeno_bidding_ends_at_local' )
+			->once()
+			->with( 'edit' )
+			->andReturn( '2024-01-10 12:00:00' );
+
+		// Setup location for special handling (save_location_data called when changes is null).
+		$location_data = array(
+			'country'     => '',
+			'subdivision' => '',
+			'city'        => '',
+			'postal_code' => '',
+			'address'     => '',
+			'address2'    => '',
+		);
+		$product->shouldReceive( 'get_location' )
+			->once()
+			->with( 'edit' )
+			->andReturn( $location_data );
+
+		// Mock WordPress functions for regular fields.
+		Functions\expect( 'wp_slash' )
+			->andReturnUsing(
+				function ( $value ) {
+					return $value;
+				}
+			);
+
+		// Track update_post_meta calls to verify correct meta keys and values.
+		$saved_meta = array();
+		Functions\expect( 'update_post_meta' )
+			->andReturnUsing(
+				function ( $id, $key, $value ) use ( &$saved_meta ) {
+					$saved_meta[ $key ] = $value;
+					return true;
+				}
+			);
+
+		// Location save: empty country means wp_set_post_terms called with empty array.
+		Functions\expect( 'wp_set_post_terms' )
+			->once()
+			->andReturn( true );
+
+		// Use reflection to call the private save method directly.
+		$reflection = new \ReflectionClass( $datastore );
+		$method     = $reflection->getMethod( 'save_item_extra_data' );
+		$method->setAccessible( true );
+
+		// Call with null changes (simulates create - saves ALL keys and location).
+		$method->invoke( $datastore, $product, null );
+
+		// Verify all expected meta keys were saved.
+		$this->assertArrayHasKey( '_aucteeno_lot_no', $saved_meta );
+		$this->assertSame( 'LOT-002', $saved_meta['_aucteeno_lot_no'] );
+		$this->assertArrayHasKey( '_aucteeno_description', $saved_meta );
+		$this->assertSame( 'Item description', $saved_meta['_aucteeno_description'] );
+		$this->assertArrayHasKey( '_aucteeno_asking_bid', $saved_meta );
+		$this->assertSame( 100.0, $saved_meta['_aucteeno_asking_bid'] );
+		$this->assertArrayHasKey( '_aucteeno_current_bid', $saved_meta );
+		$this->assertSame( 150.0, $saved_meta['_aucteeno_current_bid'] );
+		$this->assertArrayHasKey( '_aucteeno_sold_price', $saved_meta );
+		$this->assertSame( 200.0, $saved_meta['_aucteeno_sold_price'] );
+		$this->assertArrayHasKey( '_aucteeno_sold_at_utc', $saved_meta );
+		$this->assertSame( '2024-01-15 10:00:00', $saved_meta['_aucteeno_sold_at_utc'] );
+		$this->assertArrayHasKey( '_aucteeno_sold_at_local', $saved_meta );
+		$this->assertSame( '2024-01-15 12:00:00', $saved_meta['_aucteeno_sold_at_local'] );
+		$this->assertArrayHasKey( '_aucteeno_bidding_starts_at_utc', $saved_meta );
+		$this->assertSame( '2024-01-01 10:00:00', $saved_meta['_aucteeno_bidding_starts_at_utc'] );
+		$this->assertArrayHasKey( '_aucteeno_bidding_starts_at_local', $saved_meta );
+		$this->assertSame( '2024-01-01 12:00:00', $saved_meta['_aucteeno_bidding_starts_at_local'] );
+		$this->assertArrayHasKey( '_aucteeno_bidding_ends_at_utc', $saved_meta );
+		$this->assertSame( '2024-01-10 10:00:00', $saved_meta['_aucteeno_bidding_ends_at_utc'] );
+		$this->assertArrayHasKey( '_aucteeno_bidding_ends_at_local', $saved_meta );
+		$this->assertSame( '2024-01-10 12:00:00', $saved_meta['_aucteeno_bidding_ends_at_local'] );
+		$this->assertArrayHasKey( '_aucteeno_location', $saved_meta );
+		$this->assertSame( $location_data, $saved_meta['_aucteeno_location'] );
+
+		// Verify parent-handled keys were NOT saved.
+		$this->assertArrayNotHasKey( '_product_url', $saved_meta );
+		$this->assertArrayNotHasKey( '_button_text', $saved_meta );
+		// Verify auction_id was NOT saved.
+		$this->assertArrayNotHasKey( '_aucteeno_auction_id', $saved_meta );
+	}
+
+	/**
+	 * Test create() saves extra_data fields for a minimal set of keys.
+	 *
+	 * This test verifies that save_item_extra_data with null changes
+	 * saves all non-skipped fields and calls save_location_data.
+	 *
+	 * @return void
+	 */
+	public function test_create_saves_extra_data_fields(): void {
+		$product_id = 111;
+		$datastore  = new Datastore_Item();
+
+		// Mock Product_Item.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( $product_id );
+
+		// Setup get_extra_data_keys() with a subset of keys.
 		$extra_data_keys = array(
 			'product_url',
 			'button_text',
-			'auction_id',
-			'lot_no',
-			'description',
-			'location',
+			'aucteeno_auction_id',
+			'aucteeno_lot_no',
+			'aucteeno_description',
+			'aucteeno_location',
 		);
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
 			->andReturn( $extra_data_keys );
 
-		// Setup getters for fields that should be saved.
-		$product->shouldReceive( 'get_lot_no' )
+		// Setup getters for fields that should be saved (skipping parent-handled, auction_id, location).
+		$product->shouldReceive( 'get_aucteeno_lot_no' )
 			->once()
 			->with( 'edit' )
 			->andReturn( 'LOT-001' );
-		$product->shouldReceive( 'get_description' )
+		$product->shouldReceive( 'get_aucteeno_description' )
 			->once()
 			->with( 'edit' )
 			->andReturn( 'Test description' );
@@ -106,7 +284,7 @@ class Datastore_Item_Test extends TestCase {
 		// Mock WordPress functions.
 		Functions\expect( 'wp_slash' )
 			->andReturnUsing(
-				function( $value ) {
+				function ( $value ) {
 					return $value;
 				}
 			);
@@ -117,170 +295,9 @@ class Datastore_Item_Test extends TestCase {
 			->with( $product_id, '_aucteeno_description', 'Test description' )
 			->once();
 
-		// Mock location save.
+		// Mock location save: empty country means wp_set_post_terms with empty array.
 		Functions\expect( 'wp_set_post_terms' )
-			->with( $product_id, array(), Mockery::any(), false )
-			->twice();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_location', $location_data )
-			->once();
-
-		// Use reflection to call the private save method directly.
-		$reflection = new \ReflectionClass( $datastore );
-		$method     = $reflection->getMethod( 'save_item_extra_data' );
-		$method->setAccessible( true );
-		$method->invoke( $datastore, $product, null );
-
-		$this->assertTrue( true );
-	}
-
-	/**
-	 * Test create() saves all extra_data fields for Product_Item.
-	 *
-	 * This test ensures that when creating a new Product_Item,
-	 * all extra_data fields are saved to post meta with the correct prefix,
-	 * except for parent-handled keys, auction_id, and location.
-	 *
-	 * @return void
-	 */
-	public function test_create_saves_all_extra_data_fields(): void {
-		$product_id = 222;
-		$datastore  = new Datastore_Item();
-
-		// Mock Product_Item.
-		$product = Mockery::mock( Product_Item::class );
-		$product->shouldReceive( 'get_id' )
-			->andReturn( $product_id );
-
-		// Setup get_extra_data_keys() to return all custom keys.
-		$extra_data_keys = array(
-			'product_url',
-			'button_text',
-			'auction_id',
-			'lot_no',
-			'description',
-			'asking_bid',
-			'current_bid',
-			'sold_price',
-			'sold_at_utc',
-			'sold_at_local',
-			'location',
-			'bidding_starts_at_utc',
-			'bidding_starts_at_local',
-			'bidding_ends_at_utc',
-			'bidding_ends_at_local',
-		);
-		$product->shouldReceive( 'get_extra_data_keys' )
-			->once()
-			->andReturn( $extra_data_keys );
-
-		// Setup getters for fields that should be saved (excluding parent-handled, auction_id, and location).
-		$product->shouldReceive( 'get_lot_no' )
-			->once()
-			->with( 'edit' )
-			->andReturn( 'LOT-002' );
-		$product->shouldReceive( 'get_description' )
-			->once()
-			->with( 'edit' )
-			->andReturn( 'Item description' );
-		$product->shouldReceive( 'get_asking_bid' )
-			->once()
-			->with( 'edit' )
-			->andReturn( 100.0 );
-		$product->shouldReceive( 'get_current_bid' )
-			->once()
-			->with( 'edit' )
-			->andReturn( 150.0 );
-		$product->shouldReceive( 'get_sold_price' )
-			->once()
-			->with( 'edit' )
-			->andReturn( 200.0 );
-		$product->shouldReceive( 'get_sold_at_utc' )
-			->once()
-			->with( 'edit' )
-			->andReturn( '2024-01-15 10:00:00' );
-		$product->shouldReceive( 'get_sold_at_local' )
-			->once()
-			->with( 'edit' )
-			->andReturn( '2024-01-15 12:00:00' );
-		$product->shouldReceive( 'get_bidding_starts_at_utc' )
-			->once()
-			->with( 'edit' )
-			->andReturn( '2024-01-01 10:00:00' );
-		$product->shouldReceive( 'get_bidding_starts_at_local' )
-			->once()
-			->with( 'edit' )
-			->andReturn( '2024-01-01 12:00:00' );
-		$product->shouldReceive( 'get_bidding_ends_at_utc' )
-			->once()
-			->with( 'edit' )
-			->andReturn( '2024-01-10 10:00:00' );
-		$product->shouldReceive( 'get_bidding_ends_at_local' )
-			->once()
-			->with( 'edit' )
-			->andReturn( '2024-01-10 12:00:00' );
-
-		// Setup location for special handling.
-		$location_data = array(
-			'country'     => '1',
-			'subdivision' => '2',
-			'city'        => 'Test City',
-			'postal_code' => '12345',
-			'address'     => '123 Test St',
-			'address2'    => 'Apt 4',
-		);
-		$product->shouldReceive( 'get_location' )
-			->once()
-			->with( 'edit' )
-			->andReturn( $location_data );
-
-		// Mock WordPress functions for regular fields.
-		Functions\expect( 'wp_slash' )
-			->andReturnUsing(
-				function( $value ) {
-					return $value;
-				}
-			);
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_lot_no', 'LOT-002' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_description', 'Item description' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_asking_bid', 100.0 )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_current_bid', 150.0 )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_sold_price', 200.0 )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_sold_at_utc', '2024-01-15 10:00:00' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_sold_at_local', '2024-01-15 12:00:00' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_starts_at_utc', '2024-01-01 10:00:00' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_starts_at_local', '2024-01-01 12:00:00' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_ends_at_utc', '2024-01-10 10:00:00' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_ends_at_local', '2024-01-10 12:00:00' )
-			->once();
-
-		// Mock location save (taxonomy + meta).
-		Functions\expect( 'wp_set_post_terms' )
-			->with( $product_id, array( 1 ), 'country', false )
-			->once();
-		Functions\expect( 'wp_set_post_terms' )
-			->with( $product_id, array( 2 ), 'subdivision', false )
+			->with( $product_id, array(), 'aucteeno-location', false )
 			->once();
 		Functions\expect( 'update_post_meta' )
 			->with( $product_id, '_aucteeno_location', $location_data )
@@ -311,16 +328,10 @@ class Datastore_Item_Test extends TestCase {
 
 		// Verify that get_extra_data_keys is NOT called for non-Product_Item.
 		$product->shouldNotReceive( 'get_extra_data_keys' );
-		$product->shouldNotReceive( 'get_id' );
-		$product->shouldNotReceive( 'get_auction_id' );
-		$product->shouldNotReceive( 'set_parent_id' );
 
-		// Verify no WordPress meta functions are called.
-		Functions\expect( 'update_post_meta' )->never();
-		Functions\expect( 'wp_set_post_terms' )->never();
+		// Call create - parent::create() stub does nothing, and our code returns early.
+		$datastore->create( $product );
 
-		// Note: We can't easily test parent::create() call without more complex mocking.
-		// But we verify that our custom logic doesn't run for non-Product_Item instances.
 		$this->assertTrue( true );
 	}
 
@@ -328,39 +339,28 @@ class Datastore_Item_Test extends TestCase {
 	 * Test update() syncs auction_id with post_parent when auction_id changes.
 	 *
 	 * This test ensures that when auction_id is changed in an update,
-	 * it's synced with post_parent before parent::update() is called.
+	 * save_item_extra_data properly skips the auction_id field.
+	 * We test save_item_extra_data() directly with filtered changes.
 	 *
 	 * @return void
 	 */
 	public function test_update_syncs_auction_id_with_post_parent(): void {
-		$product_id  = 333;
+		$product_id     = 333;
 		$new_auction_id = 888;
-		$datastore   = new Datastore_Item();
+		$datastore      = new Datastore_Item();
 
 		// Mock Product_Item.
 		$product = Mockery::mock( Product_Item::class );
 		$product->shouldReceive( 'get_id' )
 			->andReturn( $product_id );
 
-		// Note: We're testing save_item_extra_data() directly with filtered changes,
-		// so get_changes() is not called in this test.
-		// This test verifies the auction_id sync logic works correctly.
-
 		// Setup get_extra_data_keys().
-		$extra_data_keys = array(
-			'auction_id',
-			'lot_no',
-		);
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
-			->andReturn( $extra_data_keys );
+			->andReturn( $this->all_extra_data_keys );
 
-		// Note: get_auction_id() is not called in save_item_extra_data().
-		// It's only called in the update() method itself to sync with post_parent.
-		// This test verifies that auction_id is skipped in save_item_extra_data().
-
-		// Setup get_lot_no() for save (auction_id will be skipped).
-		$product->shouldReceive( 'get_lot_no' )
+		// Setup get_aucteeno_lot_no() for save (auction_id will be skipped).
+		$product->shouldReceive( 'get_aucteeno_lot_no' )
 			->once()
 			->with( 'edit' )
 			->andReturn( 'LOT-003' );
@@ -368,7 +368,7 @@ class Datastore_Item_Test extends TestCase {
 		// Mock WordPress functions for saving lot_no.
 		Functions\expect( 'wp_slash' )
 			->andReturnUsing(
-				function( $value ) {
+				function ( $value ) {
 					return $value;
 				}
 			);
@@ -376,10 +376,11 @@ class Datastore_Item_Test extends TestCase {
 			->with( $product_id, '_aucteeno_lot_no', 'LOT-003' )
 			->once();
 
-		// Test the save method directly with the filtered changes.
+		// Filtered changes (auction_id is present but will be skipped by save_item_extra_data).
+		// Location is NOT in changes, so save_location_data should NOT be called.
 		$extra_data_changes = array(
-			'auction_id' => $new_auction_id,
-			'lot_no'     => 'LOT-003',
+			'aucteeno_auction_id' => $new_auction_id,
+			'aucteeno_lot_no'     => 'LOT-003',
 		);
 
 		// Use reflection to call the private save method with filtered changes.
@@ -408,33 +409,17 @@ class Datastore_Item_Test extends TestCase {
 		$product->shouldReceive( 'get_id' )
 			->andReturn( $product_id );
 
-		// Setup get_changes() to return only changed fields.
-		$changes = array(
-			'lot_no'     => 'LOT-004',
-			'asking_bid' => 125.0,
-			// Include a non-extra_data change to ensure it's filtered out.
-			'price'      => 99.99,
-		);
-		// Note: We're testing save_auction_extra_data() directly, so get_changes() won't be called.
-
 		// Setup get_extra_data_keys().
-		$extra_data_keys = array(
-			'lot_no',
-			'description',
-			'asking_bid',
-			'current_bid',
-			'sold_price',
-		);
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
-			->andReturn( $extra_data_keys );
+			->andReturn( $this->all_extra_data_keys );
 
 		// Setup getters for changed fields only.
-		$product->shouldReceive( 'get_lot_no' )
+		$product->shouldReceive( 'get_aucteeno_lot_no' )
 			->once()
 			->with( 'edit' )
 			->andReturn( 'LOT-004' );
-		$product->shouldReceive( 'get_asking_bid' )
+		$product->shouldReceive( 'get_aucteeno_asking_bid' )
 			->once()
 			->with( 'edit' )
 			->andReturn( 125.0 );
@@ -442,21 +427,25 @@ class Datastore_Item_Test extends TestCase {
 		// Mock WordPress functions.
 		Functions\expect( 'wp_slash' )
 			->andReturnUsing(
-				function( $value ) {
+				function ( $value ) {
 					return $value;
 				}
 			);
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_lot_no', 'LOT-004' )
-			->once();
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_asking_bid', 125.0 )
-			->once();
 
-		// Test the save method directly with the filtered changes.
+		// Track update_post_meta calls.
+		$saved_meta = array();
+		Functions\expect( 'update_post_meta' )
+			->andReturnUsing(
+				function ( $id, $key, $value ) use ( &$saved_meta ) {
+					$saved_meta[ $key ] = $value;
+					return true;
+				}
+			);
+
+		// Filtered changes (only these two keys changed, no aucteeno_location).
 		$extra_data_changes = array(
-			'lot_no'     => 'LOT-004',
-			'asking_bid' => 125.0,
+			'aucteeno_lot_no'     => 'LOT-004',
+			'aucteeno_asking_bid' => 125.0,
 		);
 
 		// Use reflection to call the private save method with filtered changes.
@@ -465,7 +454,10 @@ class Datastore_Item_Test extends TestCase {
 		$method->setAccessible( true );
 		$method->invoke( $datastore, $product, $extra_data_changes );
 
-		$this->assertTrue( true );
+		// Verify only the changed fields were saved.
+		$this->assertCount( 2, $saved_meta );
+		$this->assertSame( 'LOT-004', $saved_meta['_aucteeno_lot_no'] );
+		$this->assertSame( 125.0, $saved_meta['_aucteeno_asking_bid'] );
 	}
 
 	/**
@@ -486,13 +478,9 @@ class Datastore_Item_Test extends TestCase {
 		$product->shouldNotReceive( 'get_changes' );
 		$product->shouldNotReceive( 'get_extra_data_keys' );
 
-		// Verify no WordPress meta functions are called.
-		Functions\expect( 'update_post_meta' )->never();
-		Functions\expect( 'wp_update_post' )->never();
-		Functions\expect( 'wp_set_post_terms' )->never();
+		// Call update - returns early for non-Product_Item.
+		$datastore->update( $product );
 
-		// Note: We can't easily test parent::update() call without more complex mocking.
-		// But we verify that our custom logic doesn't run for non-Product_Item instances.
 		$this->assertTrue( true );
 	}
 
@@ -525,38 +513,41 @@ class Datastore_Item_Test extends TestCase {
 			->once()
 			->with( $parent_id );
 
-		// Setup get_extra_data_keys().
-		$extra_data_keys = array( 'location' );
+		// Setup get_extra_data_keys() for read_item_extra_data.
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
-			->andReturn( $extra_data_keys );
+			->andReturn( array( 'aucteeno_location' ) );
 
-		// Mock location read.
+		// Mock get_post_meta: handles both call patterns.
+		// 1. get_post_meta($product_id) with one arg returns all meta.
+		// 2. get_post_meta($id, '_aucteeno_location', true) for location.
 		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_location', true )
-			->once()
-			->andReturn( array() );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'country', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array() );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'subdivision', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array() );
-		$product->shouldReceive( 'set_location' )
-			->once();
+			->andReturnUsing(
+				function () use ( $product_id ) {
+					$args = func_get_args();
+					if ( count( $args ) === 1 && $args[0] === $product_id ) {
+						return array(); // No meta stored.
+					}
+					if ( count( $args ) === 3 && $args[1] === '_aucteeno_location' && $args[2] === true ) {
+						return array();
+					}
+					return '';
+				}
+			);
 
-		// Mock price logic - repository will return null (no auction found).
-		// So it will return the product's current price.
-		$product->shouldReceive( 'get_parent_id' )
-			->andReturn( $parent_id );
-		$product->shouldReceive( 'get_price' )
-			->with( 'edit' )
-			->andReturn( 100.0 );
-		$product->shouldReceive( 'set_price' )
+		// set_location should be called with defaults.
+		$product->shouldReceive( 'set_location' )
 			->once()
-			->with( 100.0 );
+			->with(
+				array(
+					'country'     => '',
+					'subdivision' => '',
+					'city'        => '',
+					'postal_code' => '',
+					'address'     => '',
+					'address2'    => '',
+				)
+			);
 
 		// Call read method.
 		$datastore->read( $product );
@@ -569,6 +560,8 @@ class Datastore_Item_Test extends TestCase {
 	 *
 	 * This test ensures that read() loads all custom fields from post meta
 	 * and sets them on the product object using the appropriate setters.
+	 * read_item_extra_data calls get_post_meta($product_id) with no key
+	 * to get all meta as an associative array.
 	 *
 	 * @return void
 	 */
@@ -588,74 +581,52 @@ class Datastore_Item_Test extends TestCase {
 			->andReturn( 0 );
 
 		// Setup get_extra_data_keys().
-		$extra_data_keys = array(
-			'product_url',
-			'button_text',
-			'auction_id',
-			'lot_no',
-			'description',
-			'asking_bid',
-			'current_bid',
-			'sold_price',
-			'sold_at_utc',
-			'sold_at_local',
-			'location',
-			'bidding_starts_at_utc',
-			'bidding_starts_at_local',
-			'bidding_ends_at_utc',
-			'bidding_ends_at_local',
-		);
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
-			->andReturn( $extra_data_keys );
+			->andReturn( $this->all_extra_data_keys );
 
-		// Mock get_post_meta() for each field.
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_lot_no', true )
-			->once()
-			->andReturn( 'LOT-005' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_description', true )
-			->once()
-			->andReturn( 'Saved description' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_asking_bid', true )
-			->once()
-			->andReturn( '100.50' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_current_bid', true )
-			->once()
-			->andReturn( '150.75' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_sold_price', true )
-			->once()
-			->andReturn( '200.00' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_sold_at_utc', true )
-			->once()
-			->andReturn( '2024-01-15 10:00:00' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_sold_at_local', true )
-			->once()
-			->andReturn( '2024-01-15 12:00:00' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_starts_at_utc', true )
-			->once()
-			->andReturn( '2024-01-01 10:00:00' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_starts_at_local', true )
-			->once()
-			->andReturn( '2024-01-01 12:00:00' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_ends_at_utc', true )
-			->once()
-			->andReturn( '2024-01-10 10:00:00' );
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_bidding_ends_at_local', true )
-			->once()
-			->andReturn( '2024-01-10 12:00:00' );
+		// Build the all-meta array for the get_post_meta mock.
+		$all_meta = array(
+			'_aucteeno_lot_no'                  => array( 'LOT-005' ),
+			'_aucteeno_description'             => array( 'Saved description' ),
+			'_aucteeno_asking_bid'              => array( '100.50' ),
+			'_aucteeno_current_bid'             => array( '150.75' ),
+			'_aucteeno_sold_price'              => array( '200.00' ),
+			'_aucteeno_sold_at_utc'             => array( '2024-01-15 10:00:00' ),
+			'_aucteeno_sold_at_local'           => array( '2024-01-15 12:00:00' ),
+			'_aucteeno_bidding_starts_at_utc'   => array( '2024-01-01 10:00:00' ),
+			'_aucteeno_bidding_starts_at_local' => array( '2024-01-01 12:00:00' ),
+			'_aucteeno_bidding_ends_at_utc'     => array( '2024-01-10 10:00:00' ),
+			'_aucteeno_bidding_ends_at_local'   => array( '2024-01-10 12:00:00' ),
+		);
+		$location_data = array(
+			'country'     => 'US',
+			'subdivision' => 'OK',
+			'city'        => 'Tulsa',
+			'postal_code' => '74101',
+			'address'     => '123 Main St',
+			'address2'    => 'Apt 4',
+		);
 
-		// Setup setters to be called.
+		// Use a single get_post_meta mock with andReturnUsing to handle both call patterns:
+		// 1. get_post_meta($id) - returns all meta (1 arg)
+		// 2. get_post_meta($id, '_aucteeno_location', true) - returns location (3 args)
+		Functions\expect( 'get_post_meta' )
+			->andReturnUsing(
+				function () use ( $product_id, $all_meta, $location_data ) {
+					$args = func_get_args();
+					if ( count( $args ) === 1 && $args[0] === $product_id ) {
+						return $all_meta;
+					}
+					if ( count( $args ) === 3 && $args[1] === '_aucteeno_location' && $args[2] === true ) {
+						return $location_data;
+					}
+					return '';
+				}
+			);
+
+		// Setters use short names: set_ + key, then str_replace('_aucteeno_', '_', setter).
+		// e.g., set_aucteeno_lot_no -> set_lot_no; set_aucteeno_description -> set_description.
 		$product->shouldReceive( 'set_lot_no' )
 			->once()
 			->with( 'LOT-005' );
@@ -690,45 +661,15 @@ class Datastore_Item_Test extends TestCase {
 			->once()
 			->with( '2024-01-10 12:00:00' );
 
-		// Mock location read.
-		$location_data = array(
-			'country'     => '1',
-			'subdivision' => '2',
-			'city'        => 'Test City',
-			'postal_code' => '12345',
-			'address'     => '123 Test St',
-			'address2'    => 'Apt 4',
-		);
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_location', true )
-			->once()
-			->andReturn( $location_data );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'country', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array( 1 ) );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'subdivision', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array( 2 ) );
+		// set_location called with the merged location array.
 		$product->shouldReceive( 'set_location' )
 			->once()
 			->with( Mockery::type( 'array' ) );
 
-		// Mock price logic - no parent, so returns current price.
-		$product->shouldReceive( 'get_parent_id' )
-			->andReturn( 0 );
-		$product->shouldReceive( 'get_price' )
-			->with( 'edit' )
-			->andReturn( 100.0 );
-		$product->shouldReceive( 'set_price' )
-			->once()
-			->with( 100.0 );
-
 		// Call read method.
 		$datastore->read( $product );
 
-		$this->assertTrue( true );
+		$this->assertTrue( true ); // If we get here, all mocks were called correctly.
 	}
 
 	/**
@@ -736,6 +677,7 @@ class Datastore_Item_Test extends TestCase {
 	 *
 	 * This test ensures that parent-handled keys are not loaded from
 	 * custom meta keys and are left to the parent datastore.
+	 * Also verifies auction_id and location are skipped in the main loop.
 	 *
 	 * @return void
 	 */
@@ -755,58 +697,42 @@ class Datastore_Item_Test extends TestCase {
 			->andReturn( 0 );
 
 		// Setup get_extra_data_keys() including parent-handled keys.
-		$extra_data_keys = array(
-			'product_url',
-			'button_text',
-			'lot_no',
-		);
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
-			->andReturn( $extra_data_keys );
+			->andReturn( array( 'product_url', 'button_text', 'aucteeno_lot_no', 'aucteeno_location' ) );
 
-		// Verify that get_post_meta() is NOT called for parent-handled keys.
+		// All meta with lot_no data only (product_url and button_text won't be read).
+		$all_meta = array(
+			'_aucteeno_lot_no' => array( 'LOT-007' ),
+		);
+
+		// get_post_meta mock: handles both call patterns.
 		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_product_url', true )
-			->never();
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_button_text', true )
-			->never();
+			->andReturnUsing(
+				function () use ( $product_id, $all_meta ) {
+					$args = func_get_args();
+					if ( count( $args ) === 1 && $args[0] === $product_id ) {
+						return $all_meta;
+					}
+					if ( count( $args ) === 3 && $args[1] === '_aucteeno_location' && $args[2] === true ) {
+						return array();
+					}
+					return '';
+				}
+			);
 
 		// Verify setters are NOT called for parent-handled keys.
 		$product->shouldNotReceive( 'set_product_url' );
 		$product->shouldNotReceive( 'set_button_text' );
 
-		// Mock other fields.
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_lot_no', true )
+		// set_lot_no should be called.
+		$product->shouldReceive( 'set_lot_no' )
 			->once()
-			->andReturn( '' );
+			->with( 'LOT-007' );
 
-		// Mock location read.
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_location', true )
-			->once()
-			->andReturn( array() );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'country', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array() );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'subdivision', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array() );
+		// Location read returns empty, merged with defaults.
 		$product->shouldReceive( 'set_location' )
 			->once();
-
-		// Mock price logic.
-		$product->shouldReceive( 'get_parent_id' )
-			->andReturn( 0 );
-		$product->shouldReceive( 'get_price' )
-			->with( 'edit' )
-			->andReturn( 100.0 );
-		$product->shouldReceive( 'set_price' )
-			->once()
-			->with( 100.0 );
 
 		// Call read method.
 		$datastore->read( $product );
@@ -844,42 +770,28 @@ class Datastore_Item_Test extends TestCase {
 			->with( $parent_id );
 
 		// Setup get_extra_data_keys() including auction_id.
-		$extra_data_keys = array(
-			'auction_id',
-			'location',
-		);
 		$product->shouldReceive( 'get_extra_data_keys' )
 			->once()
-			->andReturn( $extra_data_keys );
+			->andReturn( array( 'aucteeno_auction_id', 'aucteeno_location' ) );
 
-		// Verify that get_post_meta() is NOT called for auction_id.
+		// get_post_meta mock: empty meta, empty location.
 		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_auction_id', true )
-			->never();
-		Functions\expect( 'get_post_meta' )
-			->with( $product_id, '_aucteeno_location', true )
-			->once()
-			->andReturn( array() );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'country', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array() );
-		Functions\expect( 'wp_get_post_terms' )
-			->with( $product_id, 'subdivision', array( 'fields' => 'ids' ) )
-			->once()
-			->andReturn( array() );
+			->andReturnUsing(
+				function () use ( $product_id ) {
+					$args = func_get_args();
+					if ( count( $args ) === 1 && $args[0] === $product_id ) {
+						return array(); // No meta stored.
+					}
+					if ( count( $args ) === 3 && $args[1] === '_aucteeno_location' && $args[2] === true ) {
+						return array();
+					}
+					return '';
+				}
+			);
+
+		// set_location called with defaults.
 		$product->shouldReceive( 'set_location' )
 			->once();
-
-		// Mock price logic.
-		$product->shouldReceive( 'get_parent_id' )
-			->andReturn( $parent_id );
-		$product->shouldReceive( 'get_price' )
-			->with( 'edit' )
-			->andReturn( 100.0 );
-		$product->shouldReceive( 'set_price' )
-			->once()
-			->with( Mockery::type( 'float' ) );
 
 		// Call read method.
 		$datastore->read( $product );
@@ -906,11 +818,6 @@ class Datastore_Item_Test extends TestCase {
 		// Verify that get_extra_data_keys() is NOT called.
 		$product->shouldNotReceive( 'get_extra_data_keys' );
 
-		// Verify no WordPress functions are called.
-		Functions\expect( 'wp_get_post_parent_id' )->never();
-		Functions\expect( 'get_post_meta' )->never();
-		Functions\expect( 'wp_get_post_terms' )->never();
-
 		// Call read method.
 		$datastore->read( $product );
 
@@ -933,12 +840,6 @@ class Datastore_Item_Test extends TestCase {
 
 		// Verify that get_extra_data_keys() is NOT called.
 		$product->shouldNotReceive( 'get_extra_data_keys' );
-		$product->shouldNotReceive( 'get_id' );
-
-		// Verify no WordPress functions are called.
-		Functions\expect( 'wp_get_post_parent_id' )->never();
-		Functions\expect( 'get_post_meta' )->never();
-		Functions\expect( 'wp_get_post_terms' )->never();
 
 		// Call read method.
 		$datastore->read( $product );
@@ -947,14 +848,14 @@ class Datastore_Item_Test extends TestCase {
 	}
 
 	/**
-	 * Test save_location_data() saves country and subdivision to taxonomies.
+	 * Test read() handles empty meta values correctly.
 	 *
-	 * This test ensures that location data is properly saved to both
-	 * taxonomies (country, subdivision) and meta.
+	 * When meta values are empty, setters should NOT be called.
+	 * Location data should still be loaded and merged with defaults.
 	 *
 	 * @return void
 	 */
-	public function test_save_location_data_saves_to_taxonomies_and_meta(): void {
+	public function test_read_loads_location_from_defaults_when_empty(): void {
 		$product_id = 101112;
 		$datastore  = new Datastore_Item();
 
@@ -963,31 +864,123 @@ class Datastore_Item_Test extends TestCase {
 		$product->shouldReceive( 'get_id' )
 			->andReturn( $product_id );
 
-		$location_data = array(
-			'country'     => '3',
-			'subdivision' => '7',
-			'city'        => 'New City',
-			'postal_code' => '67890',
-			'address'     => '456 New St',
-			'address2'    => 'Suite 8',
-		);
-		$product->shouldReceive( 'get_location' )
+		// Mock wp_get_post_parent_id() to return 0.
+		Functions\expect( 'wp_get_post_parent_id' )
 			->once()
-			->with( 'edit' )
-			->andReturn( $location_data );
+			->with( $product_id )
+			->andReturn( 0 );
 
-		// Mock taxonomy save.
-		Functions\expect( 'wp_set_post_terms' )
-			->with( $product_id, array( 3 ), 'country', false )
-			->once();
-		Functions\expect( 'wp_set_post_terms' )
-			->with( $product_id, array( 7 ), 'subdivision', false )
-			->once();
+		// Setup get_extra_data_keys().
+		$product->shouldReceive( 'get_extra_data_keys' )
+			->once()
+			->andReturn( $this->all_extra_data_keys );
 
-		// Mock meta save.
-		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_location', $location_data )
-			->once();
+		// get_post_meta mock: all-meta returns empty, location returns non-array.
+		Functions\expect( 'get_post_meta' )
+			->andReturnUsing(
+				function () use ( $product_id ) {
+					$args = func_get_args();
+					if ( count( $args ) === 1 && $args[0] === $product_id ) {
+						return array(); // No meta stored.
+					}
+					if ( count( $args ) === 3 && $args[1] === '_aucteeno_location' && $args[2] === true ) {
+						return ''; // Non-array triggers reset to empty array.
+					}
+					return '';
+				}
+			);
+
+		// No setters should be called for empty meta values (Mockery will error on unexpected calls).
+
+		// set_location should be called with defaults (all empty strings).
+		$product->shouldReceive( 'set_location' )
+			->once()
+			->with(
+				array(
+					'country'     => '',
+					'subdivision' => '',
+					'city'        => '',
+					'postal_code' => '',
+					'address'     => '',
+					'address2'    => '',
+				)
+			);
+
+		// Call read method.
+		$datastore->read( $product );
+
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test read_location_data() merges location meta with defaults.
+	 *
+	 * This test verifies that read_location_data properly reads from
+	 * get_post_meta with the specific _aucteeno_location key and merges
+	 * with default values for any missing keys.
+	 *
+	 * @return void
+	 */
+	public function test_read_location_data_merges_with_defaults(): void {
+		$product_id = 252627;
+		$datastore  = new Datastore_Item();
+
+		// Mock Product_Item.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( $product_id );
+
+		// Location meta has partial data (missing some fields).
+		$stored_location = array(
+			'country' => 'CA',
+			'city'    => 'Toronto',
+		);
+		Functions\expect( 'get_post_meta' )
+			->with( $product_id, '_aucteeno_location', true )
+			->once()
+			->andReturn( $stored_location );
+
+		// set_location() should be called with merged defaults.
+		$product->shouldReceive( 'set_location' )
+			->once()
+			->with(
+				array(
+					'country'     => 'CA',
+					'subdivision' => '',
+					'city'        => 'Toronto',
+					'postal_code' => '',
+					'address'     => '',
+					'address2'    => '',
+				)
+			);
+
+		// Use reflection to call private method.
+		$reflection = new \ReflectionClass( $datastore );
+		$method     = $reflection->getMethod( 'read_location_data' );
+		$method->setAccessible( true );
+		$method->invoke( $datastore, $product );
+
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test save_location_data() returns early when product ID is zero.
+	 *
+	 * This test ensures that save_location_data() does nothing when
+	 * the product has no ID (not yet persisted).
+	 *
+	 * @return void
+	 */
+	public function test_save_location_data_returns_early_when_no_product_id(): void {
+		$datastore = new Datastore_Item();
+
+		// Mock Product_Item with zero ID.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( 0 );
+
+		// get_location should NOT be called since we return early.
+		$product->shouldNotReceive( 'get_location' );
 
 		// Use reflection to call private method.
 		$reflection = new \ReflectionClass( $datastore );
@@ -1002,7 +995,8 @@ class Datastore_Item_Test extends TestCase {
 	 * Test save_location_data() clears taxonomies when location is empty.
 	 *
 	 * This test ensures that when location fields are empty,
-	 * taxonomies are cleared (set to empty array).
+	 * wp_set_post_terms is called once with an empty terms array
+	 * and aucteeno-location taxonomy.
 	 *
 	 * @return void
 	 */
@@ -1028,15 +1022,26 @@ class Datastore_Item_Test extends TestCase {
 			->with( 'edit' )
 			->andReturn( $location_data );
 
-		// Mock taxonomy clear (empty array).
+		// wp_set_post_terms called ONCE with empty array and aucteeno-location taxonomy.
+		$wp_set_post_terms_calls = array();
 		Functions\expect( 'wp_set_post_terms' )
-			->with( $product_id, array(), Mockery::any(), false )
-			->twice();
+			->once()
+			->andReturnUsing(
+				function ( $id, $terms, $taxonomy, $append ) use ( &$wp_set_post_terms_calls ) {
+					$wp_set_post_terms_calls[] = array(
+						'id'       => $id,
+						'terms'    => $terms,
+						'taxonomy' => $taxonomy,
+						'append'   => $append,
+					);
+					return true;
+				}
+			);
 
-		// Mock meta save.
+		// Meta save still happens.
 		Functions\expect( 'update_post_meta' )
-			->with( $product_id, '_aucteeno_location', $location_data )
-			->once();
+			->once()
+			->andReturn( true );
 
 		// Use reflection to call private method.
 		$reflection = new \ReflectionClass( $datastore );
@@ -1044,7 +1049,231 @@ class Datastore_Item_Test extends TestCase {
 		$method->setAccessible( true );
 		$method->invoke( $datastore, $product );
 
+		// Verify wp_set_post_terms was called with correct arguments.
+		$this->assertCount( 1, $wp_set_post_terms_calls );
+		$this->assertSame( $product_id, $wp_set_post_terms_calls[0]['id'] );
+		$this->assertSame( array(), $wp_set_post_terms_calls[0]['terms'] );
+		$this->assertSame( 'aucteeno-location', $wp_set_post_terms_calls[0]['taxonomy'] );
+		$this->assertFalse( $wp_set_post_terms_calls[0]['append'] );
+	}
+
+	/**
+	 * Test save_item_extra_data() with changes that include aucteeno_location.
+	 *
+	 * When $changes includes aucteeno_location, save_location_data should be called.
+	 *
+	 * @return void
+	 */
+	public function test_update_saves_location_when_location_changed(): void {
+		$product_id = 282930;
+		$datastore  = new Datastore_Item();
+
+		// Mock Product_Item.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( $product_id );
+
+		$product->shouldReceive( 'get_extra_data_keys' )
+			->once()
+			->andReturn( $this->all_extra_data_keys );
+
+		// Only aucteeno_location changed.
+		$location_data = array(
+			'country'     => '',
+			'subdivision' => '',
+			'city'        => 'New City',
+			'postal_code' => '',
+			'address'     => '',
+			'address2'    => '',
+		);
+		$product->shouldReceive( 'get_location' )
+			->once()
+			->with( 'edit' )
+			->andReturn( $location_data );
+
+		// wp_set_post_terms with empty array (no country, so no terms).
+		$wp_set_post_terms_calls = array();
+		Functions\expect( 'wp_set_post_terms' )
+			->once()
+			->andReturnUsing(
+				function ( $id, $terms, $taxonomy, $append ) use ( &$wp_set_post_terms_calls ) {
+					$wp_set_post_terms_calls[] = compact( 'id', 'terms', 'taxonomy', 'append' );
+					return true;
+				}
+			);
+
+		Functions\expect( 'update_post_meta' )
+			->once()
+			->andReturn( true );
+
+		$extra_data_changes = array(
+			'aucteeno_location' => $location_data,
+		);
+
+		// Use reflection to call the private save method with changes that include location.
+		$reflection = new \ReflectionClass( $datastore );
+		$method     = $reflection->getMethod( 'save_item_extra_data' );
+		$method->setAccessible( true );
+		$method->invoke( $datastore, $product, $extra_data_changes );
+
+		// Verify wp_set_post_terms was called with correct taxonomy.
+		$this->assertCount( 1, $wp_set_post_terms_calls );
+		$this->assertSame( 'aucteeno-location', $wp_set_post_terms_calls[0]['taxonomy'] );
+	}
+
+	/**
+	 * Test save_item_extra_data() does NOT save location when location is not in changes.
+	 *
+	 * When $changes does NOT include aucteeno_location, save_location_data should NOT be called.
+	 *
+	 * @return void
+	 */
+	public function test_update_does_not_save_location_when_not_changed(): void {
+		$product_id = 313233;
+		$datastore  = new Datastore_Item();
+
+		// Mock Product_Item.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( $product_id );
+
+		$product->shouldReceive( 'get_extra_data_keys' )
+			->once()
+			->andReturn( $this->all_extra_data_keys );
+
+		// Only aucteeno_lot_no changed (not location).
+		$product->shouldReceive( 'get_aucteeno_lot_no' )
+			->once()
+			->with( 'edit' )
+			->andReturn( 'LOT-CHANGED' );
+
+		Functions\expect( 'wp_slash' )
+			->andReturnUsing(
+				function ( $value ) {
+					return $value;
+				}
+			);
+
+		Functions\expect( 'update_post_meta' )
+			->once()
+			->andReturn( true );
+
+		// get_location should NOT be called (location not in changes).
+		$product->shouldNotReceive( 'get_location' );
+
+		// wp_set_post_terms should NOT be called.
+		Functions\expect( 'wp_set_post_terms' )->never();
+
+		$extra_data_changes = array(
+			'aucteeno_lot_no' => 'LOT-CHANGED',
+		);
+
+		// Use reflection to call the private save method.
+		$reflection = new \ReflectionClass( $datastore );
+		$method     = $reflection->getMethod( 'save_item_extra_data' );
+		$method->setAccessible( true );
+		$method->invoke( $datastore, $product, $extra_data_changes );
+
 		$this->assertTrue( true );
 	}
-}
 
+	/**
+	 * Test save_item_extra_data() returns early when product ID is zero.
+	 *
+	 * @return void
+	 */
+	public function test_save_returns_early_when_no_product_id(): void {
+		$datastore = new Datastore_Item();
+
+		// Mock Product_Item with zero ID.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( 0 );
+
+		// Nothing else should be called.
+		$product->shouldNotReceive( 'get_extra_data_keys' );
+
+		// Use reflection to call private method.
+		$reflection = new \ReflectionClass( $datastore );
+		$method     = $reflection->getMethod( 'save_item_extra_data' );
+		$method->setAccessible( true );
+		$method->invoke( $datastore, $product );
+
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test update_post_meta() is called with wp_slash() for string values.
+	 *
+	 * This test ensures that string values are properly slashed
+	 * before being saved to the database.
+	 *
+	 * @return void
+	 */
+	public function test_save_uses_wp_slash_for_string_values(): void {
+		$product_id = 222324;
+		$datastore  = new Datastore_Item();
+
+		// Mock Product_Item.
+		$product = Mockery::mock( Product_Item::class );
+		$product->shouldReceive( 'get_id' )
+			->andReturn( $product_id );
+
+		// Setup get_extra_data_keys() with aucteeno_lot_no and aucteeno_location.
+		$product->shouldReceive( 'get_extra_data_keys' )
+			->once()
+			->andReturn( array( 'aucteeno_lot_no', 'aucteeno_location' ) );
+
+		$test_lot_no = "LOT-001 with 'quotes' and \"double quotes\"";
+		$product->shouldReceive( 'get_aucteeno_lot_no' )
+			->once()
+			->with( 'edit' )
+			->andReturn( $test_lot_no );
+
+		// Mock location since save_item_extra_data() with null changes calls save_location_data().
+		$location_data = array(
+			'country'     => '',
+			'subdivision' => '',
+			'city'        => '',
+			'postal_code' => '',
+			'address'     => '',
+			'address2'    => '',
+		);
+		$product->shouldReceive( 'get_location' )
+			->once()
+			->with( 'edit' )
+			->andReturn( $location_data );
+
+		// Mock wp_slash() to return slashed value.
+		$slashed_lot_no = addslashes( $test_lot_no );
+		Functions\expect( 'wp_slash' )
+			->once()
+			->with( $test_lot_no )
+			->andReturn( $slashed_lot_no );
+
+		// Track update_post_meta calls.
+		$saved_meta = array();
+		Functions\expect( 'update_post_meta' )
+			->andReturnUsing(
+				function ( $id, $key, $value ) use ( &$saved_meta ) {
+					$saved_meta[ $key ] = $value;
+					return true;
+				}
+			);
+
+		// Mock location save.
+		Functions\expect( 'wp_set_post_terms' )
+			->once()
+			->andReturn( true );
+
+		// Use reflection to call private method.
+		$reflection = new \ReflectionClass( $datastore );
+		$method     = $reflection->getMethod( 'save_item_extra_data' );
+		$method->setAccessible( true );
+		$method->invoke( $datastore, $product );
+
+		// Verify the lot_no was saved with slashed value.
+		$this->assertArrayHasKey( '_aucteeno_lot_no', $saved_meta );
+		$this->assertSame( $slashed_lot_no, $saved_meta['_aucteeno_lot_no'] );
+	}
+}

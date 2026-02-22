@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,12 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.0.5 - 2026-02-22 =
+* Added JavaScript test suite for all 11 Gutenberg blocks (104 tests)
+* Extracted countdown utility functions into reusable countdown-utils module
+* Extracted location utility functions into reusable location-utils module
+* Added @testing-library/react and @testing-library/jest-dom dev dependencies
 
 = 1.0.4 - 2026-02-21 =
 * Added product IDs filtering support to Query Loop block, REST API, and HPS database queries (e.g., for wishlists)

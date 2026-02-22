@@ -3,7 +3,7 @@
   "description": "Custom WooCommerce plugin for auction and item management",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": {
     "name": "The Another",
     "email": "hello@theanother.org",

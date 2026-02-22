@@ -50,6 +50,7 @@ class Query_Orderer_Test extends TestCase {
 	 */
 	public function test_detects_eligible_queries(): void {
 		Functions\expect( 'is_admin' )->once()->andReturn( false );
+		Functions\expect( 'wp_cache_get' )->andReturn( array( 1, 2, 3 ) );
 
 		$query = new WP_Query();
 		$query->set( 'post_type', 'product' );
