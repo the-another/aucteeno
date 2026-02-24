@@ -1,7 +1,7 @@
 .PHONY: install install-dev update build mozart-build dump-autoload dump-autoload-dev lint lint-php lint-js format test docker-build docker-run docker-shell release all clean
 
 # Docker image name
-DOCKER_IMAGE = aucteeno-runner:latest
+DOCKER_IMAGE = the-another-runner:latest
 DOCKER_RUN = docker run --rm -v $(PWD):/app -w /app $(DOCKER_IMAGE)
 
 # Plugin name and version
