@@ -71,6 +71,7 @@ if ( version_compare( get_bloginfo( 'version' ), '6.9', '<' ) ) {
 
 // Load autoloader.
 require_once AUCTEENO_PLUGIN_DIR . '/vendor/autoload.php';
+require_once AUCTEENO_PLUGIN_DIR . '/includes/functions.php';
 
 // Load plugin textdomain on init hook with early priority (required for WordPress 6.7.0+).
 // This ensures translations are loaded before any translation functions are called.
