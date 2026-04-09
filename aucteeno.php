@@ -125,6 +125,6 @@ register_deactivation_hook(
 // Must be at file scope (not inside a hook callback) for WordPress to register it correctly.
 register_deactivation_hook(
 	AUCTEENO_PLUGIN_FILE,
-	array( The_Another\Plugin\Aucteeno\Services\Status_Reconciler::class, 'unschedule' )
+	array( Services\Status_Reconciler::class, 'unschedule' )
 );
 

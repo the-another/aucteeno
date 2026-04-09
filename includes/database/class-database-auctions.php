@@ -336,6 +336,10 @@ class Database_Auctions {
 	 * @return bool True on success.
 	 */
 	public static function update_bidding_status_batch( array $auction_ids, int $new_status ): bool {
+		if ( empty( $auction_ids ) ) {
+			return false;
+		}
+
 		global $wpdb;
 
 		$table        = self::get_table_name();

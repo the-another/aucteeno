@@ -596,6 +596,10 @@ class Database_Items {
 	 * @return bool True on success.
 	 */
 	public static function update_bidding_status_batch( array $item_ids, int $new_status ): bool {
+		if ( empty( $item_ids ) ) {
+			return false;
+		}
+
 		global $wpdb;
 
 		$table        = self::get_table_name();
