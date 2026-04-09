@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.0.8
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,15 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.1.0 - 2026-04-10 =
+* Added automated bidding status reconciler that runs every 5 minutes via Action Scheduler
+* Reconciler detects stale bidding_status values in HPS tables and corrects them based on timestamps
+* Supports forward-only transitions: upcoming → running → expired
+* Processes up to 500 rows per batch, up to 50 batches per run (auctions first, then items)
+* Auction status changes update both the auction-bidding-status taxonomy and the HPS table atomically
+* Item status changes update the HPS table only (items do not hold taxonomy terms directly)
+* Reconciler is automatically scheduled on activation and unscheduled on deactivation
 
 = 1.0.8 - 2026-03-01 =
 * Adds global functions for cross-plugin use

@@ -96,4 +96,5 @@ coverage/
 .ddev/
 .vagrant/
 
-.claude
+.claude/
+docs/superpowers/

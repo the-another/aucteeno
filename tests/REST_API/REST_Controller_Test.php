@@ -14,6 +14,8 @@ namespace The_Another\Plugin\Aucteeno\Tests\REST_API;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -199,6 +201,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_auctions_defaults_to_html_format(): void {
 		$request = Mockery::mock( WP_REST_Request::class );
 		$request->shouldReceive( 'get_param' )
@@ -269,6 +273,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_auctions_custom_pagination(): void {
 		$request = $this->create_html_auctions_request( array(
 			'page'     => 2,
@@ -301,6 +307,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_auctions_very_large_page_number(): void {
 		$request = $this->create_html_auctions_request( array(
 			'page' => 999999,
@@ -328,6 +336,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_auctions_per_page_exceeds_maximum(): void {
 		$request = $this->create_html_auctions_request( array(
 			'per_page' => 100,
@@ -354,6 +364,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_auctions_invalid_sort_value(): void {
 		$request = $this->create_html_auctions_request( array(
 			'sort' => 'invalid_sort',
@@ -381,6 +393,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_auctions_invalid_format_value(): void {
 		$request = $this->create_html_auctions_request( array(
 			'format' => 'invalid_format',
@@ -898,6 +912,8 @@ class REST_Controller_Test extends TestCase {
 	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_get_items_defaults(): void {
 		$request = $this->create_html_items_request();
 

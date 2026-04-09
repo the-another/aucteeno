@@ -554,6 +554,70 @@ class Database_Items {
 	}
 
 	/**
+	 * Get item rows where stored bidding_status is stale (doesn't match timestamps).
+	 *
+	 * Same forward-only transition logic as Database_Auctions::get_stale().
+	 * Uses item_id (not auction_id) as the business key.
+	 *
+	 * @param int $limit Maximum rows to return.
+	 * @return array<array{item_id: int, bidding_starts_at: int, bidding_ends_at: int, bidding_status: int}>
+	 */
+	public static function get_stale( int $limit ): array {
+		global $wpdb;
+
+		$table = self::get_table_name();
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql = $wpdb->prepare(
+			"SELECT item_id, bidding_starts_at, bidding_ends_at, bidding_status
+			 FROM {$table}
+			 WHERE bidding_ends_at > 0
+			   AND (
+			     (bidding_status = 20 AND bidding_starts_at <= UNIX_TIMESTAMP() AND bidding_ends_at > UNIX_TIMESTAMP())
+			     OR (bidding_status = 10 AND bidding_ends_at <= UNIX_TIMESTAMP())
+			   )
+			 LIMIT %d",
+			$limit
+		);
+
+		$result = $wpdb->get_results( $sql, ARRAY_A );
+		return $result ? $result : array();
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+	}
+
+	/**
+	 * Update bidding_status for multiple items in a single query.
+	 *
+	 * Uses item_id business-key column (not the auto-increment ID column).
+	 * Caller must not pass an empty array.
+	 *
+	 * @param array<int> $item_ids   Item post IDs to update.
+	 * @param int        $new_status New bidding status (10, 20, or 30).
+	 * @return bool True on success.
+	 */
+	public static function update_bidding_status_batch( array $item_ids, int $new_status ): bool {
+		if ( empty( $item_ids ) ) {
+			return false;
+		}
+
+		global $wpdb;
+
+		$table        = self::get_table_name();
+		$placeholders = implode( ', ', array_fill( 0, count( $item_ids ), '%d' ) );
+		$values       = array_merge( array( $new_status ), $item_ids );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql    = $wpdb->prepare(
+			"UPDATE {$table} SET bidding_status = %d WHERE item_id IN ({$placeholders})",
+			$values
+		);
+		$result = $wpdb->query( $sql );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+		return false !== $result;
+	}
+
+	/**
 	 * Transform raw database results to item data arrays.
 	 *
 	 * @param array $results Raw database results.
