@@ -238,11 +238,35 @@ class Status_Reconciler {
 	/**
 	 * Process a batch of stale item rows.
 	 *
+	 * Updates HPS table only — items never hold auction-bidding-status taxonomy terms directly.
+	 *
 	 * @param array $rows Rows from Database_Items::get_stale().
 	 * @return void
 	 */
 	private function process_item_batch( array $rows ): void {
-		// Placeholder — implemented in Task 7.
+		// Group item IDs by their correct status.
+		$groups = array();
+		foreach ( $rows as $row ) {
+			$new_status = $this->compute_correct_status(
+				(int) $row['bidding_starts_at'],
+				(int) $row['bidding_ends_at']
+			);
+			$groups[ $new_status ][] = (int) $row['item_id'];
+		}
+
+		foreach ( $groups as $new_status => $ids ) {
+			if ( empty( $ids ) ) {
+				continue;
+			}
+
+			if ( ! Database_Items::update_bidding_status_batch( $ids, $new_status ) ) {
+				wc_get_logger()->error(
+					'Failed to update HPS bidding_status for item IDs: ' . implode( ', ', $ids ),
+					array( 'source' => 'aucteeno-reconciler' )
+				);
+			}
+		}
+		// No taxonomy update — items never hold auction-bidding-status terms directly.
 	}
 
 	/**

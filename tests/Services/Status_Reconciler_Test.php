@@ -7,6 +7,10 @@
 
 namespace The_Another\Plugin\Aucteeno\Tests\Services;
 
+if ( ! defined( 'ARRAY_A' ) ) {
+	define( 'ARRAY_A', 'ARRAY_A' );
+}
+
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use Mockery;
@@ -282,6 +286,74 @@ class Status_Reconciler_Test extends TestCase {
 		$rec = $this->make_reconciler();
 		$this->call_private( $rec, 'process_auction_batch', $rows );
 		$this->addToAssertionCount( 1 );
+	}
+
+	// --- process_item_batch ---
+
+	/**
+	 * Test that process_item_batch updates HPS only with no taxonomy calls.
+	 *
+	 * @return void
+	 */
+	public function test_process_item_batch_updates_hps_only_no_taxonomy(): void {
+		$wpdb            = Mockery::mock( 'wpdb' );
+		$wpdb->prefix    = 'wp_';
+		$GLOBALS['wpdb'] = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$past = time() - 3600;
+		$rows = array(
+			array( 'item_id' => 10, 'bidding_starts_at' => $past, 'bidding_ends_at' => $past, 'bidding_status' => 10 ),
+			array( 'item_id' => 11, 'bidding_starts_at' => $past, 'bidding_ends_at' => $past, 'bidding_status' => 10 ),
+		);
+
+		// Expect one HPS UPDATE (both IDs grouped into status 30).
+		$wpdb->shouldReceive( 'prepare' )->once()->andReturn( 'UPDATE_SQL' );
+		$wpdb->shouldReceive( 'query' )->once()->with( 'UPDATE_SQL' )->andReturn( 2 );
+
+		// Taxonomy methods must NOT be called.
+		$wpdb->shouldReceive( 'get_col' )->never();
+
+		$rec = $this->make_reconciler();
+		$this->call_private( $rec, 'process_item_batch', $rows );
+		$this->addToAssertionCount( 1 );
+	}
+
+	// --- run() loop ---
+
+	/**
+	 * Test that run() resets caches at start of each invocation.
+	 *
+	 * @return void
+	 */
+	public function test_run_resets_caches_at_start_of_each_invocation(): void {
+		$wpdb            = Mockery::mock( 'wpdb' );
+		$wpdb->prefix    = 'wp_';
+		$GLOBALS['wpdb'] = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$rec = $this->make_reconciler();
+		$ref = new ReflectionClass( $rec );
+
+		// Pre-populate caches from a "previous run".
+		$tc = $ref->getProperty( 'ttids_cache' );
+		$tc->setAccessible( true );
+		$tc->setValue( $rec, array( 1, 2, 3 ) );
+
+		$tt = $ref->getProperty( 'target_ttid_cache' );
+		$tt->setAccessible( true );
+		$tt->setValue( $rec, array( 10 => 5, 30 => 7 ) );
+
+		// run() makes two DB round-trips before exiting:
+		// 1. Database_Auctions::get_stale() returns [] → phase transitions to items.
+		// 2. Database_Items::get_stale() returns [] → loop breaks.
+		// Each static get_stale() issues one prepare + one get_results.
+		$wpdb->shouldReceive( 'prepare' )->twice()->andReturn( 'PREPARED_SQL' );
+		$wpdb->shouldReceive( 'get_results' )->twice()->andReturn( array() );
+
+		$rec->run();
+
+		// After run(), both caches must be reset to their initial state.
+		$this->assertNull( $tc->getValue( $rec ) );
+		$this->assertSame( array(), $tt->getValue( $rec ) );
 	}
 
 	/**
