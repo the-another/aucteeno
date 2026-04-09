@@ -93,6 +93,9 @@ class Aucteeno {
 
 		// Initialize query orderer for custom ordering.
 		$this->register_query_orderer();
+
+		// Initialize bidding status reconciler.
+		$this->register_status_reconciler();
 	}
 
 	/**
@@ -355,6 +358,24 @@ class Aucteeno {
 	private function register_query_orderer(): void {
 		$query_orderer = new Database\Query_Orderer();
 		$query_orderer->init();
+	}
+
+	/**
+	 * Register status reconciler for periodic bidding status correction.
+	 *
+	 * @throws Exception If service cannot be registered.
+	 * @since 1.1.0
+	 */
+	private function register_status_reconciler(): void {
+		$this->container->register(
+			'status_reconciler',
+			function ( Container $c ) {
+				return new Services\Status_Reconciler( $c->get_hook_manager() );
+			},
+			true // Singleton.
+		);
+
+		$this->container->get( 'status_reconciler' )->init();
 	}
 
 	/**
