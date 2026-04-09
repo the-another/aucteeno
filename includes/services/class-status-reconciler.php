@@ -207,7 +207,89 @@ class Status_Reconciler {
 	 * @return bool True on full success.
 	 */
 	private function bulk_set_bidding_status_term( array $object_ids, int $new_status ): bool {
-		// Placeholder — implemented in Task 5.
-		return false;
+		global $wpdb;
+
+		if ( empty( $object_ids ) ) {
+			return false;
+		}
+
+		// Step 1: Fetch all term_taxonomy_ids for the taxonomy (cached per run()).
+		if ( null === $this->ttids_cache ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+			$this->ttids_cache = $wpdb->get_col(
+				"SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'auction-bidding-status'"
+			) ?: array();
+		}
+
+		if ( empty( $this->ttids_cache ) ) {
+			wc_get_logger()->error( 'auction-bidding-status taxonomy has no terms', array( 'source' => 'aucteeno-reconciler' ) );
+			return false;
+		}
+
+		// Step 2: Resolve target term_taxonomy_id (cached per run() per status).
+		if ( ! isset( $this->target_ttid_cache[ $new_status ] ) ) {
+			$slug = Bidding_Status_Mapper::number_to_term( $new_status );
+
+			if ( '' === $slug ) {
+				wc_get_logger()->error(
+					"No term slug found for bidding status {$new_status}",
+					array( 'source' => 'aucteeno-reconciler' )
+				);
+				return false;
+			}
+
+			$term = get_term_by( 'slug', $slug, 'auction-bidding-status' );
+
+			if ( ! $term || is_wp_error( $term ) ) {
+				wc_get_logger()->error(
+					"Term not found for slug '{$slug}' in auction-bidding-status",
+					array( 'source' => 'aucteeno-reconciler' )
+				);
+				return false;
+			}
+
+			$this->target_ttid_cache[ $new_status ] = (int) $term->term_taxonomy_id;
+		}
+
+		$target_ttid       = $this->target_ttid_cache[ $new_status ];
+		$obj_placeholders  = implode( ', ', array_fill( 0, count( $object_ids ), '%d' ) );
+		$ttid_placeholders = implode( ', ', array_fill( 0, count( $this->ttids_cache ), '%d' ) );
+		$delete_values     = array_merge( $object_ids, $this->ttids_cache );
+		$insert_values     = array();
+
+		foreach ( $object_ids as $object_id ) {
+			$insert_values[] = $object_id;
+			$insert_values[] = $target_ttid;
+		}
+
+		// Step 3: DELETE old bidding-status term relationships.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$delete_sql = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"DELETE FROM {$wpdb->term_relationships}
+         WHERE object_id IN ({$obj_placeholders})
+           AND term_taxonomy_id IN ({$ttid_placeholders})",
+			$delete_values
+		);
+		$wpdb->query( $delete_sql );
+
+		// Step 4: INSERT new term relationships (ON DUPLICATE KEY = idempotent for AS retries).
+		$insert_row_placeholders = implode(
+			', ',
+			array_fill( 0, count( $object_ids ), '(%d, %d, 0)' )
+		);
+		$insert_sql = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"INSERT INTO {$wpdb->term_relationships} (object_id, term_taxonomy_id, term_order)
+         VALUES {$insert_row_placeholders}
+         ON DUPLICATE KEY UPDATE term_order = term_order",
+			$insert_values
+		);
+		$result = $wpdb->query( $insert_sql );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		// Detect failure via query() return value only — not $wpdb->last_error which may carry
+		// stale values from the preceding DELETE.
+		return false !== $result;
 	}
 }
