@@ -113,7 +113,7 @@ class Database_Auctions_Test extends TestCase {
 	public function test_update_bidding_status_batch_issues_single_update(): void {
 		$wpdb            = Mockery::mock( 'wpdb' );
 		$wpdb->prefix    = 'wp_';
-		$GLOBALS['wpdb'] = $wpdb;
+		$GLOBALS['wpdb'] = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		$wpdb->shouldReceive( 'prepare' )
 			->once()
@@ -136,7 +136,7 @@ class Database_Auctions_Test extends TestCase {
 	public function test_update_bidding_status_batch_returns_false_on_db_error(): void {
 		$wpdb            = Mockery::mock( 'wpdb' );
 		$wpdb->prefix    = 'wp_';
-		$GLOBALS['wpdb'] = $wpdb;
+		$GLOBALS['wpdb'] = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		$wpdb->shouldReceive( 'prepare' )->once()->andReturn( 'UPDATE_SQL' );
 		$wpdb->shouldReceive( 'query' )->once()->andReturn( false );
