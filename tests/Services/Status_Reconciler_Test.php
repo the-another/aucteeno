@@ -103,33 +103,52 @@ class Status_Reconciler_Test extends TestCase {
 	}
 
 	/**
-	 * Test that bulk_set returns false when term not found.
+	 * Test that bulk_set returns false when get_term_by returns false for a valid slug.
+	 *
+	 * Covers lines ~241-249 in class-status-reconciler.php where number_to_term()
+	 * successfully resolves a slug ('running') but get_term_by() returns false
+	 * (term exists in mapper but is absent from the DB).
 	 *
 	 * @return void
 	 */
 	public function test_bulk_set_returns_false_when_term_not_found(): void {
-		$wpdb            = Mockery::mock( 'wpdb' );
-		$wpdb->prefix    = 'wp_';
+		$wpdb                = Mockery::mock( 'wpdb' );
+		$wpdb->prefix        = 'wp_';
 		$wpdb->term_taxonomy = 'wp_term_taxonomy';
-		$GLOBALS['wpdb'] = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb']     = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
-		// No DB queries should be issued after term lookup fails.
+		// No DB writes should happen after get_term_by fails.
 		$wpdb->shouldReceive( 'prepare' )->never();
 
-		Functions\expect( 'get_terms' )->once()->andReturn( array() );
+		// Make number_to_term(10) return 'running': get_terms returns one term with slug='running'.
+		$term_slug_obj       = new \stdClass();
+		$term_slug_obj->slug = 'running';
+		Functions\expect( 'get_terms' )
+			->once()
+			->andReturn( array( $term_slug_obj ) );
+
+		Functions\expect( 'is_wp_error' )
+			->once()
+			->andReturn( false );
+
+		// get_term_by returns false: term slug resolved but not present in DB.
+		Functions\expect( 'get_term_by' )
+			->once()
+			->andReturn( false );
+
 		Functions\expect( 'wc_get_logger' )
 			->once()
 			->andReturn( Mockery::mock( array( 'error' => null ) ) );
 
 		$rec = $this->make_reconciler();
 
-		// Pre-populate ttids_cache via reflection to bypass the taxonomy fetch step.
+		// Pre-populate ttids_cache via reflection to bypass the taxonomy fetch step (step 1).
 		$ref = new ReflectionClass( $rec );
 		$p   = $ref->getProperty( 'ttids_cache' );
 		$p->setAccessible( true );
 		$p->setValue( $rec, array( 5, 6, 7 ) );
 
-		$result = $this->call_private( $rec, 'bulk_set_bidding_status_term', array( 1 ), 999 );
+		$result = $this->call_private( $rec, 'bulk_set_bidding_status_term', array( 1 ), 10 );
 		$this->assertFalse( $result );
 	}
 
