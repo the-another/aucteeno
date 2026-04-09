@@ -324,4 +324,33 @@ class Database_Auctions {
 		return $wpdb->get_results( $sql, ARRAY_A ) ?: [];
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
+
+	/**
+	 * Update bidding_status for multiple auctions in a single query.
+	 *
+	 * Caller must not pass an empty array — this is a logic error.
+	 * Uses the auction_id business-key column (not the auto-increment ID column).
+	 *
+	 * @param array<int> $auction_ids  Auction post IDs to update.
+	 * @param int        $new_status   New bidding status (10, 20, or 30).
+	 * @return bool True on success.
+	 */
+	public static function update_bidding_status_batch( array $auction_ids, int $new_status ): bool {
+		global $wpdb;
+
+		$table        = self::get_table_name();
+		$placeholders = implode( ', ', array_fill( 0, count( $auction_ids ), '%d' ) );
+		$values       = array_merge( array( $new_status ), $auction_ids );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$sql    = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and placeholders are safe.
+			"UPDATE {$table} SET bidding_status = %d WHERE auction_id IN ({$placeholders})",
+			$values
+		);
+		$result = $wpdb->query( $sql );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		return false !== $result;
+	}
 }

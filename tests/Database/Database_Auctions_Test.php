@@ -104,4 +104,45 @@ class Database_Auctions_Test extends TestCase {
 
 		$this->assertSame( array(), $result );
 	}
+
+	/**
+	 * Test that update_bidding_status_batch issues single update.
+	 *
+	 * @return void
+	 */
+	public function test_update_bidding_status_batch_issues_single_update(): void {
+		$wpdb            = Mockery::mock( 'wpdb' );
+		$wpdb->prefix    = 'wp_';
+		$GLOBALS['wpdb'] = $wpdb;
+
+		$wpdb->shouldReceive( 'prepare' )
+			->once()
+			->andReturn( 'UPDATE_SQL' );
+		$wpdb->shouldReceive( 'query' )
+			->once()
+			->with( 'UPDATE_SQL' )
+			->andReturn( 3 ); // 3 rows affected
+
+		$result = Database_Auctions::update_bidding_status_batch( array( 1, 2, 3 ), 10 );
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Test that update_bidding_status_batch returns false on db error.
+	 *
+	 * @return void
+	 */
+	public function test_update_bidding_status_batch_returns_false_on_db_error(): void {
+		$wpdb            = Mockery::mock( 'wpdb' );
+		$wpdb->prefix    = 'wp_';
+		$GLOBALS['wpdb'] = $wpdb;
+
+		$wpdb->shouldReceive( 'prepare' )->once()->andReturn( 'UPDATE_SQL' );
+		$wpdb->shouldReceive( 'query' )->once()->andReturn( false );
+
+		$result = Database_Auctions::update_bidding_status_batch( array( 1 ), 30 );
+
+		$this->assertFalse( $result );
+	}
 }
