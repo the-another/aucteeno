@@ -288,4 +288,40 @@ class Database_Auctions {
 			'total' => $total,
 		);
 	}
+
+	/**
+	 * Get auction rows where stored bidding_status is stale (doesn't match timestamps).
+	 *
+	 * Only forward transitions are detected:
+	 * - upcoming (20) → running (10): starts_at <= NOW && ends_at > NOW
+	 * - running (10) → expired (30): ends_at <= NOW
+	 *
+	 * Rows with bidding_ends_at = 0 are excluded (times not set).
+	 * Rows with bidding_starts_at = 0 are included (treated as already started).
+	 *
+	 * @param int $limit Maximum rows to return.
+	 * @return array<array{auction_id: int, bidding_starts_at: int, bidding_ends_at: int, bidding_status: int}>
+	 */
+	public static function get_stale( int $limit ): array {
+		global $wpdb;
+
+		$table = self::get_table_name();
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$sql = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe.
+			"SELECT auction_id, bidding_starts_at, bidding_ends_at, bidding_status
+			 FROM {$table}
+			 WHERE bidding_ends_at > 0
+			   AND (
+			     (bidding_status = 20 AND bidding_starts_at <= UNIX_TIMESTAMP() AND bidding_ends_at > UNIX_TIMESTAMP())
+			     OR (bidding_status = 10 AND bidding_ends_at <= UNIX_TIMESTAMP())
+			   )
+			 LIMIT %d",
+			$limit
+		);
+
+		return $wpdb->get_results( $sql, ARRAY_A ) ?: [];
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	}
 }
