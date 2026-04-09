@@ -51,13 +51,18 @@ class Database_Items_Stale_Test extends TestCase {
 	 * @return void
 	 */
 	public function test_get_stale_selects_item_id_column(): void {
-		$wpdb            = Mockery::mock( 'wpdb' );
-		$wpdb->prefix    = 'wp_';
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
 		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		$GLOBALS['wpdb'] = $wpdb;
 
 		$expected = array(
-			array( 'item_id' => 10, 'bidding_starts_at' => 100, 'bidding_ends_at' => 999, 'bidding_status' => 20 ),
+			array(
+				'item_id'           => 10,
+				'bidding_starts_at' => 100,
+				'bidding_ends_at'   => 999,
+				'bidding_status'    => 20,
+			),
 		);
 
 		$wpdb->shouldReceive( 'prepare' )
@@ -77,8 +82,8 @@ class Database_Items_Stale_Test extends TestCase {
 	 * @return void
 	 */
 	public function test_update_bidding_status_batch_uses_item_id_column(): void {
-		$wpdb            = Mockery::mock( 'wpdb' );
-		$wpdb->prefix    = 'wp_';
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
 		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		$GLOBALS['wpdb'] = $wpdb;
 

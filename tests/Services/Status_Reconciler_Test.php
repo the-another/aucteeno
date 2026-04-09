@@ -19,25 +19,55 @@ use ReflectionClass;
 use The_Another\Plugin\Aucteeno\Hook_Manager;
 use The_Another\Plugin\Aucteeno\Services\Status_Reconciler;
 
+/**
+ * Class Status_Reconciler_Test
+ *
+ * Unit tests for the Status_Reconciler service.
+ *
+ * @package Aucteeno
+ */
 class Status_Reconciler_Test extends TestCase {
 
+	/**
+	 * Sets up the test environment before each test.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
 	}
 
+	/**
+	 * Tears down the test environment after each test.
+	 *
+	 * @return void
+	 */
 	protected function tearDown(): void {
 		Mockery::close();
 		Monkey\tearDown();
 		parent::tearDown();
 	}
 
+	/**
+	 * Creates a Status_Reconciler instance with a mocked Hook_Manager.
+	 *
+	 * @return Status_Reconciler
+	 */
 	private function make_reconciler(): Status_Reconciler {
 		$hook_manager = Mockery::mock( Hook_Manager::class );
 		$hook_manager->shouldReceive( 'register_action' )->byDefault();
 		return new Status_Reconciler( $hook_manager );
 	}
 
+	/**
+	 * Invokes a private or protected method on an object via reflection.
+	 *
+	 * @param object $obj    The object instance.
+	 * @param string $method The method name.
+	 * @param mixed  ...$args Arguments to pass to the method.
+	 * @return mixed
+	 */
 	private function call_private( object $obj, string $method, mixed ...$args ): mixed {
 		$ref = new ReflectionClass( $obj );
 		$m   = $ref->getMethod( $method );
@@ -47,12 +77,22 @@ class Status_Reconciler_Test extends TestCase {
 
 	// --- compute_correct_status ---
 
+	/**
+	 * Test that compute_correct_status returns upcoming when not yet started.
+	 *
+	 * @return void
+	 */
 	public function test_compute_correct_status_returns_upcoming_when_not_yet_started(): void {
 		$future = time() + 3600;
 		$result = $this->call_private( $this->make_reconciler(), 'compute_correct_status', $future, $future + 7200 );
 		$this->assertSame( 20, $result );
 	}
 
+	/**
+	 * Test that compute_correct_status returns running when in progress.
+	 *
+	 * @return void
+	 */
 	public function test_compute_correct_status_returns_running_when_in_progress(): void {
 		$past   = time() - 3600;
 		$future = time() + 3600;
@@ -60,12 +100,22 @@ class Status_Reconciler_Test extends TestCase {
 		$this->assertSame( 10, $result );
 	}
 
+	/**
+	 * Test that compute_correct_status returns expired when ended.
+	 *
+	 * @return void
+	 */
 	public function test_compute_correct_status_returns_expired_when_ended(): void {
 		$past   = time() - 3600;
 		$result = $this->call_private( $this->make_reconciler(), 'compute_correct_status', $past - 7200, $past );
 		$this->assertSame( 30, $result );
 	}
 
+	/**
+	 * Test that compute_correct_status treats zero starts_at as already started.
+	 *
+	 * @return void
+	 */
 	public function test_compute_correct_status_treats_zero_starts_at_as_already_started(): void {
 		$future = time() + 3600;
 		// starts_at = 0 means already started; ends_at in future = running.
@@ -91,10 +141,10 @@ class Status_Reconciler_Test extends TestCase {
 	 * @return void
 	 */
 	public function test_bulk_set_returns_false_when_taxonomy_has_no_terms(): void {
-		$wpdb            = Mockery::mock( 'wpdb' );
-		$wpdb->prefix    = 'wp_';
+		$wpdb                = Mockery::mock( 'wpdb' );
+		$wpdb->prefix        = 'wp_';
 		$wpdb->term_taxonomy = 'wp_term_taxonomy';
-		$GLOBALS['wpdb'] = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb']     = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		$wpdb->shouldReceive( 'get_col' )->once()->andReturn( array() );
 
@@ -179,7 +229,7 @@ class Status_Reconciler_Test extends TestCase {
 		Functions\expect( 'get_term_by' )->once()->andReturn( $term_obj );
 
 		$wpdb->shouldReceive( 'prepare' )
-			->twice() // once for DELETE, once for INSERT
+			->twice() // Once for DELETE, once for INSERT.
 			->andReturn( 'DELETE_SQL', 'INSERT_SQL' );
 		$wpdb->shouldReceive( 'query' )
 			->once()->with( 'DELETE_SQL' )->andReturn( 2 );
@@ -215,17 +265,27 @@ class Status_Reconciler_Test extends TestCase {
 		$past   = time() - 3600;
 		$future = time() + 3600;
 		$rows   = array(
-			array( 'auction_id' => 1, 'bidding_starts_at' => $past,   'bidding_ends_at' => $future, 'bidding_status' => 20 ),
-			array( 'auction_id' => 2, 'bidding_starts_at' => $past,   'bidding_ends_at' => $past,   'bidding_status' => 10 ),
+			array(
+				'auction_id'        => 1,
+				'bidding_starts_at' => $past,
+				'bidding_ends_at'   => $future,
+				'bidding_status'    => 20,
+			),
+			array(
+				'auction_id'        => 2,
+				'bidding_starts_at' => $past,
+				'bidding_ends_at'   => $past,
+				'bidding_status'    => 10,
+			),
 		);
 
 		// Stub ttids lookup.
 		$wpdb->shouldReceive( 'get_col' )->once()->andReturn( array( 5, 6, 7 ) );
 
 		// Stub taxonomy resolution for both status groups.
-		$term_running             = new \stdClass();
+		$term_running                   = new \stdClass();
 		$term_running->term_taxonomy_id = 5;
-		$term_expired             = new \stdClass();
+		$term_expired                   = new \stdClass();
 		$term_expired->term_taxonomy_id = 7;
 
 		Functions\expect( 'get_term_by' )
@@ -270,7 +330,12 @@ class Status_Reconciler_Test extends TestCase {
 
 		$past = time() - 3600;
 		$rows = array(
-			array( 'auction_id' => 1, 'bidding_starts_at' => $past, 'bidding_ends_at' => $past, 'bidding_status' => 10 ),
+			array(
+				'auction_id'        => 1,
+				'bidding_starts_at' => $past,
+				'bidding_ends_at'   => $past,
+				'bidding_status'    => 10,
+			),
 		);
 
 		// Taxonomy fetch returns empty → bulk_set returns false, then process_auction_batch also logs.
@@ -302,8 +367,18 @@ class Status_Reconciler_Test extends TestCase {
 
 		$past = time() - 3600;
 		$rows = array(
-			array( 'item_id' => 10, 'bidding_starts_at' => $past, 'bidding_ends_at' => $past, 'bidding_status' => 10 ),
-			array( 'item_id' => 11, 'bidding_starts_at' => $past, 'bidding_ends_at' => $past, 'bidding_status' => 10 ),
+			array(
+				'item_id'           => 10,
+				'bidding_starts_at' => $past,
+				'bidding_ends_at'   => $past,
+				'bidding_status'    => 10,
+			),
+			array(
+				'item_id'           => 11,
+				'bidding_starts_at' => $past,
+				'bidding_ends_at'   => $past,
+				'bidding_status'    => 10,
+			),
 		);
 
 		// Expect one HPS UPDATE (both IDs grouped into status 30).
@@ -340,7 +415,13 @@ class Status_Reconciler_Test extends TestCase {
 
 		$tt = $ref->getProperty( 'target_ttid_cache' );
 		$tt->setAccessible( true );
-		$tt->setValue( $rec, array( 10 => 5, 30 => 7 ) );
+		$tt->setValue(
+			$rec,
+			array(
+				10 => 5,
+				30 => 7,
+			) 
+		);
 
 		// run() makes two DB round-trips before exiting:
 		// 1. Database_Auctions::get_stale() returns [] → phase transitions to items.

@@ -567,9 +567,8 @@ class Database_Items {
 
 		$table = self::get_table_name();
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$sql = $wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe.
 			"SELECT item_id, bidding_starts_at, bidding_ends_at, bidding_status
 			 FROM {$table}
 			 WHERE bidding_ends_at > 0
@@ -581,8 +580,9 @@ class Database_Items {
 			$limit
 		);
 
-		return $wpdb->get_results( $sql, ARRAY_A ) ?: array();
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->get_results( $sql, ARRAY_A );
+		return $result ? $result : array();
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**
@@ -606,14 +606,13 @@ class Database_Items {
 		$placeholders = implode( ', ', array_fill( 0, count( $item_ids ), '%d' ) );
 		$values       = array_merge( array( $new_status ), $item_ids );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$sql    = $wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and placeholders are safe.
 			"UPDATE {$table} SET bidding_status = %d WHERE item_id IN ({$placeholders})",
 			$values
 		);
 		$result = $wpdb->query( $sql );
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
 		return false !== $result;
 	}

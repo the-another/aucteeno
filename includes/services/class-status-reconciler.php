@@ -133,14 +133,14 @@ class Status_Reconciler {
 		$now = time();
 
 		if ( $starts_at > $now ) {
-			return 20; // upcoming
+			return 20; // Upcoming.
 		}
 
 		if ( $ends_at > $now ) {
-			return 10; // running
+			return 10; // Running.
 		}
 
-		return 30; // expired
+		return 30; // Expired.
 	}
 
 	/**
@@ -164,7 +164,7 @@ class Status_Reconciler {
 					continue; // Back to while condition; $runs NOT incremented.
 				}
 				$this->process_auction_batch( $rows );
-				$runs++;
+				++$runs;
 				if ( count( $rows ) < self::BATCH_SIZE ) {
 					$phase = 'items';
 				}
@@ -174,7 +174,7 @@ class Status_Reconciler {
 					break;
 				}
 				$this->process_item_batch( $rows );
-				$runs++;
+				++$runs;
 			}
 		}
 	}
@@ -192,7 +192,7 @@ class Status_Reconciler {
 		// Group auction IDs by their correct status.
 		$groups = array();
 		foreach ( $rows as $row ) {
-			$new_status = $this->compute_correct_status(
+			$new_status              = $this->compute_correct_status(
 				(int) $row['bidding_starts_at'],
 				(int) $row['bidding_ends_at']
 			);
@@ -209,7 +209,7 @@ class Status_Reconciler {
 
 			// Taxonomy first — failure means HPS update is skipped for this group.
 			if ( $this->bulk_set_bidding_status_term( $ids, $new_status ) ) {
-				$any_taxonomy_updated                  = true;
+				$any_taxonomy_updated              = true;
 				$taxonomy_ok_groups[ $new_status ] = $ids;
 			} else {
 				wc_get_logger()->error(
@@ -247,7 +247,7 @@ class Status_Reconciler {
 		// Group item IDs by their correct status.
 		$groups = array();
 		foreach ( $rows as $row ) {
-			$new_status = $this->compute_correct_status(
+			$new_status              = $this->compute_correct_status(
 				(int) $row['bidding_starts_at'],
 				(int) $row['bidding_ends_at']
 			);
@@ -286,9 +286,10 @@ class Status_Reconciler {
 		// Step 1: Fetch all term_taxonomy_ids for the taxonomy (cached per run()).
 		if ( null === $this->ttids_cache ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$this->ttids_cache = $wpdb->get_col(
+			$raw               = $wpdb->get_col(
 				"SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'auction-bidding-status'"
-			) ?: array();
+			);
+			$this->ttids_cache = $raw ? $raw : array();
 		}
 
 		if ( empty( $this->ttids_cache ) ) {
@@ -333,9 +334,8 @@ class Status_Reconciler {
 		}
 
 		// Step 3: DELETE old bidding-status term relationships.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.NotPrepared
 		$delete_sql = $wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"DELETE FROM {$wpdb->term_relationships}
          WHERE object_id IN ({$obj_placeholders})
            AND term_taxonomy_id IN ({$ttid_placeholders})",
@@ -348,15 +348,14 @@ class Status_Reconciler {
 			', ',
 			array_fill( 0, count( $object_ids ), '(%d, %d, 0)' )
 		);
-		$insert_sql = $wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$insert_sql              = $wpdb->prepare(
 			"INSERT INTO {$wpdb->term_relationships} (object_id, term_taxonomy_id, term_order)
          VALUES {$insert_row_placeholders}
          ON DUPLICATE KEY UPDATE term_order = term_order",
 			$insert_values
 		);
-		$result = $wpdb->query( $insert_sql );
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result                  = $wpdb->query( $insert_sql );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Detect failure via query() return value only — not $wpdb->last_error which may carry
 		// stale values from the preceding DELETE.
