@@ -193,6 +193,97 @@ class Status_Reconciler_Test extends TestCase {
 		$this->assertTrue( $result );
 	}
 
+	// --- process_auction_batch ---
+
+	/**
+	 * Test that process_auction_batch updates taxonomy before HPS and calls wp_update_term_count.
+	 *
+	 * @return void
+	 */
+	public function test_process_auction_batch_updates_taxonomy_before_hps(): void {
+		$wpdb                     = Mockery::mock( 'wpdb' );
+		$wpdb->prefix             = 'wp_';
+		$wpdb->term_relationships = 'wp_term_relationships';
+		$wpdb->term_taxonomy      = 'wp_term_taxonomy';
+		$GLOBALS['wpdb']          = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		// Two rows: one upcoming→running, one running→expired.
+		$past   = time() - 3600;
+		$future = time() + 3600;
+		$rows   = array(
+			array( 'auction_id' => 1, 'bidding_starts_at' => $past,   'bidding_ends_at' => $future, 'bidding_status' => 20 ),
+			array( 'auction_id' => 2, 'bidding_starts_at' => $past,   'bidding_ends_at' => $past,   'bidding_status' => 10 ),
+		);
+
+		// Stub ttids lookup.
+		$wpdb->shouldReceive( 'get_col' )->once()->andReturn( array( 5, 6, 7 ) );
+
+		// Stub taxonomy resolution for both status groups.
+		$term_running             = new \stdClass();
+		$term_running->term_taxonomy_id = 5;
+		$term_expired             = new \stdClass();
+		$term_expired->term_taxonomy_id = 7;
+
+		Functions\expect( 'get_term_by' )
+			->twice()
+			->andReturn( $term_running, $term_expired );
+
+		Functions\expect( 'get_terms' )
+			->twice()
+			->andReturn(
+				array( (object) array( 'slug' => 'running' ) ),
+				array( (object) array( 'slug' => 'expired' ) )
+			);
+
+		Functions\expect( 'is_wp_error' )
+			->zeroOrMoreTimes()
+			->andReturn( false );
+
+		// 2 status groups × (1 DELETE + 1 INSERT) = 4 taxonomy prepare/query calls.
+		// 2 HPS UPDATE calls (one per status group) = 2 more prepare/query calls.
+		// Total: 6 prepare calls and 6 query calls.
+		$wpdb->shouldReceive( 'prepare' )->times( 6 )->andReturn( 'SQL' );
+		$wpdb->shouldReceive( 'query' )->times( 6 )->andReturn( 1 );
+
+		// Expect term count recomputed once after all taxonomy writes.
+		Functions\expect( 'wp_update_term_count' )->once();
+
+		$rec = $this->make_reconciler();
+		$this->call_private( $rec, 'process_auction_batch', $rows );
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test that process_auction_batch skips HPS when taxonomy fails.
+	 *
+	 * @return void
+	 */
+	public function test_process_auction_batch_skips_hps_when_taxonomy_fails(): void {
+		$wpdb                = Mockery::mock( 'wpdb' );
+		$wpdb->prefix        = 'wp_';
+		$wpdb->term_taxonomy = 'wp_term_taxonomy';
+		$GLOBALS['wpdb']     = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$past = time() - 3600;
+		$rows = array(
+			array( 'auction_id' => 1, 'bidding_starts_at' => $past, 'bidding_ends_at' => $past, 'bidding_status' => 10 ),
+		);
+
+		// Taxonomy fetch returns empty → bulk_set returns false, then process_auction_batch also logs.
+		$wpdb->shouldReceive( 'get_col' )->once()->andReturn( array() );
+		Functions\expect( 'wc_get_logger' )->twice()->andReturn( Mockery::mock( array( 'error' => null ) ) );
+
+		// HPS update must NOT be called.
+		$wpdb->shouldReceive( 'prepare' )->never();
+		$wpdb->shouldReceive( 'query' )->never();
+
+		Functions\expect( 'wp_update_term_count' )->never();
+
+		$rec = $this->make_reconciler();
+		$this->call_private( $rec, 'process_auction_batch', $rows );
+		$this->addToAssertionCount( 1 );
+	}
+
 	/**
 	 * Test that bulk_set returns false when number_to_term returns '' (no slug for given status).
 	 *

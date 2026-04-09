@@ -182,11 +182,57 @@ class Status_Reconciler {
 	/**
 	 * Process a batch of stale auction rows.
 	 *
+	 * Updates taxonomy term relationships first; HPS updated second only if taxonomy succeeded.
+	 * Fires wp_update_term_count once after all groups if any taxonomy write succeeded.
+	 *
 	 * @param array $rows Rows from Database_Auctions::get_stale().
 	 * @return void
 	 */
 	private function process_auction_batch( array $rows ): void {
-		// Placeholder — implemented in Task 6.
+		// Group auction IDs by their correct status.
+		$groups = array();
+		foreach ( $rows as $row ) {
+			$new_status = $this->compute_correct_status(
+				(int) $row['bidding_starts_at'],
+				(int) $row['bidding_ends_at']
+			);
+			$groups[ $new_status ][] = (int) $row['auction_id'];
+		}
+
+		$any_taxonomy_updated = false;
+		$taxonomy_ok_groups   = array();
+
+		foreach ( $groups as $new_status => $ids ) {
+			if ( empty( $ids ) ) {
+				continue;
+			}
+
+			// Taxonomy first — failure means HPS update is skipped for this group.
+			if ( $this->bulk_set_bidding_status_term( $ids, $new_status ) ) {
+				$any_taxonomy_updated                  = true;
+				$taxonomy_ok_groups[ $new_status ] = $ids;
+			} else {
+				wc_get_logger()->error(
+					'Failed to update taxonomy for auction IDs: ' . implode( ', ', $ids ),
+					array( 'source' => 'aucteeno-reconciler' )
+				);
+			}
+		}
+
+		// HPS update only for groups where taxonomy succeeded.
+		foreach ( $taxonomy_ok_groups as $new_status => $ids ) {
+			if ( ! Database_Auctions::update_bidding_status_batch( $ids, $new_status ) ) {
+				wc_get_logger()->error(
+					'Failed to update HPS bidding_status for auction IDs: ' . implode( ', ', $ids ),
+					array( 'source' => 'aucteeno-reconciler' )
+				);
+			}
+		}
+
+		// Recount term associations once after all groups — only if any taxonomy write succeeded.
+		if ( $any_taxonomy_updated && ! empty( $this->ttids_cache ) ) {
+			wp_update_term_count( $this->ttids_cache, 'auction-bidding-status' );
+		}
 	}
 
 	/**
