@@ -215,7 +215,7 @@ class Status_Reconciler {
 
 		// Step 1: Fetch all term_taxonomy_ids for the taxonomy (cached per run()).
 		if ( null === $this->ttids_cache ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$this->ttids_cache = $wpdb->get_col(
 				"SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'auction-bidding-status'"
 			) ?: array();

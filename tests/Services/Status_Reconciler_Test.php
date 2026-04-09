@@ -168,7 +168,7 @@ class Status_Reconciler_Test extends TestCase {
 		$term_obj->term_taxonomy_id = 7;
 
 		$term_slug_obj       = new \stdClass();
-		$term_slug_obj->slug = 'publish';
+		$term_slug_obj->slug = 'running';
 
 		Functions\expect( 'get_terms' )->once()->andReturn( array( $term_slug_obj ) );
 		Functions\expect( 'is_wp_error' )->twice()->andReturn( false );
@@ -191,5 +191,43 @@ class Status_Reconciler_Test extends TestCase {
 
 		$result = $this->call_private( $rec, 'bulk_set_bidding_status_term', array( 1, 2, 3 ), 10 );
 		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Test that bulk_set returns false when number_to_term returns '' (no slug for given status).
+	 *
+	 * Covers the branch at class-status-reconciler.php where '' === $slug after
+	 * Bidding_Status_Mapper::number_to_term() is called with an unmapped status.
+	 *
+	 * @return void
+	 */
+	public function test_bulk_set_returns_false_when_no_slug_for_status(): void {
+		$wpdb                = Mockery::mock( 'wpdb' );
+		$wpdb->prefix        = 'wp_';
+		$wpdb->term_taxonomy = 'wp_term_taxonomy';
+		$GLOBALS['wpdb']     = $wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		// No DB writes should happen — method returns before any prepare() call.
+		$wpdb->shouldReceive( 'prepare' )->never();
+
+		// get_terms returns empty array so number_to_term(999) returns ''.
+		Functions\expect( 'get_terms' )
+			->once()
+			->andReturn( array() );
+
+		Functions\expect( 'wc_get_logger' )
+			->once()
+			->andReturn( Mockery::mock( array( 'error' => null ) ) );
+
+		$rec = $this->make_reconciler();
+
+		// Pre-populate ttids_cache via reflection to bypass the taxonomy fetch step (step 1).
+		$ref = new ReflectionClass( $rec );
+		$p   = $ref->getProperty( 'ttids_cache' );
+		$p->setAccessible( true );
+		$p->setValue( $rec, array( 5, 6, 7 ) );
+
+		$result = $this->call_private( $rec, 'bulk_set_bidding_status_term', array( 1 ), 999 );
+		$this->assertFalse( $result );
 	}
 }
