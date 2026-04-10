@@ -30,9 +30,10 @@ $subdivision = $item_data['location_subdivision'] ?? '';
 $country     = $item_data['location_country'] ?? '';
 
 /**
- * Get location term ID by code meta.
+ * Get location term ID by code meta — fallback for single-post pages
+ * where pre-loaded term IDs are not available in context.
  *
- * @param string $code Meta code to search for.
+ * @param string $code   Meta code to search for.
  * @param int    $parent Parent term ID (0 for countries, country term ID for subdivisions).
  * @return int Term ID or 0 if not found.
  */
@@ -46,7 +47,7 @@ $get_term_by_code = function ( $code, $parent = 0 ) {
 			'taxonomy'   => 'aucteeno-location',
 			'hide_empty' => false,
 			'parent'     => $parent,
-			'meta_query' => array(
+			'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- single-post fallback only; batch pre-loading used in query loop context.
 				array(
 					'key'   => 'code',
 					'value' => $code,
@@ -86,16 +87,14 @@ switch ( $format ) {
 			);
 		}
 		if ( $subdivision_name ) {
-			// Get term IDs for linking.
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			// Use pre-loaded term IDs from context (query loop); fall back to per-item lookup (single post).
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
-			$subdivision_term_id = 0;
-			if ( $show_links && $country && $subdivision_code ) {
-				$subdivision_term_id = $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id );
-			}
+			$subdivision_term_id = $item_data['location_subdivision_term_id']
+				?? ( $show_links && $country && $subdivision_code
+					? $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id )
+					: 0 );
 
 			$location_parts[] = array(
 				'text'    => $subdivision_name,
@@ -106,10 +105,8 @@ switch ( $format ) {
 				'term_id' => $country_term_id > 0 ? $country_term_id : null,
 			);
 		} elseif ( $country_name ) {
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
 			$location_parts[] = array(
 				'text'    => $country_name,
@@ -129,10 +126,8 @@ switch ( $format ) {
 
 	case 'country_only':
 		if ( $country_name ) {
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
 			$location_parts[] = array(
 				'text'    => $country_name,
@@ -149,15 +144,13 @@ switch ( $format ) {
 			);
 		}
 		if ( $subdivision_name ) {
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
-			$subdivision_term_id = 0;
-			if ( $show_links && $country && $subdivision_code ) {
-				$subdivision_term_id = $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id );
-			}
+			$subdivision_term_id = $item_data['location_subdivision_term_id']
+				?? ( $show_links && $country && $subdivision_code
+					? $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id )
+					: 0 );
 
 			$location_parts[] = array(
 				'text'    => $subdivision_name,
@@ -174,10 +167,8 @@ switch ( $format ) {
 			);
 		}
 		if ( $country ) {
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
 			$location_parts[] = array(
 				'text'    => $country,
@@ -195,15 +186,13 @@ switch ( $format ) {
 			);
 		}
 		if ( $subdivision_name ) {
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
-			$subdivision_term_id = 0;
-			if ( $show_links && $country && $subdivision_code ) {
-				$subdivision_term_id = $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id );
-			}
+			$subdivision_term_id = $item_data['location_subdivision_term_id']
+				?? ( $show_links && $country && $subdivision_code
+					? $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id )
+					: 0 );
 
 			$location_parts[] = array(
 				'text'    => $subdivision_name,
@@ -214,10 +203,8 @@ switch ( $format ) {
 				'term_id' => $country_term_id > 0 ? $country_term_id : null,
 			);
 		} elseif ( $country_name ) {
-			$country_term_id = 0;
-			if ( $show_links && $country ) {
-				$country_term_id = $get_term_by_code( $country, 0 );
-			}
+			$country_term_id = $item_data['location_country_term_id']
+				?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
 
 			$location_parts[] = array(
 				'text'    => $country_name,
