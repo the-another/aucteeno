@@ -28,6 +28,7 @@ class Eager_Loader {
 	 * Uses _prime_post_caches() when available (WordPress internal, 6.0+).
 	 * Falls back to get_post_meta($id) per-ID when the function is absent.
 	 *
+	 * @since 2.1.0
 	 * @param array<int> $ids Post IDs to prime.
 	 * @return void
 	 */
@@ -42,6 +43,7 @@ class Eager_Loader {
 		}
 
 		// Fallback: load all meta per ID individually (higher query cost but safe).
+		// absint() guards against non-integer elements that callers may pass.
 		foreach ( $ids as $id ) {
 			get_post_meta( absint( $id ) );
 		}

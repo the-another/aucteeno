@@ -47,13 +47,12 @@ class Eager_Loader_Test extends TestCase {
 	public function test_prime_post_meta_calls_prime_post_caches_with_meta_enabled(): void {
 		Functions\expect( '_prime_post_caches' )
 			->once()
-			->with( array( 1, 2 ), false, true )
-			->andReturn( null );
+			->with( array( 1, 2 ), false, true );
 
 		Eager_Loader::prime_post_meta( array( 1, 2 ) );
 
-		// Test reached without uncaught exception.
-		$this->assertTrue( true );
+		// Expectation verified by Mockery::close() in tearDown().
+		$this->addToAssertionCount( 1 );
 	}
 
 	/**
@@ -77,12 +76,11 @@ class Eager_Loader_Test extends TestCase {
 		// Only expect get_post_meta to be called as fallback.
 		Functions\expect( 'get_post_meta' )
 			->twice()
-			->with( \Mockery::type( 'int' ) )
-			->andReturn( array() );
+			->with( \Mockery::type( 'int' ) );
 
 		Eager_Loader::prime_post_meta( array( 1, 2 ) );
 
-		// Test reached without uncaught exception.
-		$this->assertTrue( true );
+		// Expectation verified by Mockery::close() in tearDown().
+		$this->addToAssertionCount( 1 );
 	}
 }
