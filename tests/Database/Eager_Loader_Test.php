@@ -155,6 +155,11 @@ class Eager_Loader_Test extends TestCase {
 			->once()
 			->andReturn( array( $term_us, $term_ks ) );
 
+		Functions\when( 'wp_list_pluck' )->alias( function ( $list, $field ) {
+			return array_column( array_map( 'get_object_vars', $list ), $field );
+		} );
+		Functions\when( 'update_termmeta_cache' )->justReturn( null );
+
 		Functions\when( 'get_term_meta' )
 			->alias( function ( $term_id, $key, $single ) {
 				$map = array(
@@ -204,6 +209,8 @@ class Eager_Loader_Test extends TestCase {
 	 */
 	public function test_load_location_terms_deduplicates_codes_before_querying(): void {
 		Functions\when( 'is_wp_error' )->justReturn( false );
+		Functions\when( 'wp_list_pluck' )->justReturn( array() );
+		Functions\when( 'update_termmeta_cache' )->justReturn( null );
 
 		Functions\expect( 'get_terms' )
 			->once()
@@ -214,6 +221,9 @@ class Eager_Loader_Test extends TestCase {
 			} );
 
 		Eager_Loader::load_location_terms( array( 'US', 'US', 'US' ) );
+
+		// Ensures andReturnUsing executed (assertion embedded inside callback).
+		$this->addToAssertionCount( 1 );
 	}
 
 	/**

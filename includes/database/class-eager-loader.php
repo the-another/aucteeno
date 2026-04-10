@@ -122,6 +122,9 @@ class Eager_Loader {
 			return $map;
 		}
 
+		// Prime term meta cache in one batch query — avoids N get_term_meta() DB hits.
+		update_termmeta_cache( wp_list_pluck( $terms, 'term_id' ) );
+
 		foreach ( $terms as $term ) {
 			$code = get_term_meta( $term->term_id, 'code', true );
 			if ( ! empty( $code ) ) {
