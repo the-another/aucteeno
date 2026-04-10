@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,12 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.2.1 - 2026-04-10 =
+* Added aucteeno_product_context_data filter (per-product) and aucteeno_products_context_data filter (batch, fires once per query) as extension points for enriching block context data
+* aucteeno_products_context_data receives the full items array and all post IDs together, enabling a single batch query instead of N per-item lookups
+* Added aucteeno_field_image_html filter on the field-image block, allowing plugins to supply fully custom image HTML with a priority chain: filter HTML → attachment image → image_url fallback → placeholder
+* field-image block now reads image_url from block context; filters let external plugins inject Nexus CDN or other custom image sources without coupling to the core plugin
 
 = 1.2.0 - 2026-04-10 =
 * Performance: replaced per-item wc_get_product() calls in query loop with batch WordPress object cache priming, reducing queries from ~152 to 5–8 per page for 25-item listings

@@ -59,9 +59,12 @@ class Database_Auctions_Transform_Test extends TestCase {
 
 		// Re-stub Brain\Monkey-managed functions reset by Monkey\setUp().
 		Functions\when( 'wc_get_product' )->justReturn( false );
-Functions\when( '_prime_post_caches' )->justReturn( null );
+		Functions\when( '_prime_post_caches' )->justReturn( null );
 		Functions\when( 'get_post_meta' )->justReturn( '' );
 		Functions\when( 'wp_get_attachment_image_src' )->justReturn( false );
+		Functions\when( 'apply_filters' )->alias( function ( $tag, $value ) {
+			return $value;
+		} );
 		Functions\when( 'get_terms' )->justReturn( array() );
 		Functions\when( 'get_term_meta' )->justReturn( '' );
 		Functions\when( 'is_wp_error' )->justReturn( false );
@@ -157,6 +160,22 @@ Functions\when( '_prime_post_caches' )->justReturn( null );
 		$result = Database_Auctions::query_for_listing();
 
 		$this->assertStringContainsString( 'test-auction', $result['items'][0]['permalink'] );
+	}
+
+	public function test_query_for_listing_batch_filter_receives_all_items(): void {
+		$captured_ids = null;
+
+		Functions\when( 'apply_filters' )->alias( function ( $tag, $value, ...$extra ) use ( &$captured_ids ) {
+			if ( 'aucteeno_products_context_data' === $tag ) {
+				$captured_ids = $extra[0] ?? null;
+			}
+			return $value;
+		} );
+
+		Database_Auctions::query_for_listing();
+
+		$this->assertIsArray( $captured_ids );
+		$this->assertContains( 10, $captured_ids );
 	}
 
 	public function test_query_for_listing_image_url_populated_from_attachment(): void {

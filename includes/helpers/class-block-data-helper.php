@@ -141,6 +141,16 @@ class Block_Data_Helper {
 			$item_data['auction_id'] = (int) $row['auction_id'];
 		}
 
-		return $item_data;
+		/**
+		 * Filters the item data array placed into block context for a single product page.
+		 *
+		 * Allows external plugins to add or override fields (e.g. inject image_url
+		 * from a custom image source) before the data reaches any child block.
+		 *
+		 * @since 2.2.0
+		 * @param array $item_data Item context data array.
+		 * @param int   $post_id   Product post ID.
+		 */
+		return apply_filters( 'aucteeno_product_context_data', $item_data, $post_id );
 	}
 }

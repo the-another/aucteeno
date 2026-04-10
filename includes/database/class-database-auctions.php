@@ -270,26 +270,56 @@ class Database_Auctions {
 			$image_src  = $image_id ? wp_get_attachment_image_src( $image_id, 'medium' ) : false;
 			$image_url  = is_array( $image_src ) ? $image_src[0] : '';
 
-			$items[] = array(
-				'id'                           => $auction_id,
-				'title'                        => $row['post_title'],
-				'permalink'                    => home_url( user_trailingslashit( $auction_base . '/' . $row['post_name'] ) ),
-				'image_url'                    => $image_url,
-				'image_id'                     => $image_id,
-				'user_id'                      => absint( $row['user_id'] ),
-				'bidding_status'               => absint( $row['bidding_status'] ),
-				'bidding_starts_at'            => absint( $row['bidding_starts_at'] ),
-				'bidding_ends_at'              => absint( $row['bidding_ends_at'] ),
-				'location_country'             => $row['location_country'],
-				'location_subdivision'         => $row['location_subdivision'],
-				'location_city'                => $row['location_city'],
-				'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
-				'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
-				'current_bid'                  => (float) get_post_meta( $auction_id, '_price', true ),
-				// Product_Auction has no get_reserve_price() method; field is always 0 until implemented.
-				'reserve_price'                => 0.0,
+			/**
+			 * Filters the item data array placed into block context for an auction.
+			 *
+			 * Fires per-item. Post meta for $auction_id is already primed —
+			 * get_post_meta() calls in callbacks are zero-cost cache hits.
+			 * For batch enrichment across all items in the result set, use the
+			 * aucteeno_products_context_data filter instead.
+			 *
+			 * @since 2.2.0
+			 * @param array $item_data  Item context data array.
+			 * @param int   $auction_id Auction post ID.
+			 */
+			$items[] = apply_filters(
+				'aucteeno_product_context_data',
+				array(
+					'id'                           => $auction_id,
+					'title'                        => $row['post_title'],
+					'permalink'                    => home_url( user_trailingslashit( $auction_base . '/' . $row['post_name'] ) ),
+					'image_url'                    => $image_url,
+					'image_id'                     => $image_id,
+					'user_id'                      => absint( $row['user_id'] ),
+					'bidding_status'               => absint( $row['bidding_status'] ),
+					'bidding_starts_at'            => absint( $row['bidding_starts_at'] ),
+					'bidding_ends_at'              => absint( $row['bidding_ends_at'] ),
+					'location_country'             => $row['location_country'],
+					'location_subdivision'         => $row['location_subdivision'],
+					'location_city'                => $row['location_city'],
+					'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
+					'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
+					'current_bid'                  => (float) get_post_meta( $auction_id, '_price', true ),
+					// Product_Auction has no get_reserve_price() method; field is always 0 until implemented.
+					'reserve_price'                => 0.0,
+				),
+				$auction_id
 			);
 		}
+
+		/**
+		 * Filters the complete items array after all per-item context data is built.
+		 *
+		 * Fires once per query. Use this filter (rather than aucteeno_product_context_data)
+		 * when enrichment requires a single batch query across all result IDs — e.g.
+		 * fetching rows from a custom table or an external API for all IDs at once.
+		 * Post meta for all IDs is already primed via Eager_Loader::prime_post_meta().
+		 *
+		 * @since 2.2.0
+		 * @param array $items    Array of item data arrays in display order.
+		 * @param int[] $post_ids Ordered auction post IDs matching $items.
+		 */
+		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
 
 		return array(
 			'items' => $items,

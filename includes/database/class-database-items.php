@@ -287,8 +287,24 @@ class Database_Items {
 		$auction_base   = Auction_Item_Permalinks::get_auction_base();
 		$item_base      = Auction_Item_Permalinks::get_item_base();
 
+		$items = self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+
+		/**
+		 * Filters the complete items array after all per-item context data is built.
+		 *
+		 * Fires once per query. Use this filter (rather than aucteeno_product_context_data)
+		 * when enrichment requires a single batch query across all result IDs — e.g.
+		 * fetching rows from a custom table or an external API for all IDs at once.
+		 * Post meta for all IDs is already primed via Eager_Loader::prime_post_meta().
+		 *
+		 * @since 2.2.0
+		 * @param array $items    Array of item data arrays in display order.
+		 * @param int[] $post_ids Ordered item post IDs matching $items.
+		 */
+		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
+
 		return array(
-			'items' => self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base ),
+			'items' => $items,
 			'page'  => $page,
 			'pages' => max( 1, (int) ceil( $total / $per_page ) ),
 			'total' => $total,
@@ -442,8 +458,13 @@ class Database_Items {
 		$auction_base   = Auction_Item_Permalinks::get_auction_base();
 		$item_base      = Auction_Item_Permalinks::get_item_base();
 
+		$items = self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+
+		/** This filter is documented in includes/database/class-database-items.php */
+		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
+
 		return array(
-			'items' => self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base ),
+			'items' => $items,
 			'page'  => $page,
 			'pages' => max( 1, (int) ceil( $total / $per_page ) ),
 			'total' => $total,
@@ -720,27 +741,43 @@ class Database_Items {
 				$permalink = get_permalink( $item_id );
 			}
 
-			$items[] = array(
-				'id'                           => $item_id,
-				'auction_id'                   => absint( $row['auction_id'] ),
-				'title'                        => $row['post_title'],
-				'permalink'                    => $permalink,
-				'image_url'                    => $image_url,
-				'image_id'                     => $image_id,
-				'user_id'                      => absint( $row['user_id'] ),
-				'bidding_status'               => $bidding_status,
-				'bidding_starts_at'            => absint( $row['bidding_starts_at'] ),
-				'bidding_ends_at'              => absint( $row['bidding_ends_at'] ),
-				'lot_no'                       => $row['lot_no'],
-				'lot_sort_key'                 => absint( $row['lot_sort_key'] ),
-				'location_country'             => $row['location_country'],
-				'location_subdivision'         => $row['location_subdivision'],
-				'location_city'                => $row['location_city'],
-				'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
-				'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
-				'current_bid'                  => (float) get_post_meta( $item_id, $current_bid_key, true ),
-				// Product_Item has no get_reserve_price() method; field is always 0 until implemented.
-				'reserve_price'                => 0.0,
+			/**
+			 * Filters the item data array placed into block context for an item/lot.
+			 *
+			 * Fires per-item. Post meta for $item_id is already primed —
+			 * get_post_meta() calls in callbacks are zero-cost cache hits.
+			 * For batch enrichment across all items in the result set, use the
+			 * aucteeno_products_context_data filter (applied by the callers of this method).
+			 *
+			 * @since 2.2.0
+			 * @param array $item_data Item context data array.
+			 * @param int   $item_id   Item post ID.
+			 */
+			$items[] = apply_filters(
+				'aucteeno_product_context_data',
+				array(
+					'id'                           => $item_id,
+					'auction_id'                   => absint( $row['auction_id'] ),
+					'title'                        => $row['post_title'],
+					'permalink'                    => $permalink,
+					'image_url'                    => $image_url,
+					'image_id'                     => $image_id,
+					'user_id'                      => absint( $row['user_id'] ),
+					'bidding_status'               => $bidding_status,
+					'bidding_starts_at'            => absint( $row['bidding_starts_at'] ),
+					'bidding_ends_at'              => absint( $row['bidding_ends_at'] ),
+					'lot_no'                       => $row['lot_no'],
+					'lot_sort_key'                 => absint( $row['lot_sort_key'] ),
+					'location_country'             => $row['location_country'],
+					'location_subdivision'         => $row['location_subdivision'],
+					'location_city'                => $row['location_city'],
+					'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
+					'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
+					'current_bid'                  => (float) get_post_meta( $item_id, $current_bid_key, true ),
+					// Product_Item has no get_reserve_price() method; field is always 0 until implemented.
+					'reserve_price'                => 0.0,
+				),
+				$item_id
 			);
 		}
 

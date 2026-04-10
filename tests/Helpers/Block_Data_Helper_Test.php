@@ -67,6 +67,9 @@ class Block_Data_Helper_Test extends TestCase {
 		Functions\when( 'get_post' )->justReturn( $post );
 		Functions\when( 'get_permalink' )->justReturn( 'https://example.com/auction/test/' );
 		Functions\when( 'wp_get_attachment_image_src' )->justReturn( false );
+		Functions\when( 'apply_filters' )->alias( function ( $tag, $value ) {
+			return $value;
+		} );
 
 		return array( 'wpdb' => $wpdb, 'product' => $product );
 	}
