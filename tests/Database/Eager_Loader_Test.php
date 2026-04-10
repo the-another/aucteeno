@@ -141,4 +141,94 @@ class Eager_Loader_Test extends TestCase {
 
 		$this->addToAssertionCount( 1 );
 	}
+
+	/**
+	 * Test that load_location_terms returns code to term ID map.
+	 *
+	 * @return void
+	 */
+	public function test_load_location_terms_returns_code_to_term_id_map(): void {
+		$term_us = (object) array( 'term_id' => 42 );
+		$term_ks = (object) array( 'term_id' => 43 );
+
+		Functions\expect( 'get_terms' )
+			->once()
+			->andReturn( array( $term_us, $term_ks ) );
+
+		Functions\when( 'get_term_meta' )
+			->alias( function ( $term_id, $key, $single ) {
+				$map = array(
+					42 => 'US',
+					43 => 'US:KS',
+				);
+				return $map[ $term_id ] ?? '';
+			} );
+
+		Functions\when( 'is_wp_error' )->justReturn( false );
+
+		$map = Eager_Loader::load_location_terms( array( 'US', 'US:KS' ) );
+
+		$this->assertSame( array( 'US' => 42, 'US:KS' => 43 ), $map );
+	}
+
+	/**
+	 * Test that load_location_terms returns empty map and skips query for empty codes.
+	 *
+	 * @return void
+	 */
+	public function test_load_location_terms_returns_empty_map_and_skips_query_for_empty_codes(): void {
+		Functions\expect( 'get_terms' )->never();
+
+		$map = Eager_Loader::load_location_terms( array() );
+
+		$this->assertSame( array(), $map );
+	}
+
+	/**
+	 * Test that load_location_terms filters empty strings.
+	 *
+	 * @return void
+	 */
+	public function test_load_location_terms_filters_empty_strings(): void {
+		Functions\expect( 'get_terms' )->never();
+
+		$map = Eager_Loader::load_location_terms( array( '', '', '' ) );
+
+		$this->assertSame( array(), $map );
+	}
+
+	/**
+	 * Test that load_location_terms deduplicates codes before querying.
+	 *
+	 * @return void
+	 */
+	public function test_load_location_terms_deduplicates_codes_before_querying(): void {
+		Functions\when( 'is_wp_error' )->justReturn( false );
+
+		Functions\expect( 'get_terms' )
+			->once()
+			->andReturnUsing( function ( $args ) {
+				// Confirm only one unique code is passed.
+				$this->assertSame( array( 'US' ), $args['meta_query'][0]['value'] );
+				return array();
+			} );
+
+		Eager_Loader::load_location_terms( array( 'US', 'US', 'US' ) );
+	}
+
+	/**
+	 * Test that load_location_terms returns empty map on wp_error.
+	 *
+	 * @return void
+	 */
+	public function test_load_location_terms_returns_empty_map_on_wp_error(): void {
+		$error = new \WP_Error( 'invalid_taxonomy', 'Invalid taxonomy.' );
+
+		Functions\expect( 'get_terms' )->once()->andReturn( $error );
+		Functions\when( 'is_wp_error' )->justReturn( true );
+
+		$map = Eager_Loader::load_location_terms( array( 'US' ) );
+
+		$this->assertSame( array(), $map );
+	}
 }

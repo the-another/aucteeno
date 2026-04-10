@@ -81,4 +81,54 @@ class Eager_Loader {
 
 		return $map;
 	}
+
+	/**
+	 * Load location taxonomy term IDs for a set of location codes.
+	 *
+	 * Runs a single get_terms() call with meta_query IN(...) for all unique codes,
+	 * replacing per-item get_terms() calls in field-location/render.php.
+	 *
+	 * The aucteeno-location taxonomy uses globally unique `code` term meta:
+	 * countries store two-letter codes ('US'), subdivisions store 'COUNTRY:STATE' ('US:KS').
+	 *
+	 * @since 2.1.0
+	 * @param array<string> $codes Mixed country and subdivision codes. Empty strings are filtered.
+	 * @return array<string,int> Map of code => term_id. Empty if no codes or no matches.
+	 */
+	public static function load_location_terms( array $codes ): array {
+		$codes = array_values( array_unique( array_filter( $codes ) ) );
+
+		if ( empty( $codes ) ) {
+			return array();
+		}
+
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'aucteeno-location',
+				'hide_empty' => false,
+				'meta_query' => array(
+					array(
+						'key'     => 'code',
+						'value'   => $codes,
+						'compare' => 'IN',
+					),
+				),
+			)
+		);
+
+		$map = array();
+
+		if ( is_wp_error( $terms ) || ! is_array( $terms ) ) {
+			return $map;
+		}
+
+		foreach ( $terms as $term ) {
+			$code = get_term_meta( $term->term_id, 'code', true );
+			if ( ! empty( $code ) ) {
+				$map[ $code ] = (int) $term->term_id;
+			}
+		}
+
+		return $map;
+	}
 }
