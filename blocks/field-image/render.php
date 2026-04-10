@@ -19,26 +19,12 @@ $is_link      = $attributes['isLink'] ?? true;
 $aspect_ratio = $attributes['aspectRatio'] ?? '4/3';
 $permalink    = $item_data['permalink'] ?? '#';
 $title        = $item_data['title'] ?? '';
+$image_id     = absint( $item_data['image_id'] ?? 0 );
 
-// Get product ID from item data.
-$product_id = isset( $item_data['id'] ) ? absint( $item_data['id'] ) : 0;
-if ( ! $product_id ) {
-	return '';
-}
-
-// Get product object.
-$product = wc_get_product( $product_id );
-if ( ! $product ) {
-	return '';
-}
-
-$wrapper_classes = 'aucteeno-field-image';
+$wrapper_classes    = 'aucteeno-field-image';
 $wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
 
 $style = "aspect-ratio: {$aspect_ratio};";
-
-// Get featured image ID.
-$image_id = $product->get_image_id();
 
 ob_start();
 ?>
@@ -51,9 +37,15 @@ ob_start();
 
 	<?php if ( $image_id ) : ?>
 		<?php
-		$alt_text = get_post_meta( $image_id, '_wp_attachment_image_alt', true );
-		$alt      = ! empty( $alt_text ) ? $alt_text : $title;
-		echo $product->get_image( 'woocommerce_thumbnail', array( 'alt' => $alt, 'style' => $style ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo wp_get_attachment_image(
+			$image_id,
+			'woocommerce_thumbnail',
+			false,
+			array(
+				'alt'   => esc_attr( $title ),
+				'style' => $style,
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		?>
 	<?php else : ?>
 		<?php echo wc_placeholder_img( 'woocommerce_thumbnail', array( 'style' => $style ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

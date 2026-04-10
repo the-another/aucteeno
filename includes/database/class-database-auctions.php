@@ -10,6 +10,9 @@
 
 namespace The_Another\Plugin\Aucteeno\Database;
 
+use The_Another\Plugin\Aucteeno\Database\Eager_Loader;
+use The_Another\Plugin\Aucteeno\Permalinks\Auction_Item_Permalinks;
+
 /**
  * Class Database_Auctions
  *
@@ -247,37 +250,44 @@ class Database_Auctions {
 		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
-		// Transform results to include additional data.
+		// Batch-prime caches before transform loop — eliminates N+1 wc_get_product() calls.
+		$ids = array_column( $results, 'auction_id' );
+		Eager_Loader::prime_post_meta( $ids );
+		$image_map = Eager_Loader::prime_images( $ids );
+
+		$merged_codes   = array_merge(
+			array_column( $results, 'location_country' ),
+			array_column( $results, 'location_subdivision' )
+		);
+		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
+		$term_map       = Eager_Loader::load_location_terms( $location_codes );
+		$auction_base   = Auction_Item_Permalinks::get_auction_base();
+
 		$items = array();
 		foreach ( $results as $row ) {
 			$auction_id = absint( $row['auction_id'] );
-			$product    = wc_get_product( $auction_id );
-
-			$image_url = '';
-			if ( $product ) {
-				$image_id = $product->get_image_id();
-				if ( $image_id ) {
-					$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
-					if ( $image_src ) {
-						$image_url = $image_src[0];
-					}
-				}
-			}
+			$image_id   = $image_map[ $auction_id ] ?? 0;
+			$image_src  = $image_id ? wp_get_attachment_image_src( $image_id, 'medium' ) : false;
+			$image_url  = is_array( $image_src ) ? $image_src[0] : '';
 
 			$items[] = array(
-				'id'                   => $auction_id,
-				'title'                => $row['post_title'],
-				'permalink'            => get_permalink( $auction_id ),
-				'image_url'            => $image_url,
-				'user_id'              => absint( $row['user_id'] ),
-				'bidding_status'       => absint( $row['bidding_status'] ),
-				'bidding_starts_at'    => absint( $row['bidding_starts_at'] ),
-				'bidding_ends_at'      => absint( $row['bidding_ends_at'] ),
-				'location_country'     => $row['location_country'],
-				'location_subdivision' => $row['location_subdivision'],
-				'location_city'        => $row['location_city'],
-				'current_bid'          => $product ? (float) $product->get_price() : 0,
-				'reserve_price'        => $product && method_exists( $product, 'get_reserve_price' ) ? (float) $product->get_reserve_price() : 0,
+				'id'                           => $auction_id,
+				'title'                        => $row['post_title'],
+				'permalink'                    => home_url( user_trailingslashit( $auction_base . '/' . $row['post_name'] ) ),
+				'image_url'                    => $image_url,
+				'image_id'                     => $image_id,
+				'user_id'                      => absint( $row['user_id'] ),
+				'bidding_status'               => absint( $row['bidding_status'] ),
+				'bidding_starts_at'            => absint( $row['bidding_starts_at'] ),
+				'bidding_ends_at'              => absint( $row['bidding_ends_at'] ),
+				'location_country'             => $row['location_country'],
+				'location_subdivision'         => $row['location_subdivision'],
+				'location_city'                => $row['location_city'],
+				'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
+				'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
+				'current_bid'                  => (float) get_post_meta( $auction_id, '_price', true ),
+				// Product_Auction has no get_reserve_price() method; field is always 0 until implemented.
+				'reserve_price'                => 0.0,
 			);
 		}
 

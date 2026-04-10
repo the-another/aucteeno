@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,15 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.2.0 - 2026-04-10 =
+* Performance: replaced per-item wc_get_product() calls in query loop with batch WordPress object cache priming, reducing queries from ~152 to 5–8 per page for 25-item listings
+* Added Eager_Loader helper class with batch post meta priming, attachment meta priming, and location taxonomy term loading
+* Database_Auctions::query_for_listing() now returns image_id, location_country_term_id, and location_subdivision_term_id fields; permalink built from SQL slug without get_permalink() per item
+* Database_Items::query_for_listing() now returns the same new fields; current_bid reads from status-specific meta key (_aucteeno_current_bid / _aucteeno_asking_bid / _aucteeno_sold_price); permalink built from auction and item slugs
+* Block_Data_Helper::get_item_data() no longer calls wc_get_product() a second time for image loading; image_id field added to return data
+* field-image block reads image_id from block context instead of calling wc_get_product() per item
+* field-location block reads pre-loaded term IDs from block context when available, falling back to per-item get_terms() only on single-post pages
 
 = 1.1.0 - 2026-04-10 =
 * Added automated bidding status reconciler that runs every 5 minutes via Action Scheduler

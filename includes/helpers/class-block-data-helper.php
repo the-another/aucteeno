@@ -107,16 +107,13 @@ class Block_Data_Helper {
 			return null;
 		}
 
-		// Get image URL via WooCommerce product (respects Nexus image overrides).
+		// Get image via postmeta — avoids a second wc_get_product() call per item.
+		$image_id  = (int) get_post_meta( $post_id, '_thumbnail_id', true );
 		$image_url = '';
-		$product   = wc_get_product( $post_id );
-		if ( $product ) {
-			$image_id = $product->get_image_id();
-			if ( $image_id ) {
-				$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
-				if ( $image_src ) {
-					$image_url = $image_src[0];
-				}
+		if ( $image_id ) {
+			$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
+			if ( is_array( $image_src ) ) {
+				$image_url = $image_src[0];
 			}
 		}
 
@@ -126,6 +123,7 @@ class Block_Data_Helper {
 			'title'                => $post->post_title,
 			'permalink'            => get_permalink( $post_id ),
 			'image_url'            => $image_url,
+			'image_id'             => $image_id,
 			'user_id'              => (int) $row['user_id'],
 			'bidding_status'       => (int) $row['bidding_status'],
 			'bidding_starts_at'    => (int) $row['bidding_starts_at'],
