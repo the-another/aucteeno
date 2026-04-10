@@ -64,8 +64,8 @@ class Eager_Loader {
 		$attachment_ids = array();
 
 		foreach ( $ids as $id ) {
-			$id       = absint( $id );
-			$image_id = (int) get_post_meta( $id, '_thumbnail_id', true );
+			$id         = absint( $id );
+			$image_id   = (int) get_post_meta( $id, '_thumbnail_id', true );
 			$map[ $id ] = $image_id;
 			if ( $image_id > 0 ) {
 				$attachment_ids[] = $image_id;
