@@ -59,8 +59,7 @@ class Database_Auctions_Transform_Test extends TestCase {
 
 		// Re-stub Brain\Monkey-managed functions reset by Monkey\setUp().
 		Functions\when( 'wc_get_product' )->justReturn( false );
-		Functions\when( 'get_permalink' )->justReturn( 'https://example.com/auction/test/' );
-		Functions\when( '_prime_post_caches' )->justReturn( null );
+Functions\when( '_prime_post_caches' )->justReturn( null );
 		Functions\when( 'get_post_meta' )->justReturn( '' );
 		Functions\when( 'wp_get_attachment_image_src' )->justReturn( false );
 		Functions\when( 'get_terms' )->justReturn( array() );
@@ -110,6 +109,21 @@ class Database_Auctions_Transform_Test extends TestCase {
 
 		$this->assertArrayHasKey( 'location_country_term_id', $result['items'][0] );
 		$this->assertArrayHasKey( 'location_subdivision_term_id', $result['items'][0] );
+	}
+
+	public function test_query_for_listing_location_term_ids_resolved_from_term_map(): void {
+		$term = (object) array( 'term_id' => 42 );
+
+		Functions\when( 'get_terms' )->justReturn( array( $term ) );
+		Functions\when( 'wp_list_pluck' )->alias( function ( $list, $field ) {
+			return array_column( array_map( 'get_object_vars', $list ), $field );
+		} );
+		Functions\when( 'update_termmeta_cache' )->justReturn( null );
+		Functions\when( 'get_term_meta' )->justReturn( 'US' );
+
+		$result = Database_Auctions::query_for_listing();
+
+		$this->assertSame( 42, $result['items'][0]['location_country_term_id'] );
 	}
 
 	public function test_query_for_listing_current_bid_reads_from_price_meta(): void {

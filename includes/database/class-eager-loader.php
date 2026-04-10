@@ -106,6 +106,7 @@ class Eager_Loader {
 			array(
 				'taxonomy'   => 'aucteeno-location',
 				'hide_empty' => false,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional batch IN() query replacing N per-item lookups.
 				'meta_query' => array(
 					array(
 						'key'     => 'code',
