@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,16 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+
+
+= 1.2.2 - 2026-04-10 =
+* Added "Lot Number" sort option to the Query Loop block when query type is "Items"
+* Items sorted by lot number use lot_sort_key ASC from the aucteeno_items HPS table for correct alphanumeric ordering
+* REST API sort parameter now accepts lot_number value for both auctions and items endpoints
+
+= 1.2.1 - 2026-04-10 =
+* Version bump
 
 = 1.2.1 - 2026-04-10 =
 * Added aucteeno_product_context_data filter (per-product) and aucteeno_products_context_data filter (batch, fires once per query) as extension points for enriching block context data
