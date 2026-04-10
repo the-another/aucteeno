@@ -80,6 +80,7 @@ class Database_Items_Transform_Test extends TestCase {
                 'post_title'           => 'Test Item',
                 'post_name'            => 'test-item',
                 'auction_post_name'    => 'test-auction',
+                'cnt'                  => 1,
             ),
             $overrides
         );
@@ -199,7 +200,7 @@ class Database_Items_Transform_Test extends TestCase {
 
         Functions\expect( 'wc_get_product' )->never();
 
-        Database_Items::query_for_listing( array( 'sort' => 'status' ) );
+        Database_Items::query_for_listing( array( 'sort' => 'ending_soon' ) );
         $this->addToAssertionCount( 1 );
     }
 
@@ -215,7 +216,7 @@ class Database_Items_Transform_Test extends TestCase {
                 return '_thumbnail_id' === $key ? '99' : '';
             } );
 
-        $result = Database_Items::query_for_listing( array( 'sort' => 'status' ) );
+        $result = Database_Items::query_for_listing( array( 'sort' => 'ending_soon' ) );
 
         $this->assertArrayHasKey( 'image_id', $result['items'][0] );
         $this->assertSame( 99, $result['items'][0]['image_id'] );

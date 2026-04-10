@@ -255,12 +255,11 @@ class Database_Auctions {
 		Eager_Loader::prime_post_meta( $ids );
 		$image_map = Eager_Loader::prime_images( $ids );
 
-		$location_codes = array_filter(
-			array_merge(
-				array_column( $results, 'location_country' ),
-				array_column( $results, 'location_subdivision' )
-			)
+		$merged_codes   = array_merge(
+			array_column( $results, 'location_country' ),
+			array_column( $results, 'location_subdivision' )
 		);
+		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
 		$auction_base   = Auction_Item_Permalinks::get_auction_base();
 
