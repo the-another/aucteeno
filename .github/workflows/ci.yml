@@ -97,6 +97,7 @@ jobs:
   lint-js:
     name: JS & CSS Lint
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Checkout code
