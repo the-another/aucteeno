@@ -10,6 +10,9 @@
 
 namespace The_Another\Plugin\Aucteeno\Database;
 
+use The_Another\Plugin\Aucteeno\Database\Eager_Loader;
+use The_Another\Plugin\Aucteeno\Permalinks\Auction_Item_Permalinks;
+
 /**
  * Class Database_Items
  *
@@ -261,8 +264,32 @@ class Database_Items {
 		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
+		if ( empty( $results ) ) {
+			return array(
+				'items' => array(),
+				'page'  => $page,
+				'pages' => max( 1, (int) ceil( $total / $per_page ) ),
+				'total' => $total,
+			);
+		}
+
+		// Batch-prime caches before transform — eliminates N+1 wc_get_product() calls.
+		$ids = array_column( $results, 'item_id' );
+		Eager_Loader::prime_post_meta( $ids );
+		$image_map = Eager_Loader::prime_images( $ids );
+
+		$location_codes = array_filter(
+			array_merge(
+				array_column( $results, 'location_country' ),
+				array_column( $results, 'location_subdivision' )
+			)
+		);
+		$term_map       = Eager_Loader::load_location_terms( $location_codes );
+		$auction_base   = Auction_Item_Permalinks::get_auction_base();
+		$item_base      = Auction_Item_Permalinks::get_item_base();
+
 		return array(
-			'items' => self::transform_results( $results ),
+			'items' => self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base ),
 			'page'  => $page,
 			'pages' => max( 1, (int) ceil( $total / $per_page ) ),
 			'total' => $total,
@@ -393,8 +420,32 @@ class Database_Items {
 			$results = array_merge( $results, $expired_results );
 		}
 
+		if ( empty( $results ) ) {
+			return array(
+				'items' => array(),
+				'page'  => $page,
+				'pages' => max( 1, (int) ceil( $total / $per_page ) ),
+				'total' => $total,
+			);
+		}
+
+		// Batch-prime caches before transform — all results merged first.
+		$ids = array_column( $results, 'item_id' );
+		Eager_Loader::prime_post_meta( $ids );
+		$image_map = Eager_Loader::prime_images( $ids );
+
+		$location_codes = array_filter(
+			array_merge(
+				array_column( $results, 'location_country' ),
+				array_column( $results, 'location_subdivision' )
+			)
+		);
+		$term_map       = Eager_Loader::load_location_terms( $location_codes );
+		$auction_base   = Auction_Item_Permalinks::get_auction_base();
+		$item_base      = Auction_Item_Permalinks::get_item_base();
+
 		return array(
-			'items' => self::transform_results( $results ),
+			'items' => self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base ),
 			'page'  => $page,
 			'pages' => max( 1, (int) ceil( $total / $per_page ) ),
 			'total' => $total,
@@ -443,7 +494,7 @@ class Database_Items {
 
 		foreach ( $count_results as $row ) {
 			$status = absint( $row['bidding_status'] );
-			$cnt    = absint( $row['cnt'] );
+			$cnt    = absint( $row['cnt'] ?? 1 );
 
 			if ( 10 === $status ) {
 				$counts['running'] = $cnt;
@@ -624,44 +675,73 @@ class Database_Items {
 	/**
 	 * Transform raw database results to item data arrays.
 	 *
-	 * @param array $results Raw database results.
+	 * Reads image and price data from the WP object cache (primed by Eager_Loader).
+	 * Uses bidding_status from the HPS row to select the correct price meta key,
+	 * eliminating the hidden wp_get_post_terms() call inside Product_Item::get_price().
+	 *
+	 * @since 2.1.0
+	 * @param array  $results      Raw database results (must include auction_post_name column).
+	 * @param array  $image_map    Map of item_id => attachment_id from Eager_Loader::prime_images().
+	 * @param array  $term_map     Map of location code => term_id from Eager_Loader::load_location_terms().
+	 * @param string $auction_base Auction URL base slug (e.g. 'auction').
+	 * @param string $item_base    Item URL base slug (e.g. 'item').
 	 * @return array Transformed item data.
 	 */
-	private static function transform_results( array $results ): array {
+	private static function transform_results(
+		array $results,
+		array $image_map,
+		array $term_map,
+		string $auction_base,
+		string $item_base
+	): array {
 		$items = array();
 
 		foreach ( $results as $row ) {
-			$item_id = absint( $row['item_id'] );
-			$product = wc_get_product( $item_id );
+			$item_id        = absint( $row['item_id'] );
+			$bidding_status = absint( $row['bidding_status'] );
 
-			$image_url = '';
-			if ( $product ) {
-				$image_id = $product->get_image_id();
-				if ( $image_id ) {
-					$image_src = wp_get_attachment_image_src( $image_id, 'medium' );
-					if ( $image_src ) {
-						$image_url = $image_src[0];
-					}
-				}
+			$image_id  = $image_map[ $item_id ] ?? 0;
+			$image_src = $image_id ? wp_get_attachment_image_src( $image_id, 'medium' ) : false;
+			$image_url = is_array( $image_src ) ? $image_src[0] : '';
+
+			$current_bid_key = match ( $bidding_status ) {
+				10      => '_aucteeno_current_bid',
+				20      => '_aucteeno_asking_bid',
+				30      => '_aucteeno_sold_price',
+				default => '_aucteeno_current_bid',
+			};
+
+			$auction_slug = $row['auction_post_name'] ?? '';
+			if ( $auction_slug ) {
+				$permalink = home_url(
+					user_trailingslashit(
+						$auction_base . '/' . $auction_slug . '/' . $item_base . '/' . $row['post_name']
+					) 
+				);
+			} else {
+				$permalink = get_permalink( $item_id );
 			}
 
 			$items[] = array(
-				'id'                   => $item_id,
-				'auction_id'           => absint( $row['auction_id'] ),
-				'title'                => $row['post_title'],
-				'permalink'            => get_permalink( $item_id ),
-				'image_url'            => $image_url,
-				'user_id'              => absint( $row['user_id'] ),
-				'bidding_status'       => absint( $row['bidding_status'] ),
-				'bidding_starts_at'    => absint( $row['bidding_starts_at'] ),
-				'bidding_ends_at'      => absint( $row['bidding_ends_at'] ),
-				'lot_no'               => $row['lot_no'],
-				'lot_sort_key'         => absint( $row['lot_sort_key'] ),
-				'location_country'     => $row['location_country'],
-				'location_subdivision' => $row['location_subdivision'],
-				'location_city'        => $row['location_city'],
-				'current_bid'          => $product ? (float) $product->get_price() : 0,
-				'reserve_price'        => $product && method_exists( $product, 'get_reserve_price' ) ? (float) $product->get_reserve_price() : 0,
+				'id'                           => $item_id,
+				'auction_id'                   => absint( $row['auction_id'] ),
+				'title'                        => $row['post_title'],
+				'permalink'                    => $permalink,
+				'image_url'                    => $image_url,
+				'image_id'                     => $image_id,
+				'user_id'                      => absint( $row['user_id'] ),
+				'bidding_status'               => $bidding_status,
+				'bidding_starts_at'            => absint( $row['bidding_starts_at'] ),
+				'bidding_ends_at'              => absint( $row['bidding_ends_at'] ),
+				'lot_no'                       => $row['lot_no'],
+				'lot_sort_key'                 => absint( $row['lot_sort_key'] ),
+				'location_country'             => $row['location_country'],
+				'location_subdivision'         => $row['location_subdivision'],
+				'location_city'                => $row['location_city'],
+				'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
+				'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
+				'current_bid'                  => (float) get_post_meta( $item_id, $current_bid_key, true ),
+				'reserve_price'                => 0.0,
 			);
 		}
 
