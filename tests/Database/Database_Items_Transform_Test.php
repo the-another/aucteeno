@@ -40,6 +40,9 @@ class Database_Items_Transform_Test extends TestCase {
         Functions\when( '_prime_post_caches' )->justReturn( null );
         Functions\when( 'get_post_meta' )->justReturn( '' );
         Functions\when( 'wp_get_attachment_image_src' )->justReturn( false );
+        Functions\when( 'apply_filters' )->alias( function ( $tag, $value ) {
+            return $value;
+        } );
         Functions\when( 'get_terms' )->justReturn( array() );
         Functions\when( 'get_term_meta' )->justReturn( '' );
         Functions\when( 'is_wp_error' )->justReturn( false );
@@ -193,6 +196,23 @@ class Database_Items_Transform_Test extends TestCase {
         $this->assertArrayHasKey( 'location_subdivision_term_id', $result['items'][0] );
     }
 
+    public function test_query_for_listing_batch_filter_receives_all_item_ids(): void {
+        $this->stub_wpdb_for_single_item( $this->base_item_row() );
+        $captured_ids = null;
+
+        Functions\when( 'apply_filters' )->alias( function ( $tag, $value, ...$extra ) use ( &$captured_ids ) {
+            if ( 'aucteeno_products_context_data' === $tag ) {
+                $captured_ids = $extra[0] ?? null;
+            }
+            return $value;
+        } );
+
+        Database_Items::query_for_listing();
+
+        $this->assertIsArray( $captured_ids );
+        $this->assertContains( 20, $captured_ids );
+    }
+
     public function test_query_for_listing_by_status_does_not_call_wc_get_product(): void {
         $this->wpdb->shouldReceive( 'prepare' )->andReturn( 'SQL' );
         $this->wpdb->shouldReceive( 'get_var' )->andReturn( '1' );
@@ -210,7 +230,6 @@ class Database_Items_Transform_Test extends TestCase {
         $this->wpdb->shouldReceive( 'get_results' )->andReturn( array(
             $this->base_item_row( array( 'bidding_status' => 10 ) ),
         ) );
-
         Functions\when( 'get_post_meta' )
             ->alias( function ( $id, $key = null, $single = false ) {
                 return '_thumbnail_id' === $key ? '99' : '';
