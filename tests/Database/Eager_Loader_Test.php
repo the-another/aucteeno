@@ -83,4 +83,73 @@ class Eager_Loader_Test extends TestCase {
 		// Expectation verified by Mockery::close() in tearDown().
 		$this->addToAssertionCount( 1 );
 	}
+
+	/**
+	 * Test that prime_images returns post_id to image_id map.
+	 *
+	 * @return void
+	 */
+	public function test_prime_images_returns_post_id_to_image_id_map(): void {
+		Functions\when( 'get_post_meta' )
+			->alias( function ( $id, $key, $single ) {
+				return $id === 10 ? '55' : '';
+			} );
+		Functions\when( '_prime_post_caches' )->justReturn( null );
+
+		$map = Eager_Loader::prime_images( array( 10, 11 ) );
+
+		$this->assertSame( array( 10 => 55, 11 => 0 ), $map );
+	}
+
+	/**
+	 * Test that prime_images primes attachment caches for found thumbnails.
+	 *
+	 * @return void
+	 */
+	public function test_prime_images_primes_attachment_caches_for_found_thumbnails(): void {
+		Functions\when( 'get_post_meta' )
+			->alias( function ( $id, $key, $single ) {
+				return '55';
+			} );
+
+		Functions\expect( '_prime_post_caches' )
+			->once()
+			->with( array( 55 ), false, true );
+
+		Eager_Loader::prime_images( array( 10 ) );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test that prime_images skips attachment prime when no thumbnails.
+	 *
+	 * @return void
+	 */
+	public function test_prime_images_skips_attachment_prime_when_no_thumbnails(): void {
+		Functions\when( 'get_post_meta' )->justReturn( '' );
+		// No _prime_post_caches expected — Brain\Monkey will fail if called unexpectedly.
+
+		$map = Eager_Loader::prime_images( array( 10 ) );
+
+		$this->assertSame( array( 10 => 0 ), $map );
+	}
+
+	/**
+	 * Test that prime_images deduplicates attachment IDs.
+	 *
+	 * @return void
+	 */
+	public function test_prime_images_deduplicates_attachment_ids(): void {
+		// Two posts share the same thumbnail.
+		Functions\when( 'get_post_meta' )->justReturn( '55' );
+
+		Functions\expect( '_prime_post_caches' )
+			->once()
+			->with( array( 55 ), false, true ); // Deduplicated: [55, 55] → [55]
+
+		Eager_Loader::prime_images( array( 10, 11 ) );
+
+		$this->addToAssertionCount( 1 );
+	}
 }

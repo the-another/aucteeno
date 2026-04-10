@@ -48,4 +48,37 @@ class Eager_Loader {
 			get_post_meta( absint( $id ) );
 		}
 	}
+
+	/**
+	 * Prime attachment meta caches for the thumbnails of the given post IDs.
+	 *
+	 * Must be called AFTER prime_post_meta() on the same IDs — reads
+	 * _thumbnail_id from the already-primed meta cache.
+	 *
+	 * @since 2.1.0
+	 * @param array<int> $ids Post IDs whose thumbnails should be primed.
+	 * @return array<int,int> Map of post_id => attachment_id (0 if no thumbnail).
+	 */
+	public static function prime_images( array $ids ): array {
+		$map            = array();
+		$attachment_ids = array();
+
+		foreach ( $ids as $id ) {
+			$id       = absint( $id );
+			$image_id = (int) get_post_meta( $id, '_thumbnail_id', true );
+			$map[ $id ] = $image_id;
+			if ( $image_id > 0 ) {
+				$attachment_ids[] = $image_id;
+			}
+		}
+
+		if ( ! empty( $attachment_ids ) ) {
+			$unique_ids = array_values( array_unique( $attachment_ids ) );
+			if ( function_exists( '_prime_post_caches' ) ) {
+				_prime_post_caches( $unique_ids, false, true );
+			}
+		}
+
+		return $map;
+	}
 }
