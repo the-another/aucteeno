@@ -58,7 +58,7 @@
 		"orderBy": {
 			"type": "string",
 			"default": "ending_soon",
-			"enum": [ "ending_soon", "newest" ]
+			"enum": [ "ending_soon", "newest", "lot_number" ]
 		},
 		"infiniteScroll": {
 			"type": "boolean",

@@ -107,7 +107,7 @@ class REST_Controller extends WP_REST_Controller {
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
-							'enum'        => array( 'ending_soon', 'newest' ),
+							'enum'        => array( 'ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'         => array(
 							'description' => 'Response format: html (fragments) or json (data).',
@@ -241,7 +241,7 @@ class REST_Controller extends WP_REST_Controller {
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
-							'enum'        => array( 'ending_soon', 'newest' ),
+							'enum'        => array( 'ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'         => array(
 							'description' => 'Response format: html (fragments) or json (data).',

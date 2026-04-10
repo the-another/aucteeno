@@ -341,6 +341,17 @@ function Edit( { attributes, setAttributes, context } ) {
 								label: __( 'Newest First', 'aucteeno' ),
 								value: 'newest',
 							},
+							...( queryType === 'items'
+								? [
+										{
+											label: __(
+												'Lot Number',
+												'aucteeno'
+											),
+											value: 'lot_number',
+										},
+								  ]
+								: [] ),
 						] }
 						onChange={ ( value ) =>
 							setAttributes( { orderBy: value } )

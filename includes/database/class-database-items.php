@@ -152,11 +152,14 @@ class Database_Items {
 		$page     = max( 1, absint( $args['page'] ) );
 		$per_page = min( 50, max( 1, absint( $args['per_page'] ) ) );
 		$offset   = ( $page - 1 ) * $per_page;
-		$sort     = in_array( $args['sort'], array( 'ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
+		$sort     = in_array( $args['sort'], array( 'ending_soon', 'newest', 'lot_number' ), true ) ? $args['sort'] : 'ending_soon';
 
-		// For 'newest' sort, use the combined query approach since it doesn't group by status.
 		if ( 'newest' === $sort ) {
 			return self::query_for_listing_newest( $args, $page, $per_page, $offset );
+		}
+
+		if ( 'lot_number' === $sort ) {
+			return self::query_for_listing_by_lot( $args, $page, $per_page, $offset );
 		}
 
 		// For 'ending_soon' sort, use separate queries per status group.
@@ -301,6 +304,132 @@ class Database_Items {
 		 * @param array $items    Array of item data arrays in display order.
 		 * @param int[] $post_ids Ordered item post IDs matching $items.
 		 */
+		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
+
+		return array(
+			'items' => $items,
+			'page'  => $page,
+			'pages' => max( 1, (int) ceil( $total / $per_page ) ),
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * Query items sorted by lot number (lot_sort_key ASC).
+	 *
+	 * Uses a single combined query ordered by lot_sort_key ASC across all active statuses.
+	 *
+	 * @param array $args     Query arguments.
+	 * @param int   $page     Current page number.
+	 * @param int   $per_page Items per page.
+	 * @param int   $offset   Query offset.
+	 * @return array Query result.
+	 */
+	private static function query_for_listing_by_lot( array $args, int $page, int $per_page, int $offset ): array {
+		global $wpdb;
+
+		$table_name  = self::get_table_name();
+		$posts_table = $wpdb->posts;
+
+		$where_clauses = array(
+			'(
+				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
+				OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
+				OR (i.bidding_status = 30 AND i.bidding_ends_at <= UNIX_TIMESTAMP())
+			)',
+		);
+		$where_values  = self::build_where_values( $args );
+
+		if ( ! empty( $args['user_id'] ) ) {
+			$where_clauses[] = 'i.user_id = %d';
+		}
+		if ( ! empty( $args['auction_id'] ) ) {
+			$where_clauses[] = 'i.auction_id = %d';
+		}
+		if ( ! empty( $args['country'] ) ) {
+			$where_clauses[] = 'i.location_country = %s';
+		}
+		if ( ! empty( $args['subdivision'] ) ) {
+			$where_clauses[] = 'i.location_subdivision = %s';
+		}
+
+		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
+			$product_ids     = array_filter( array_map( 'absint', $args['product_ids'] ) );
+			$placeholders    = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$where_clauses[] = "i.item_id IN ($placeholders)";
+			$where_values    = array_merge( $where_values, $product_ids );
+		}
+
+		if ( ! empty( $args['search'] ) ) {
+			$where_clauses[] = 'p.post_title LIKE %s';
+		}
+
+		$where_sql = implode( ' AND ', $where_clauses );
+
+		$count_sql = "
+			SELECT COUNT(*)
+			FROM {$table_name} i
+			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
+			WHERE {$where_sql}
+		";
+		if ( ! empty( $where_values ) ) {
+			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		$query_sql = "
+			SELECT
+				i.item_id,
+				i.auction_id,
+				i.user_id,
+				i.bidding_status,
+				i.bidding_starts_at,
+				i.bidding_ends_at,
+				i.lot_no,
+				i.lot_sort_key,
+				i.location_country,
+				i.location_subdivision,
+				i.location_city,
+				p.post_title,
+				p.post_name,
+				ap.post_name AS auction_post_name
+			FROM {$table_name} i
+			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
+			LEFT JOIN {$posts_table} ap ON i.auction_id = ap.ID AND ap.post_status = 'publish' -- auction slug, NULL if trashed/draft
+			WHERE {$where_sql}
+			ORDER BY i.lot_sort_key ASC, i.item_id ASC
+			LIMIT %d OFFSET %d
+		";
+
+		$query_values   = array_merge( $where_values, array( $per_page, $offset ) );
+		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$results        = $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		if ( empty( $results ) ) {
+			return array(
+				'items' => array(),
+				'page'  => $page,
+				'pages' => max( 1, (int) ceil( $total / $per_page ) ),
+				'total' => $total,
+			);
+		}
+
+		$ids = array_column( $results, 'item_id' );
+		Eager_Loader::prime_post_meta( $ids );
+		$image_map = Eager_Loader::prime_images( $ids );
+
+		$merged_codes   = array_merge(
+			array_column( $results, 'location_country' ),
+			array_column( $results, 'location_subdivision' )
+		);
+		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
+		$term_map       = Eager_Loader::load_location_terms( $location_codes );
+		$auction_base   = Auction_Item_Permalinks::get_auction_base();
+		$item_base      = Auction_Item_Permalinks::get_item_base();
+
+		$items = self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+
+		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
 
 		return array(

@@ -5,13 +5,17 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  phpunit:
-    name: PHPUnit Tests
-    runs-on: ubuntu-latest
+  build:
+    name: Build
+    runs-on: depot-ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -27,12 +31,54 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: |
+            dist/
+            vendor/
+          retention-days: 1
+
+  phpunit:
+    name: PHPUnit Tests
+    runs-on: depot-ubuntu-24.04
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, zip, curl, dom, tokenizer, intl, iconv
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: artifacts
+
       - name: Run PHPUnit
-        run: ./vendor/bin/phpunit
+        run: php vendor/bin/phpunit
 
   phpcs:
     name: PHP Code Standards
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
+    needs: build
 
     steps:
       - name: Checkout code
@@ -43,17 +89,19 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mbstring, xml, zip, curl, dom, tokenizer, intl, iconv
-          tools: composer:v2
 
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: artifacts
 
       - name: Run PHPCS
-        run: ./vendor/bin/phpcs
+        run: php vendor/bin/phpcs
 
   lint-js:
     name: JS & CSS Lint
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
+    needs: build
 
     steps:
       - name: Checkout code
