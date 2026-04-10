@@ -73,7 +73,7 @@ jobs:
           name: artifacts
 
       - name: Run PHPUnit
-        run: ./vendor/bin/phpunit
+        run: php vendor/bin/phpunit
 
   phpcs:
     name: PHP Code Standards
@@ -96,7 +96,7 @@ jobs:
           name: artifacts
 
       - name: Run PHPCS
-        run: ./vendor/bin/phpcs
+        run: php vendor/bin/phpcs
 
   lint-js:
     name: JS & CSS Lint
