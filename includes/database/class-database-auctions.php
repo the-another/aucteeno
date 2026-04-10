@@ -286,6 +286,7 @@ class Database_Auctions {
 				'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
 				'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
 				'current_bid'                  => (float) get_post_meta( $auction_id, '_price', true ),
+				// Product_Auction has no get_reserve_price() method; field is always 0 until implemented.
 				'reserve_price'                => 0.0,
 			);
 		}

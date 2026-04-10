@@ -254,7 +254,7 @@ class Database_Items {
 				ap.post_name AS auction_post_name
 			FROM {$table_name} i
 			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
-			LEFT JOIN {$posts_table} ap ON i.auction_id = ap.ID -- auction slug, NULL if orphaned
+			LEFT JOIN {$posts_table} ap ON i.auction_id = ap.ID AND ap.post_status = 'publish' -- auction slug, NULL if trashed/draft
 			WHERE {$where_sql}
 			ORDER BY p.post_date DESC, i.item_id DESC
 			LIMIT %d OFFSET %d
@@ -561,7 +561,7 @@ class Database_Items {
 				ap.post_name AS auction_post_name
 			FROM {$table_name} i
 			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
-			LEFT JOIN {$posts_table} ap ON i.auction_id = ap.ID -- auction slug, NULL if orphaned
+			LEFT JOIN {$posts_table} ap ON i.auction_id = ap.ID AND ap.post_status = 'publish' -- auction slug, NULL if trashed/draft
 			WHERE {$base_where_sql}
 			  AND i.bidding_status = %d
 			  {$timestamp_condition}
@@ -739,6 +739,7 @@ class Database_Items {
 				'location_country_term_id'     => $term_map[ $row['location_country'] ] ?? 0,
 				'location_subdivision_term_id' => $term_map[ $row['location_subdivision'] ] ?? 0,
 				'current_bid'                  => (float) get_post_meta( $item_id, $current_bid_key, true ),
+				// Product_Item has no get_reserve_price() method; field is always 0 until implemented.
 				'reserve_price'                => 0.0,
 			);
 		}
