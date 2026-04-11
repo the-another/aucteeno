@@ -94,8 +94,20 @@ class Status_Reconciler {
 		// Defer scheduling until WordPress init fires (AS is available by then).
 		$this->hook_manager->register_action( 'init', array( $this, 'schedule' ), 20 );
 
-		// If init already fired (late plugin load), call directly.
-		if ( did_action( 'init' ) ) {
+		// If init already fully completed (late plugin load), call directly.
+		//
+		// `did_action( 'init' )` returns truthy the moment the `init` hook
+		// STARTS firing — including while `before_woocommerce_init` runs
+		// inside WooCommerce's own `init` callback at priority 0. Action
+		// Scheduler does not initialize its data store until `init`
+		// priority 1, so calling `as_has_scheduled_action()` from that
+		// window triggers a "called before the Action Scheduler data
+		// store was initialized" _doing_it_wrong notice.
+		//
+		// Combining `did_action()` with `! doing_action()` ensures we only
+		// call `schedule()` directly when `init` has fully completed; the
+		// normal case is handled by the deferred priority-20 callback above.
+		if ( did_action( 'init' ) && ! doing_action( 'init' ) ) {
 			$this->schedule();
 		}
 	}
