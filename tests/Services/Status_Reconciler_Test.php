@@ -437,6 +437,101 @@ class Status_Reconciler_Test extends TestCase {
 		$this->assertSame( array(), $tt->getValue( $rec ) );
 	}
 
+	// --- init() / schedule() AS data store safety ---
+
+	/**
+	 * Test that init() does NOT call schedule() directly while the WP `init`
+	 * hook is still firing — Action Scheduler's data store is not yet
+	 * initialized during `before_woocommerce_init` (which runs inside WC's
+	 * own `init` callback at priority 0).
+	 *
+	 * Regression test for the
+	 * "as_has_scheduled_action() was called before the Action Scheduler
+	 * data store was initialized" _doing_it_wrong notice.
+	 *
+	 * @return void
+	 */
+	public function test_init_does_not_schedule_directly_while_init_is_firing(): void {
+		$hook_manager = Mockery::mock( Hook_Manager::class );
+		// Both the action handler and the deferred `init` callback must be registered.
+		$hook_manager->shouldReceive( 'register_action' )
+			->twice();
+
+		// Brain Monkey: simulate "we are currently inside the WP `init` hook".
+		Functions\expect( 'did_action' )
+			->with( 'init' )
+			->andReturn( 1 );
+		Functions\expect( 'doing_action' )
+			->with( 'init' )
+			->andReturn( true );
+
+		// If the bug is present, schedule() runs and calls as_has_scheduled_action(),
+		// which would trigger this expectation. It MUST NOT be called.
+		Functions\expect( 'as_has_scheduled_action' )->never();
+		Functions\expect( 'as_schedule_recurring_action' )->never();
+
+		( new Status_Reconciler( $hook_manager ) )->init();
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test that init() calls schedule() directly when the WP `init` hook has
+	 * already fully completed (late plugin load scenario).
+	 *
+	 * @return void
+	 */
+	public function test_init_schedules_directly_when_init_has_fully_completed(): void {
+		$hook_manager = Mockery::mock( Hook_Manager::class );
+		$hook_manager->shouldReceive( 'register_action' )
+			->twice();
+
+		// Brain Monkey: simulate "init has fully completed".
+		Functions\expect( 'did_action' )
+			->with( 'init' )
+			->andReturn( 1 );
+		Functions\expect( 'doing_action' )
+			->with( 'init' )
+			->andReturn( false );
+
+		// schedule() should be called and see "not yet scheduled".
+		Functions\expect( 'as_has_scheduled_action' )
+			->once()
+			->andReturn( false );
+		Functions\expect( 'as_schedule_recurring_action' )
+			->once();
+
+		( new Status_Reconciler( $hook_manager ) )->init();
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test that init() does not call schedule() directly when the WP `init`
+	 * hook has not yet fired at all — the deferred callback at init priority 20
+	 * is the only path.
+	 *
+	 * @return void
+	 */
+	public function test_init_does_not_schedule_directly_when_init_not_yet_fired(): void {
+		$hook_manager = Mockery::mock( Hook_Manager::class );
+		$hook_manager->shouldReceive( 'register_action' )
+			->twice();
+
+		Functions\expect( 'did_action' )
+			->with( 'init' )
+			->andReturn( 0 );
+		// `doing_action` may or may not be short-circuited depending on evaluation order.
+		Functions\expect( 'doing_action' )
+			->zeroOrMoreTimes()
+			->with( 'init' )
+			->andReturn( false );
+
+		Functions\expect( 'as_has_scheduled_action' )->never();
+		Functions\expect( 'as_schedule_recurring_action' )->never();
+
+		( new Status_Reconciler( $hook_manager ) )->init();
+		$this->addToAssertionCount( 1 );
+	}
+
 	/**
 	 * Test that bulk_set returns false when number_to_term returns '' (no slug for given status).
 	 *
