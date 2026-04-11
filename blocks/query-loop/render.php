@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use The_Another\Plugin\Aucteeno\Blocks\Query_Loop_Location_Filter;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
 use The_Another\Plugin\Aucteeno\Database\Database_Items;
 
@@ -205,6 +206,17 @@ if ( ! empty( $attributes['locationSubdivision'] ) ) {
 	$location_subdivision = sanitize_text_field( $block->context['locationSubdivision'] );
 } elseif ( ! empty( $archive_location_subdivision ) ) {
 	$location_subdivision = $archive_location_subdivision;
+}
+
+// Allow extensions to override the resolved location.
+// Skipped when the block is in product-IDs mode — that branch (below) rebuilds
+// $query_args from scratch and ignores location filters entirely.
+if ( ! $has_product_ids ) {
+	list( $location_country, $location_subdivision ) = Query_Loop_Location_Filter::apply(
+		array( $location_country, $location_subdivision ),
+		$attributes,
+		$block
+	);
 }
 
 if ( ! empty( $location_country ) ) {

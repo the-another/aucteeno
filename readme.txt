@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.2.2
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -164,7 +164,10 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 == Changelog ==
 
-
+= 1.2.4 - 2026-04-11 =
+* Added Query_Loop_Location_Filter helper class exposing the new aucteeno_query_loop_location filter
+* Extension plugins (such as aucteeno-geo-tagging) can hook the filter to override the resolved country and subdivision before they are used to query the HPS tables
+* Filter is invoked from the Query Loop block render template inside the ! $has_product_ids guard so explicit product ID queries remain untouched
 
 = 1.2.2 - 2026-04-10 =
 * Added "Lot Number" sort option to the Query Loop block when query type is "Items"
