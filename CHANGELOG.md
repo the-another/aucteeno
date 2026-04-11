@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `Query_Loop_Location_Filter` helper class exposing the `aucteeno_query_loop_location` filter. Extension plugins can hook the filter to override the resolved country and subdivision before they are used to query the HPS tables. The helper is called from `blocks/query-loop/render.php` inside a `! $has_product_ids` guard. Consumed by the `aucteeno-nexus-geo-tagging` extension.
+- New `Query_Loop_Location_Filter` helper class exposing the `aucteeno_query_loop_location` filter. Extension plugins can hook the filter to override the resolved country and subdivision before they are used to query the HPS tables. The helper is called from `blocks/query-loop/render.php` inside a `! $has_product_ids` guard. Consumed by the `aucteeno-geo-tagging` extension.
 
 ## [1.0.0] - 2025-12-30
 
