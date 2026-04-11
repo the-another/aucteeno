@@ -7,7 +7,7 @@
  * logic can be unit-tested in isolation.
  *
  * @package Aucteeno
- * @since AUCTEENO_NEXT_PATCH_VERSION
+ * @since 1.2.3
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ final class Query_Loop_Location_Filter {
 		 * written into $query_args. Does not fire when the block is in product-IDs mode —
 		 * callers wrap this call in a ! $has_product_ids guard.
 		 *
-		 * @since AUCTEENO_NEXT_PATCH_VERSION
+		 * @since 1.2.3
 		 *
 		 * @param array $location   Two-element indexed array [ string $country, string $subdivision ].
 		 * @param array $attributes The block's resolved attributes array.
