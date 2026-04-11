@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,12 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+
+= 1.2.5 - 2026-04-11 =
+* Fixed Status_Reconciler calling as_has_scheduled_action() / as_schedule_recurring_action() before Action Scheduler's data store is initialized — these ran during before_woocommerce_init (WP init priority 0) while AS initializes at init priority 1, producing _doing_it_wrong notices on every request
+* Tightened the init() late-load guard from did_action('init') to did_action('init') && ! doing_action('init') so the direct call only fires when init has fully completed; the deferred priority-20 callback continues to handle the normal case
+* Bumped npm transitive dependencies via npm audit fix (non-force), clearing both critical advisories and most high-severity advisories without changing any direct dependency versions
 
 = 1.2.4 - 2026-04-11 =
 * Added Query_Loop_Location_Filter helper class exposing the new aucteeno_query_loop_location filter
