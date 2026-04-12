@@ -358,6 +358,37 @@ class REST_Controller_Test extends TestCase {
 	}
 
 	/**
+	 * Test GET auctions with sort=status_ending_soon in HTML format.
+	 *
+	 * Verifies the 3-group / by_status path is dispatched correctly via the REST API.
+	 *
+	 * @return void
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	public function test_get_auctions_sort_status_ending_soon_html(): void {
+		$request = $this->create_html_auctions_request( array(
+			'sort' => 'status_ending_soon',
+		) );
+
+		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db->shouldReceive( 'query_for_listing' )
+			->once()
+			->with( Mockery::on( function ( $args ) {
+				return isset( $args['sort'] ) && $args['sort'] === 'status_ending_soon';
+			} ) )
+			->andReturn( array(
+				'items' => array(),
+				'page'  => 1,
+				'pages' => 1,
+				'total' => 0,
+			) );
+
+		$response = $this->controller->get_auctions( $request );
+		$this->assertEquals( 200, $response->get_status() );
+	}
+
+	/**
 	 * Test GET auctions with invalid sort value (HTML format).
 	 *
 	 * This verifies that invalid sort values are handled gracefully.
@@ -486,6 +517,25 @@ class REST_Controller_Test extends TestCase {
 	public function test_get_auctions_sort_newest(): void {
 		$request = $this->create_json_auctions_request( array(
 			'sort' => 'newest',
+		) );
+
+		$response = $this->controller->get_auctions( $request );
+		$this->assertEquals( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertIsArray( $data );
+	}
+
+	/**
+	 * Test GET auctions with sort option 'status_ending_soon' in JSON format.
+	 *
+	 * This verifies that the status_ending_soon sort value is accepted
+	 * by the REST API (3-group / by_status path).
+	 *
+	 * @return void
+	 */
+	public function test_get_auctions_sort_status_ending_soon(): void {
+		$request = $this->create_json_auctions_request( array(
+			'sort' => 'status_ending_soon',
 		) );
 
 		$response = $this->controller->get_auctions( $request );
@@ -947,6 +997,24 @@ class REST_Controller_Test extends TestCase {
 	// ==========================================
 	// GET /aucteeno/v1/items TESTS (JSON format)
 	// ==========================================
+
+	/**
+	 * Test GET items with sort=status_ending_soon in JSON format.
+	 *
+	 * Verifies the status_ending_soon sort value is accepted for items.
+	 *
+	 * @return void
+	 */
+	public function test_get_items_sort_status_ending_soon(): void {
+		$request = $this->create_json_items_request( array(
+			'sort' => 'status_ending_soon',
+		) );
+
+		$response = $this->controller->get_items( $request );
+		$this->assertEquals( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertIsArray( $data );
+	}
 
 	/**
 	 * Test GET items with auction_id filter in JSON format.

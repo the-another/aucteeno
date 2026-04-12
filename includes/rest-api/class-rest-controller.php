@@ -107,7 +107,7 @@ class REST_Controller extends WP_REST_Controller {
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
-							'enum'        => array( 'ending_soon', 'newest', 'lot_number' ),
+							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'         => array(
 							'description' => 'Response format: html (fragments) or json (data).',
@@ -241,7 +241,7 @@ class REST_Controller extends WP_REST_Controller {
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
-							'enum'        => array( 'ending_soon', 'newest', 'lot_number' ),
+							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'         => array(
 							'description' => 'Response format: html (fragments) or json (data).',
@@ -463,6 +463,7 @@ class REST_Controller extends WP_REST_Controller {
 				'post_status'    => 'publish',
 				'posts_per_page' => $per_page,
 				'paged'          => $page,
+				'aucteeno_sort'  => $sort,
 				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'tax_query'      => array(
 					array(
@@ -485,7 +486,7 @@ class REST_Controller extends WP_REST_Controller {
 			}
 
 			// Add sorting.
-			if ( 'ending_soon' !== $sort ) {
+			if ( ! in_array( $sort, array( 'ending_soon', 'status_ending_soon' ), true ) ) {
 				$query_args['orderby'] = array(
 					'date' => 'DESC',
 					'ID'   => 'DESC',
@@ -681,6 +682,7 @@ class REST_Controller extends WP_REST_Controller {
 				'post_status'    => 'publish',
 				'posts_per_page' => $per_page,
 				'paged'          => $page,
+				'aucteeno_sort'  => $sort,
 				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
 				'tax_query'      => array(
 					array(
@@ -710,7 +712,7 @@ class REST_Controller extends WP_REST_Controller {
 			}
 
 			// Add sorting.
-			if ( 'ending_soon' !== $sort ) {
+			if ( ! in_array( $sort, array( 'ending_soon', 'status_ending_soon' ), true ) ) {
 				$query_args['orderby'] = array(
 					'date' => 'DESC',
 					'ID'   => 'DESC',

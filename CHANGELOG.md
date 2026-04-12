@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.0
+
+### Added
+
+- New "Ending Soon" default sort for query loop — combines running and upcoming auctions/items into one group ordered by bidding end date, with expired items following.
+- "By Status & Ending" sort option (`status_ending_soon`) — the previous default behavior, now available as an explicit choice. Groups by bidding status (running, upcoming, expired) with per-status date ordering.
+- `query_combined_status_group` helper in `Database_Items` for querying multiple bidding statuses in a single SQL query.
+- Sort-aware `Query_Orderer` — reads `aucteeno_sort` query variable to select between 2-group and 3-group UNION ALL patterns, with separate cache keys per sort mode.
+
 ## 1.3.0
 
 ### Added

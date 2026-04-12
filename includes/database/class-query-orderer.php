@@ -117,6 +117,14 @@ class Query_Orderer {
 		// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 		$query->set( 'aucteeno_order_type', Product_Item::PRODUCT_TYPE === $product_type ? 'items' : 'auctions' );
 
+		// Read sort preference from query var (set by block render or REST API).
+		$sort = $query->get( 'aucteeno_sort' );
+		if ( ! in_array( $sort, array( 'ending_soon', 'status_ending_soon' ), true ) ) {
+			$sort = 'ending_soon';
+		}
+		// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
+		$query->set( 'aucteeno_sort', $sort );
+
 		// Get ordered IDs and set post__in + orderby=post__in.
 		// This is simpler and more reliable than custom JOIN + GROUP BY.
 		$ordered_ids = $this->get_ordered_ids( $query );
@@ -218,83 +226,148 @@ class Query_Orderer {
 
 		// Build optimized UNION ALL query with ORDER BY and LIMIT in each subquery.
 		// Each subquery must be wrapped in parentheses when using ORDER BY/LIMIT with UNION ALL.
-		$sql = "
-		SELECT ordered.item_id
-		FROM (
-			(
-				-- Running items (status = 10) - ordered and limited early
-				-- Only include items that have actually started and not yet ended
-				SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 1 as sort_group
-				FROM {$items_table} i
-				INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-				WHERE i.bidding_status = 10
-					AND i.bidding_starts_at <= UNIX_TIMESTAMP()
-					AND i.bidding_ends_at > UNIX_TIMESTAMP()
-					AND p.post_status = 'publish'
-					AND p.post_type = 'product'
-					{$where_conditions}
-				ORDER BY i.bidding_ends_at ASC, i.lot_sort_key ASC, i.item_id ASC
-				LIMIT %d
-			)
-			UNION ALL
-			(
-				-- Upcoming items (status = 20) - ordered and limited early
-				-- Only include items that haven't started yet
-				SELECT i.item_id, i.bidding_starts_at as sort_time, i.lot_sort_key, 2 as sort_group
-				FROM {$items_table} i
-				INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-				WHERE i.bidding_status = 20
-					AND i.bidding_starts_at > UNIX_TIMESTAMP()
-					AND p.post_status = 'publish'
-					AND p.post_type = 'product'
-					{$where_conditions}
-				ORDER BY i.bidding_starts_at ASC, i.lot_sort_key ASC, i.item_id ASC
-				LIMIT %d
-			)
-			UNION ALL
-			(
-				-- Expired items (status = 30) - ordered and limited early
-				-- Only include items that have already ended
-				SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 3 as sort_group
-				FROM {$items_table} i
-				INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-				WHERE i.bidding_status = 30
-					AND i.bidding_ends_at <= UNIX_TIMESTAMP()
-					AND p.post_status = 'publish'
-					AND p.post_type = 'product'
-					{$where_conditions}
-				ORDER BY i.bidding_ends_at DESC, i.item_id ASC
-				LIMIT %d
-			)
-		) AS ordered
-		ORDER BY
-			ordered.sort_group ASC,
-			CASE ordered.sort_group
-				WHEN 1 THEN ordered.sort_time
-				WHEN 2 THEN ordered.sort_time
-				WHEN 3 THEN -ordered.sort_time
-			END ASC,
-			ordered.lot_sort_key ASC,
-			ordered.item_id ASC
-		LIMIT %d OFFSET %d";
+		$sort = $query->get( 'aucteeno_sort' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$results = $wpdb->get_col(
-			$wpdb->prepare(
-				$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
-				$ttid,
-				$fetch_per_group,
-				$ttid,
-				$fetch_per_group,
-				$ttid,
-				$fetch_per_group,
-				$per_page,
-				$offset
-			)
-		);
+		if ( 'status_ending_soon' === $sort ) {
+			// 3-group UNION ALL: running, upcoming, expired (status-based ordering).
+			$sql = "
+			SELECT ordered.item_id
+			FROM (
+				(
+					-- Running items (status = 10) - ordered and limited early
+					-- Only include items that have actually started and not yet ended
+					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 1 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status = 10
+						AND i.bidding_starts_at <= UNIX_TIMESTAMP()
+						AND i.bidding_ends_at > UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_ends_at ASC, i.lot_sort_key ASC, i.item_id ASC
+					LIMIT %d
+				)
+				UNION ALL
+				(
+					-- Upcoming items (status = 20) - ordered and limited early
+					-- Only include items that haven't started yet
+					SELECT i.item_id, i.bidding_starts_at as sort_time, i.lot_sort_key, 2 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status = 20
+						AND i.bidding_starts_at > UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_starts_at ASC, i.lot_sort_key ASC, i.item_id ASC
+					LIMIT %d
+				)
+				UNION ALL
+				(
+					-- Expired items (status = 30) - ordered and limited early
+					-- Only include items that have already ended
+					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 3 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status = 30
+						AND i.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_ends_at DESC, i.item_id ASC
+					LIMIT %d
+				)
+			) AS ordered
+			ORDER BY
+				ordered.sort_group ASC,
+				CASE ordered.sort_group
+					WHEN 1 THEN ordered.sort_time
+					WHEN 2 THEN ordered.sort_time
+					WHEN 3 THEN -ordered.sort_time
+				END ASC,
+				ordered.lot_sort_key ASC,
+				ordered.item_id ASC
+			LIMIT %d OFFSET %d";
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_col(
+				$wpdb->prepare(
+					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
+					$ttid,
+					$fetch_per_group,
+					$ttid,
+					$fetch_per_group,
+					$ttid,
+					$fetch_per_group,
+					$per_page,
+					$offset
+				)
+			);
+		} else {
+			// 2-group UNION ALL: active (running + upcoming), expired (ending_soon ordering).
+			$sql = "
+			SELECT ordered.item_id
+			FROM (
+				(
+					-- Active items (running + upcoming)
+					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 1 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status IN (10, 20)
+						AND (
+							(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
+							OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
+						)
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_ends_at ASC, i.lot_sort_key ASC, i.item_id ASC
+					LIMIT %d
+				)
+				UNION ALL
+				(
+					-- Expired items
+					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 2 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status = 30
+						AND i.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_ends_at DESC, i.item_id ASC
+					LIMIT %d
+				)
+			) AS ordered
+			ORDER BY
+				ordered.sort_group ASC,
+				CASE ordered.sort_group
+					WHEN 1 THEN ordered.sort_time
+					WHEN 2 THEN -ordered.sort_time
+				END ASC,
+				ordered.lot_sort_key ASC,
+				ordered.item_id ASC
+			LIMIT %d OFFSET %d";
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_col(
+				$wpdb->prepare(
+					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
+					$ttid,
+					$fetch_per_group,
+					$ttid,
+					$fetch_per_group,
+					$per_page,
+					$offset
+				)
+			);
+		}
 
 		return array_map( 'absint', $results );
 	}
@@ -325,82 +398,146 @@ class Query_Orderer {
 
 		// Build optimized UNION ALL query with ORDER BY and LIMIT in each subquery.
 		// Each subquery must be wrapped in parentheses when using ORDER BY/LIMIT with UNION ALL.
-		$sql = "
-		SELECT ordered.auction_id
-		FROM (
-			(
-				-- Running auctions (status = 10) - ordered and limited early
-				-- Only include auctions that have actually started and not yet ended
-				SELECT a.auction_id, a.bidding_ends_at as sort_time, 1 as sort_group
-				FROM {$auctions_table} a
-				INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-				WHERE a.bidding_status = 10
-					AND a.bidding_starts_at <= UNIX_TIMESTAMP()
-					AND a.bidding_ends_at > UNIX_TIMESTAMP()
-					AND p.post_status = 'publish'
-					AND p.post_type = 'product'
-					{$where_conditions}
-				ORDER BY a.bidding_ends_at ASC, a.auction_id ASC
-				LIMIT %d
-			)
-			UNION ALL
-			(
-				-- Upcoming auctions (status = 20) - ordered and limited early
-				-- Only include auctions that haven't started yet
-				SELECT a.auction_id, a.bidding_starts_at as sort_time, 2 as sort_group
-				FROM {$auctions_table} a
-				INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-				WHERE a.bidding_status = 20
-					AND a.bidding_starts_at > UNIX_TIMESTAMP()
-					AND p.post_status = 'publish'
-					AND p.post_type = 'product'
-					{$where_conditions}
-				ORDER BY a.bidding_starts_at ASC, a.auction_id ASC
-				LIMIT %d
-			)
-			UNION ALL
-			(
-				-- Expired auctions (status = 30) - ordered and limited early
-				-- Only include auctions that have already ended
-				SELECT a.auction_id, a.bidding_ends_at as sort_time, 3 as sort_group
-				FROM {$auctions_table} a
-				INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-				WHERE a.bidding_status = 30
-					AND a.bidding_ends_at <= UNIX_TIMESTAMP()
-					AND p.post_status = 'publish'
-					AND p.post_type = 'product'
-					{$where_conditions}
-				ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
-				LIMIT %d
-			)
-		) AS ordered
-		ORDER BY
-			ordered.sort_group ASC,
-			CASE ordered.sort_group
-				WHEN 1 THEN ordered.sort_time
-				WHEN 2 THEN ordered.sort_time
-				WHEN 3 THEN -ordered.sort_time
-			END ASC,
-			ordered.auction_id ASC
-		LIMIT %d OFFSET %d";
+		$sort = $query->get( 'aucteeno_sort' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$results = $wpdb->get_col(
-			$wpdb->prepare(
-				$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
-				$ttid,
-				$fetch_per_group,
-				$ttid,
-				$fetch_per_group,
-				$ttid,
-				$fetch_per_group,
-				$per_page,
-				$offset
-			)
-		);
+		if ( 'status_ending_soon' === $sort ) {
+			// 3-group UNION ALL: running, upcoming, expired (status-based ordering).
+			$sql = "
+			SELECT ordered.auction_id
+			FROM (
+				(
+					-- Running auctions (status = 10) - ordered and limited early
+					-- Only include auctions that have actually started and not yet ended
+					SELECT a.auction_id, a.bidding_ends_at as sort_time, 1 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status = 10
+						AND a.bidding_starts_at <= UNIX_TIMESTAMP()
+						AND a.bidding_ends_at > UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_ends_at ASC, a.auction_id ASC
+					LIMIT %d
+				)
+				UNION ALL
+				(
+					-- Upcoming auctions (status = 20) - ordered and limited early
+					-- Only include auctions that haven't started yet
+					SELECT a.auction_id, a.bidding_starts_at as sort_time, 2 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status = 20
+						AND a.bidding_starts_at > UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_starts_at ASC, a.auction_id ASC
+					LIMIT %d
+				)
+				UNION ALL
+				(
+					-- Expired auctions (status = 30) - ordered and limited early
+					-- Only include auctions that have already ended
+					SELECT a.auction_id, a.bidding_ends_at as sort_time, 3 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status = 30
+						AND a.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
+					LIMIT %d
+				)
+			) AS ordered
+			ORDER BY
+				ordered.sort_group ASC,
+				CASE ordered.sort_group
+					WHEN 1 THEN ordered.sort_time
+					WHEN 2 THEN ordered.sort_time
+					WHEN 3 THEN -ordered.sort_time
+				END ASC,
+				ordered.auction_id ASC
+			LIMIT %d OFFSET %d";
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_col(
+				$wpdb->prepare(
+					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
+					$ttid,
+					$fetch_per_group,
+					$ttid,
+					$fetch_per_group,
+					$ttid,
+					$fetch_per_group,
+					$per_page,
+					$offset
+				)
+			);
+		} else {
+			// 2-group UNION ALL: active (running + upcoming), expired (ending_soon ordering).
+			$sql = "
+			SELECT ordered.auction_id
+			FROM (
+				(
+					-- Active auctions (running + upcoming)
+					SELECT a.auction_id, a.bidding_ends_at as sort_time, 1 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status IN (10, 20)
+						AND (
+							(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
+							OR (a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP())
+						)
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_ends_at ASC, a.auction_id ASC
+					LIMIT %d
+				)
+				UNION ALL
+				(
+					-- Expired auctions
+					SELECT a.auction_id, a.bidding_ends_at as sort_time, 2 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status = 30
+						AND a.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
+					LIMIT %d
+				)
+			) AS ordered
+			ORDER BY
+				ordered.sort_group ASC,
+				CASE ordered.sort_group
+					WHEN 1 THEN ordered.sort_time
+					WHEN 2 THEN -ordered.sort_time
+				END ASC,
+				ordered.auction_id ASC
+			LIMIT %d OFFSET %d";
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_col(
+				$wpdb->prepare(
+					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
+					$ttid,
+					$fetch_per_group,
+					$ttid,
+					$fetch_per_group,
+					$per_page,
+					$offset
+				)
+			);
+		}
 
 		return array_map( 'absint', $results );
 	}
@@ -565,6 +702,7 @@ class Query_Orderer {
 		$per_page   = $query->get( 'posts_per_page' );
 		$filters    = array(
 			'order_type' => $order_type,
+			'sort'       => $query->get( 'aucteeno_sort' ),
 			'page'       => $page,
 			'per_page'   => $per_page,
 			'parent'     => $query->get( 'post_parent' ),

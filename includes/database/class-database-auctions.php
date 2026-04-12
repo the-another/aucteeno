@@ -138,7 +138,7 @@ class Database_Auctions {
 		$page     = max( 1, absint( $args['page'] ) );
 		$per_page = min( 50, max( 1, absint( $args['per_page'] ) ) );
 		$offset   = ( $page - 1 ) * $per_page;
-		$sort     = in_array( $args['sort'], array( 'ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
+		$sort     = in_array( $args['sort'], array( 'ending_soon', 'status_ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
 
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
@@ -201,8 +201,8 @@ class Database_Auctions {
 				$order_sql      = $wpdb->prepare( "FIELD(a.auction_id, $field_placeholders)", $product_ids ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		} elseif ( 'newest' === $sort ) {
 			$order_sql = 'p.post_date DESC, a.auction_id DESC';
-		} else {
-			// ending_soon: Running first (by ends_at ASC), then Upcoming (by starts_at ASC), then Expired (by ends_at DESC).
+		} elseif ( 'status_ending_soon' === $sort ) {
+			// status_ending_soon: Running first (by ends_at ASC), then Upcoming (by starts_at ASC), then Expired (by ends_at DESC).
 			$order_sql = '
 				CASE a.bidding_status
 					WHEN 10 THEN 1
@@ -215,6 +215,13 @@ class Database_Auctions {
 					WHEN 20 THEN a.bidding_starts_at
 					ELSE -a.bidding_ends_at
 				END ASC,
+				a.auction_id ASC
+			';
+		} else {
+			// ending_soon (default): Active (running+upcoming) by ends_at ASC, then Expired by ends_at DESC.
+			$order_sql = '
+				CASE WHEN a.bidding_status IN (10, 20) THEN 1 ELSE 2 END ASC,
+				CASE WHEN a.bidding_status IN (10, 20) THEN a.bidding_ends_at ELSE -a.bidding_ends_at END ASC,
 				a.auction_id ASC
 			';
 		}

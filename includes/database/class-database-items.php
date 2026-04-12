@@ -152,7 +152,7 @@ class Database_Items {
 		$page     = max( 1, absint( $args['page'] ) );
 		$per_page = min( 50, max( 1, absint( $args['per_page'] ) ) );
 		$offset   = ( $page - 1 ) * $per_page;
-		$sort     = in_array( $args['sort'], array( 'ending_soon', 'newest', 'lot_number' ), true ) ? $args['sort'] : 'ending_soon';
+		$sort     = in_array( $args['sort'], array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ), true ) ? $args['sort'] : 'ending_soon';
 
 		if ( 'newest' === $sort ) {
 			return self::query_for_listing_newest( $args, $page, $per_page, $offset );
@@ -162,8 +162,13 @@ class Database_Items {
 			return self::query_for_listing_by_lot( $args, $page, $per_page, $offset );
 		}
 
-		// For 'ending_soon' sort, use separate queries per status group.
-		return self::query_for_listing_by_status( $args, $page, $per_page, $offset );
+		if ( 'status_ending_soon' === $sort ) {
+			// 3-group sort: running by ends_at, upcoming by starts_at, expired by ends_at DESC.
+			return self::query_for_listing_by_status( $args, $page, $per_page, $offset );
+		}
+
+		// Default ending_soon: 2-group sort (running+upcoming by ends_at, then expired).
+		return self::query_for_listing_ending_soon( $args, $page, $per_page, $offset );
 	}
 
 	/**
@@ -601,6 +606,143 @@ class Database_Items {
 	}
 
 	/**
+	 * Query items with 2-group sort: active (running+upcoming) by ends_at, then expired.
+	 *
+	 * Unlike query_for_listing_by_status which separates running and upcoming into
+	 * distinct groups, this combines them into a single "active" group sorted by
+	 * bidding_ends_at ASC.
+	 *
+	 * @param array $args     Query arguments.
+	 * @param int   $page     Current page number.
+	 * @param int   $per_page Items per page.
+	 * @param int   $offset   Global offset across all groups.
+	 * @return array Query result.
+	 */
+	private static function query_for_listing_ending_soon( array $args, int $page, int $per_page, int $offset ): array {
+		global $wpdb;
+
+		$table_name = self::get_table_name();
+
+		// Build base WHERE clause (without status filter).
+		$base_where_clauses = array();
+		$where_values       = self::build_where_values( $args );
+
+		if ( ! empty( $args['user_id'] ) ) {
+			$base_where_clauses[] = 'i.user_id = %d';
+		}
+		if ( ! empty( $args['auction_id'] ) ) {
+			$base_where_clauses[] = 'i.auction_id = %d';
+		}
+		if ( ! empty( $args['country'] ) ) {
+			$base_where_clauses[] = 'i.location_country = %s';
+		}
+		if ( ! empty( $args['subdivision'] ) ) {
+			$base_where_clauses[] = 'i.location_subdivision = %s';
+		}
+
+		// Product IDs filter.
+		if ( ! empty( $args['product_ids'] ) && is_array( $args['product_ids'] ) ) {
+			$product_ids          = array_map( 'absint', $args['product_ids'] );
+			$product_ids          = array_filter( $product_ids );
+			$placeholders         = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+			$base_where_clauses[] = "i.item_id IN ($placeholders)";
+			$where_values         = array_merge( $where_values, $product_ids );
+		}
+
+		// Search filter (requires posts table join).
+		if ( ! empty( $args['search'] ) ) {
+			$base_where_clauses[] = 'p.post_title LIKE %s';
+		}
+
+		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
+
+		// Get counts for each status group.
+		$counts = self::get_status_counts( $table_name, $base_where_sql, $where_values );
+
+		$active_count  = $counts['running'] + $counts['upcoming'];
+		$expired_count = $counts['expired'];
+		$total         = $active_count + $expired_count;
+
+		// Calculate which groups we need and their offsets/limits.
+		$results          = array();
+		$remaining_offset = $offset;
+		$remaining_limit  = $per_page;
+
+		// Group 1: Active items (status 10 + 20).
+		if ( $remaining_limit > 0 && $remaining_offset < $active_count ) {
+			$group_offset = $remaining_offset;
+			$group_limit  = min( $remaining_limit, $active_count - $group_offset );
+
+			$active_results = self::query_combined_status_group(
+				array( 10, 20 ),
+				$base_where_sql,
+				$where_values,
+				'i.bidding_ends_at ASC, i.lot_sort_key ASC, i.item_id ASC',
+				$group_limit,
+				$group_offset
+			);
+
+			$results          = array_merge( $results, $active_results );
+			$remaining_limit -= count( $active_results );
+		}
+
+		// Adjust offset for expired group.
+		$remaining_offset = max( 0, $remaining_offset - $active_count );
+
+		// Group 2: Expired items (status = 30).
+		if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
+			$group_offset = $remaining_offset;
+			$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
+
+			$expired_results = self::query_status_group(
+				30,
+				$base_where_sql,
+				$where_values,
+				'i.bidding_ends_at DESC, i.item_id DESC',
+				$group_limit,
+				$group_offset
+			);
+
+			$results = array_merge( $results, $expired_results );
+		}
+
+		if ( empty( $results ) ) {
+			return array(
+				'items' => array(),
+				'page'  => $page,
+				'pages' => max( 1, (int) ceil( $total / $per_page ) ),
+				'total' => $total,
+			);
+		}
+
+		// Batch-prime caches before transform — all results merged first.
+		$ids = array_column( $results, 'item_id' );
+		Eager_Loader::prime_post_meta( $ids );
+		$image_map = Eager_Loader::prime_images( $ids );
+
+		$merged_codes   = array_merge(
+			array_column( $results, 'location_country' ),
+			array_column( $results, 'location_subdivision' )
+		);
+		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
+		$term_map       = Eager_Loader::load_location_terms( $location_codes );
+		$auction_base   = Auction_Item_Permalinks::get_auction_base();
+		$item_base      = Auction_Item_Permalinks::get_item_base();
+
+		$items = self::transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+
+		/** This filter is documented in includes/database/class-database-items.php */
+		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
+
+		return array(
+			'items' => $items,
+			'page'  => $page,
+			'pages' => max( 1, (int) ceil( $total / $per_page ) ),
+			'total' => $total,
+		);
+	}
+
+	/**
 	 * Get item counts for each status group.
 	 *
 	 * @param string $table_name     Items table name.
@@ -720,6 +862,86 @@ class Database_Items {
 		";
 
 		$query_values   = array_merge( $where_values, array( $status, $limit, $offset ) );
+		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		return $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+	}
+
+	/**
+	 * Query a combined status group (multiple statuses in one query).
+	 *
+	 * Like query_status_group but accepts an array of statuses, building
+	 * timestamp conditions for each.
+	 *
+	 * @param int[]  $statuses       Bidding statuses (10=running, 20=upcoming, 30=expired).
+	 * @param string $base_where_sql Base WHERE clause (without status).
+	 * @param array  $where_values   Prepared statement values for base WHERE.
+	 * @param string $order_sql      ORDER BY clause.
+	 * @param int    $limit          Number of items to fetch.
+	 * @param int    $offset         Offset within this group.
+	 * @return array Raw database results.
+	 */
+	private static function query_combined_status_group(
+		array $statuses,
+		string $base_where_sql,
+		array $where_values,
+		string $order_sql,
+		int $limit,
+		int $offset
+	): array {
+		global $wpdb;
+
+		$table_name  = self::get_table_name();
+		$posts_table = $wpdb->posts;
+
+		// Build timestamp conditions per status.
+		$status_conditions = array();
+		$status_values     = array();
+
+		foreach ( $statuses as $status ) {
+			if ( 10 === $status ) {
+				// Running: started and not yet ended.
+				$status_conditions[] = '(i.bidding_status = %d AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())';
+				$status_values[]     = $status;
+			} elseif ( 20 === $status ) {
+				// Upcoming: not yet started.
+				$status_conditions[] = '(i.bidding_status = %d AND i.bidding_starts_at > UNIX_TIMESTAMP())';
+				$status_values[]     = $status;
+			} elseif ( 30 === $status ) {
+				// Expired: already ended.
+				$status_conditions[] = '(i.bidding_status = %d AND i.bidding_ends_at <= UNIX_TIMESTAMP())';
+				$status_values[]     = $status;
+			}
+		}
+
+		$status_sql = implode( ' OR ', $status_conditions );
+
+		$query_sql = "
+			SELECT
+				i.item_id,
+				i.auction_id,
+				i.user_id,
+				i.bidding_status,
+				i.bidding_starts_at,
+				i.bidding_ends_at,
+				i.lot_no,
+				i.lot_sort_key,
+				i.location_country,
+				i.location_subdivision,
+				i.location_city,
+				p.post_title,
+				p.post_name,
+				ap.post_name AS auction_post_name
+			FROM {$table_name} i
+			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
+			LEFT JOIN {$posts_table} ap ON i.auction_id = ap.ID AND ap.post_status = 'publish' -- auction slug, NULL if trashed/draft
+			WHERE {$base_where_sql}
+			  AND ({$status_sql})
+			ORDER BY {$order_sql}
+			LIMIT %d OFFSET %d
+		";
+
+		$query_values   = array_merge( $where_values, $status_values, array( $limit, $offset ) );
 		$prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		return $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared

@@ -166,6 +166,12 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+= 1.4.0 - 2026-04-12 =
+* New "Ending Soon" default sort for query loop — combines running and upcoming auctions/items into one group ordered by bidding end date, with expired items following
+* Renamed previous "Ending Soon" sort to "By Status & Ending" — groups by bidding status (running, upcoming, expired) with per-status date ordering
+* Query_Orderer now supports sort-aware ordering via aucteeno_sort query variable, with separate cache keys per sort mode
+
 = 1.3.0 - 2026-04-12 =
 * Enhanced query loop empty state message to include active filter details (search term, location, seller, parent auction) instead of a generic "No auctions/items found."
 * Added aucteeno_query_loop_no_results filter hook for extensions to customize the empty state message — receives both raw filter values and pre-resolved display labels
