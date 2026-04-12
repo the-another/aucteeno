@@ -17,8 +17,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use The_Another\Plugin\Aucteeno\Blocks\Query_Loop_Location_Filter;
+use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
 use The_Another\Plugin\Aucteeno\Database\Database_Items;
+use The_Another\Plugin\Aucteeno\Helpers\Location_Helper;
 
 // Parse attributes with defaults.
 $query_type      = $attributes['queryType'] ?? 'auctions';
@@ -232,10 +234,12 @@ if ( $has_product_ids ) {
 
 	// When specific post IDs are defined, show exactly those posts.
 	// Strip all inherited filters — product_ids IS the query.
-	$user_id      = 0;
-	$auction_id   = 0;
-	$page         = 1;
-	$search_query = '';
+	$user_id              = 0;
+	$auction_id           = 0;
+	$page                 = 1;
+	$search_query         = '';
+	$location_country     = '';
+	$location_subdivision = '';
 	$query_args   = array(
 		'page'        => 1,
 		'per_page'    => $query_args['per_page'],
@@ -531,17 +535,42 @@ if ( ! empty( $items ) ) {
 	</div>
 	<?php
 } else {
-	// Empty state.
+	// Empty state — compose filter-aware message via service.
+	// Resolve display labels from raw filter values.
+	$location_label = '';
+	if ( '' !== $location_country ) {
+		$location_label = Location_Helper::format_smart_location( '', $location_subdivision, $location_country );
+	}
+
+	$seller_name = '';
+	if ( $user_id > 0 ) {
+		$seller_user = get_userdata( $user_id );
+		if ( $seller_user && ! empty( $seller_user->display_name ) ) {
+			$seller_name = $seller_user->display_name;
+		}
+	}
+
+	$auction_title = '';
+	if ( $auction_id > 0 ) {
+		$auction_title = get_the_title( $auction_id );
+	}
+
+	$empty_message_service = Container::get_instance()->get( 'query_loop_empty_message' );
+	$active_filters        = array(
+		'country'        => $location_country,
+		'subdivision'    => $location_subdivision,
+		'search'         => $search_query,
+		'user_id'        => $user_id,
+		'auction_id'     => $auction_id,
+		'location_label' => $location_label,
+		'seller_name'    => $seller_name,
+		'auction_title'  => $auction_title,
+	);
+	$empty_message = $empty_message_service->get_message( $query_type, $active_filters );
 	?>
 	<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 		<p class="aucteeno-query-loop__empty">
-			<?php
-			if ( 'auctions' === $query_type ) {
-				esc_html_e( 'No auctions found.', 'aucteeno' );
-			} else {
-				esc_html_e( 'No items found.', 'aucteeno' );
-			}
-			?>
+			<?php echo esc_html( $empty_message ); ?>
 		</p>
 	</div>
 	<?php

@@ -96,6 +96,9 @@ class Aucteeno {
 
 		// Initialize bidding status reconciler.
 		$this->register_status_reconciler();
+
+		// Register query loop empty message service.
+		$this->register_query_loop_empty_message();
 	}
 
 	/**
@@ -376,6 +379,21 @@ class Aucteeno {
 		);
 
 		$this->container->get( 'status_reconciler' )->init();
+	}
+
+	/**
+	 * Register the query loop empty message service.
+	 *
+	 * @since TBD
+	 */
+	private function register_query_loop_empty_message(): void {
+		$this->container->register(
+			'query_loop_empty_message',
+			function ( Container $c ) {
+				return new Blocks\Query_Loop_Empty_Message( $c->get_hook_manager() );
+			},
+			true // Singleton.
+		);
 	}
 
 	/**
