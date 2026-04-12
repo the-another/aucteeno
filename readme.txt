@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.2.5
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -164,6 +164,13 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 == Changelog ==
 
+
+
+= 1.3.0 - 2026-04-12 =
+* Enhanced query loop empty state message to include active filter details (search term, location, seller, parent auction) instead of a generic "No auctions/items found."
+* Added aucteeno_query_loop_no_results filter hook for extensions to customize the empty state message — receives both raw filter values and pre-resolved display labels
+* New Query_Loop_Empty_Message container-managed service for composing filter-aware no-results messages
+* Fixed stale location variables leaking into empty message when block is in product-IDs mode
 
 = 1.2.5 - 2026-04-11 =
 * Fixed Status_Reconciler calling as_has_scheduled_action() / as_schedule_recurring_action() before Action Scheduler's data store is initialized — these ran during before_woocommerce_init (WP init priority 0) while AS initializes at init priority 1, producing _doing_it_wrong notices on every request

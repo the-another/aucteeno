@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.0
+
+### Added
+
+- Filter-aware empty state message for the query loop block — when no results are found with active filters (search, location, seller, parent auction), the message now includes those filter details instead of a generic "No auctions/items found."
+- `aucteeno_query_loop_no_results` filter hook for extensions to customize the empty state message. Receives both raw filter values (codes, IDs) and pre-resolved display labels.
+- `Query_Loop_Empty_Message` container-managed service class for composing the no-results message.
+
+### Fixed
+
+- Stale location variables leaking into the empty state message when the query loop block is in product-IDs mode.
+
 ## 1.2.3
 
 ### Added
