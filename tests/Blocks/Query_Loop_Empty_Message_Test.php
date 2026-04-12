@@ -23,6 +23,10 @@ final class Query_Loop_Empty_Message_Test extends TestCase {
 		parent::setUp();
 		Monkey\setUp();
 
+		// Re-register __() stub after Monkey\setUp() since Monkey\tearDown()
+		// clears Patchwork stubs registered in the bootstrap.
+		Functions\when( '__' )->returnArg();
+
 		$hook_manager  = $this->createMock( Hook_Manager::class );
 		$this->service = new Query_Loop_Empty_Message( $hook_manager );
 	}
