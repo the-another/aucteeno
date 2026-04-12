@@ -338,10 +338,7 @@ function Edit( { attributes, setAttributes, context } ) {
 								value: 'ending_soon',
 							},
 							{
-								label: __(
-									'By Status & Ending',
-									'aucteeno'
-								),
+								label: __( 'By Status & Ending', 'aucteeno' ),
 								value: 'status_ending_soon',
 							},
 							{
