@@ -49,7 +49,7 @@ public function get_message( string $query_type, array $filters ): string
    - Search: `for term "tractor"`
    - Location: `in Kansas, US` or `in Canada` (resolved via `Location_Helper`)
    - Seller: `by John's Farm Equipment` (resolved via `get_userdata()`)
-   - Parent auction: `in Spring 2026 Farm Auction` (resolved via `get_the_title()`)
+   - Parent auction: `within Spring 2026 Farm Auction` (resolved via `get_the_title()`)
 3. **End with period**
 4. **Pass through WordPress filter hook** (see below)
 
@@ -62,8 +62,8 @@ public function get_message( string $query_type, array $filters ): string
 | Location (country) | `No auctions found in Canada.` |
 | Location (subdivision) | `No items found in Kansas, US.` |
 | Search + location + seller | `No auctions found for term "tractor" in Canada by John's Farm Equipment.` |
-| Items by auction | `No items found in Spring 2026 Farm Auction.` |
-| All filters | `No items found for term "drill" in Kansas, US by John's Farm Equipment in Spring 2026 Farm Auction.` |
+| Items by auction | `No items found within Spring 2026 Farm Auction.` |
+| All filters | `No items found for term "drill" in Kansas, US by John's Farm Equipment within Spring 2026 Farm Auction.` |
 
 #### Location Name Resolution
 
@@ -72,7 +72,7 @@ Uses existing `Location_Helper` methods:
 - `Location_Helper::get_subdivision_name( $country_code, $subdivision_code )` — returns subdivision name (e.g. `"Kansas"`)
 - `Location_Helper::format_smart_location( '', $subdivision, $country )` — returns formatted string (e.g. `"Kansas, US"`)
 
-When only a country is active, use the full country name. When a subdivision is active, use the `format_smart_location()` format (subdivision name + country code).
+`format_smart_location( '', $subdivision, $country )` handles both cases uniformly — it returns the full country name when no subdivision is set, and `"Subdivision, CC"` format when one is. Call it for all location resolution.
 
 #### Seller Name Resolution
 
@@ -97,7 +97,7 @@ $message = apply_filters(
 );
 ```
 
-The `$filters` array passed to the hook contains raw values (ISO codes, user IDs, post IDs), not resolved human-readable names. This allows extension developers to build entirely custom messages from scratch.
+The `$filters` array passed to the hook contains both raw values (ISO codes, user IDs, post IDs) and pre-resolved display labels (`location_label`, `seller_name`, `auction_title`). This gives extension developers access to both the original codes/IDs for custom resolution and the resolved names for convenience.
 
 **Example usage:**
 
@@ -144,6 +144,14 @@ $empty_message = $empty_message_service->get_message( $query_type, $active_filte
 
 Output `esc_html( $empty_message )` inside the existing `<p class="aucteeno-query-loop__empty">` wrapper.
 
+## i18n Considerations
+
+The dynamically composed message (concatenating fragments like base + search + location + seller) is English-only. Fragment-based string concatenation is not translatable because word order varies across languages. Translators who need localized empty messages should use the `aucteeno_query_loop_no_results` filter hook to provide full replacement strings in their language. The `$filters` array gives them the raw values to compose their own sentence in the correct word order.
+
+## Version
+
+The `@since` tag for the new class, filter hook, and container key should be set at implementation time to match the release version.
+
 ## Out of Scope
 
 - **Editor preview** (`editor.js`): Stays as-is ("No auctions found. Showing placeholder.")
@@ -157,6 +165,7 @@ Output `esc_html( $empty_message )` inside the existing `<p class="aucteeno-quer
 | `includes/blocks/class-query-loop-empty-message.php` | **New** — service class |
 | `includes/class-aucteeno.php` | Add container registration |
 | `blocks/query-loop/render.php` | Replace hardcoded empty state with service call |
+| `tests/Blocks/Query_Loop_Empty_Message_Test.php` | **New** — unit tests |
 
 ## Testing
 
