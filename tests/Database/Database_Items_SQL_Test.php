@@ -104,7 +104,7 @@ class Database_Items_SQL_Test extends TestCase {
 	/**
 	 * Test that query_status_group SQL contains auction_post_name column.
 	 *
-	 * Triggered via query_for_listing() with default sort (ending_soon / by_status path).
+	 * Triggered via query_for_listing() with status_ending_soon sort (3-group / by_status path).
 	 * Returns both status=10 (running) and status=20 (upcoming) rows from the count query
 	 * so that query_status_group() is invoked for two different branches.  Because the
 	 * SELECT/JOIN template is shared across all branches (only the timestamp_condition
@@ -158,7 +158,7 @@ class Database_Items_SQL_Test extends TestCase {
 			->twice()
 			->andReturn( array() );
 
-		Database_Items::query_for_listing( array( 'sort' => 'ending_soon' ) );
+		Database_Items::query_for_listing( array( 'sort' => 'status_ending_soon' ) );
 
 		$this->assertCount( 2, $captured_sqls, 'prepare() should be called once per status branch' );
 
