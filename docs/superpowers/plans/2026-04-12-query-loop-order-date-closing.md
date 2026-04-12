@@ -347,7 +347,7 @@ private static function query_combined_status_group(
     $query_values   = array_merge( $where_values, array( $limit, $offset ) );
     $prepared_query = $wpdb->prepare( $query_sql, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
-    return $wpdb->get_results( $prepared_query, ARRAY_A ) ?: array(); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+    return $wpdb->get_results( $prepared_query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 }
 ```
 
@@ -439,7 +439,7 @@ ORDER BY
 LIMIT %d OFFSET %d
 ```
 
-Extract the current SQL into a helper or use an if/else to select between the two SQL strings based on `$query->get( 'aucteeno_sort' )`.
+Use an if/else within the method to select between the two SQL strings based on `$query->get( 'aucteeno_sort' )`. Keep the current 3-group SQL in the `status_ending_soon` branch and add the new 2-group SQL in the `else` (default `ending_soon`) branch.
 
 - [ ] **Step 3: Update `get_ordered_item_ids` — add `ending_soon` 2-group SQL**
 
@@ -579,17 +579,7 @@ $query_args = array(
 );
 ```
 
-In the items WP_Query path, add to the `$query_args` array at line 679-694 (after `'order'`):
-```php
-$query_args = array(
-    'post_type'      => 'product',
-    'post_status'    => 'publish',
-    'posts_per_page' => $per_page,
-    'paged'          => $page,
-    'aucteeno_sort'  => $sort,
-    // ... rest of existing keys
-);
-```
+In the items WP_Query path, add `'aucteeno_sort' => $sort` to the existing `$query_args` array at line 679-694. Keep all existing keys intact (`orderby`, `order`, `tax_query`, etc.) — just insert the new key.
 
 - [ ] **Step 4: Commit**
 
@@ -681,7 +671,10 @@ Follow the same mock pattern as the existing `test_query_status_group_contains_a
 
 - [ ] **Step 2: Update the existing `ending_soon` SQL test**
 
-The test at line 161 now exercises the new 2-group `query_for_listing_ending_soon` path which calls `query_combined_status_group` instead of `query_status_group` twice. The mock expectations need adjusting: `prepare()` should be called once (single combined query for statuses 10+20) instead of twice. Update the mock expectations and assertions accordingly. The SQL should contain `bidding_status IN (10, 20)` or both status conditions.
+The test at line 161 now exercises the new 2-group `query_for_listing_ending_soon` path which calls `query_combined_status_group` instead of `query_status_group` twice. The mock expectations need adjusting:
+- `get_results`: called twice total (1 count query + 1 combined status group query)
+- `prepare`: called once (for the combined status group query; count query skips prepare when `$where_values` is empty)
+- The captured SQL should contain both status conditions (e.g., `bidding_status = 10` and `bidding_status = 20` in a single query)
 
 - [ ] **Step 3: Add `status_ending_soon` to REST controller test sort expectations**
 
