@@ -27,6 +27,13 @@ if ( ! defined( 'ARRAY_A' ) ) {
 class Database_Items_SQL_Test extends TestCase {
 
 	/**
+	 * Database_Items instance under test.
+	 *
+	 * @var Database_Items
+	 */
+	private Database_Items $db_items;
+
+	/**
 	 * Set up test environment.
 	 *
 	 * @return void
@@ -34,6 +41,8 @@ class Database_Items_SQL_Test extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+
+		$this->db_items = new Database_Items();
 
 		Functions\when( 'wp_parse_args' )->alias(
 			function ( $args, $defaults ) {
@@ -67,7 +76,13 @@ class Database_Items_SQL_Test extends TestCase {
 
 		$sql_captured = null;
 
-		// Count query (no placeholders, uses get_var directly).
+		// get_status_counts: two get_var calls (running + upcoming), expired via transient.
+		$wpdb->shouldReceive( 'get_var' )->times( 2 )->andReturn( '0' );
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+
+		// get_expired_count fires one more get_var (no JOIN).
 		$wpdb->shouldReceive( 'get_var' )->once()->andReturn( '0' );
 
 		// Main query prepare — capture the SQL.
@@ -86,7 +101,7 @@ class Database_Items_SQL_Test extends TestCase {
 
 		$wpdb->shouldReceive( 'get_results' )->once()->andReturn( array() );
 
-		Database_Items::query_for_listing( array( 'sort' => 'newest' ) );
+		$this->db_items->query_for_listing( array( 'sort' => 'newest' ) );
 
 		$this->assertNotNull( $sql_captured, 'prepare() was not called' );
 		$this->assertStringContainsString(
@@ -121,23 +136,16 @@ class Database_Items_SQL_Test extends TestCase {
 
 		$captured_sqls = array();
 
-		// get_status_counts skips prepare (no WHERE values for default args) and calls
-		// get_results directly.  Return two status rows so the running (10) and upcoming
-		// (20) branches both fire, each issuing their own prepare() + get_results() call.
-		$wpdb->shouldReceive( 'get_results' )
-			->once()
-			->andReturn(
-				array(
-					array(
-						'bidding_status' => '10',
-						'cnt'            => '1',
-					),
-					array(
-						'bidding_status' => '20',
-						'cnt'            => '1',
-					),
-				)
-			);
+		// get_status_counts: two get_var calls (running + upcoming).
+		// Return running=1, upcoming=1 so both branches fire.
+		$wpdb->shouldReceive( 'get_var' )
+			->times( 2 )
+			->andReturn( '1', '1' );
+		// get_expired_count: cache miss, then one get_var for the count.
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		$wpdb->shouldReceive( 'get_var' )->once()->andReturn( '0' );
 
 		// query_status_group calls prepare for each status branch — capture both SQLs.
 		$wpdb->shouldReceive( 'prepare' )
@@ -158,7 +166,7 @@ class Database_Items_SQL_Test extends TestCase {
 			->twice()
 			->andReturn( array() );
 
-		Database_Items::query_for_listing( array( 'sort' => 'status_ending_soon' ) );
+		$this->db_items->query_for_listing( array( 'sort' => 'status_ending_soon' ) );
 
 		$this->assertCount( 2, $captured_sqls, 'prepare() should be called once per status branch' );
 
@@ -199,22 +207,16 @@ class Database_Items_SQL_Test extends TestCase {
 
 		$sql_captured = null;
 
-		// get_status_counts: calls get_results directly (no prepare, $where_values empty).
-		// Return active items so query_combined_status_group fires.
-		$wpdb->shouldReceive( 'get_results' )
-			->once()
-			->andReturn(
-				array(
-					array(
-						'bidding_status' => '10',
-						'cnt'            => '2',
-					),
-					array(
-						'bidding_status' => '20',
-						'cnt'            => '1',
-					),
-				)
-			);
+		// get_status_counts: two get_var calls (running + upcoming).
+		// Return running=2, upcoming=1 so active branch fires.
+		$wpdb->shouldReceive( 'get_var' )
+			->times( 2 )
+			->andReturn( '2', '1' );
+		// get_expired_count: cache miss, then one get_var for the count.
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		$wpdb->shouldReceive( 'get_var' )->once()->andReturn( '0' );
 
 		// query_combined_status_group: prepare called once with the combined SQL.
 		$wpdb->shouldReceive( 'prepare' )
@@ -235,7 +237,7 @@ class Database_Items_SQL_Test extends TestCase {
 			->once()
 			->andReturn( array() );
 
-		Database_Items::query_for_listing( array( 'sort' => 'ending_soon' ) );
+		$this->db_items->query_for_listing( array( 'sort' => 'ending_soon' ) );
 
 		$this->assertNotNull( $sql_captured, 'prepare() was not called for combined status group' );
 		$this->assertStringContainsString(

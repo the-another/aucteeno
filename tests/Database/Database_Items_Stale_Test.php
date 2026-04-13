@@ -25,6 +25,13 @@ if ( ! defined( 'ARRAY_A' ) ) {
 class Database_Items_Stale_Test extends TestCase {
 
 	/**
+	 * Database_Items instance under test.
+	 *
+	 * @var Database_Items
+	 */
+	private Database_Items $db_items;
+
+	/**
 	 * Set up test environment.
 	 *
 	 * @return void
@@ -32,6 +39,7 @@ class Database_Items_Stale_Test extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+		$this->db_items = new Database_Items();
 	}
 
 	/**
@@ -71,7 +79,7 @@ class Database_Items_Stale_Test extends TestCase {
 			->andReturn( 'PREPARED_SQL' );
 		$wpdb->shouldReceive( 'get_results' )->once()->andReturn( $expected );
 
-		$result = Database_Items::get_stale( 500 );
+		$result = $this->db_items->get_stale( 500 );
 
 		$this->assertSame( $expected, $result );
 	}
@@ -93,7 +101,7 @@ class Database_Items_Stale_Test extends TestCase {
 			->andReturn( 'UPDATE_SQL' );
 		$wpdb->shouldReceive( 'query' )->once()->andReturn( 2 );
 
-		$result = Database_Items::update_bidding_status_batch( array( 10, 11 ), 30 );
+		$result = $this->db_items->update_bidding_status_batch( array( 10, 11 ), 30 );
 
 		$this->assertTrue( $result );
 	}

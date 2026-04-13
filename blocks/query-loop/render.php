@@ -251,9 +251,10 @@ if ( $has_product_ids ) {
 }
 
 // Query HPS tables directly.
-$results = 'auctions' === $query_type
-	? Database_Auctions::query_for_listing( $query_args )
-	: Database_Items::query_for_listing( $query_args );
+$container = Container::get_instance();
+$results   = 'auctions' === $query_type
+	? $container->get( 'database_auctions' )->query_for_listing( $query_args )
+	: $container->get( 'database_items' )->query_for_listing( $query_args );
 
 $items       = $results['items'] ?? array();
 $total_pages = $results['pages'] ?? 1;

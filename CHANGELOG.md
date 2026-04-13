@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.1
+
+### Changed
+
+- Optimized bidding status count queries — split OR-based queries into per-status queries leveraging composite indexes (`idx_running_*`, `idx_upcoming_*`, `idx_expired_*`).
+- Dropped `wp_posts` JOIN for expired counts (settled items) and added `wp_cache` with 60s TTL.
+- Converted `Database_Items` and `Database_Auctions` from static to instance methods, registered as Container singletons.
+
+### Added
+
+- `aucteeno_query_auctions()` and `aucteeno_query_items()` global API functions for cross-plugin/theme use via `function_exists()`.
+
 ## 1.4.0
 
 ### Added

@@ -63,6 +63,9 @@ class Aucteeno {
 		// Initialize container.
 		$this->container = Container::get_instance();
 
+		// Register database services.
+		$this->register_database_services();
+
 		// Initialize database tables.
 		Database\Database::maybe_migrate();
 
@@ -99,6 +102,29 @@ class Aucteeno {
 
 		// Register query loop empty message service.
 		$this->register_query_loop_empty_message();
+	}
+
+	/**
+	 * Register database service singletons.
+	 *
+	 * @since TBD
+	 */
+	private function register_database_services(): void {
+		$this->container->register(
+			'database_items',
+			function () {
+				return new Database\Database_Items();
+			},
+			true // Singleton.
+		);
+
+		$this->container->register(
+			'database_auctions',
+			function () {
+				return new Database\Database_Auctions();
+			},
+			true // Singleton.
+		);
 	}
 
 	/**
@@ -373,7 +399,11 @@ class Aucteeno {
 		$this->container->register(
 			'status_reconciler',
 			function ( Container $c ) {
-				return new Services\Status_Reconciler( $c->get_hook_manager() );
+				return new Services\Status_Reconciler(
+					$c->get_hook_manager(),
+					$c->get( 'database_auctions' ),
+					$c->get( 'database_items' )
+				);
 			},
 			true // Singleton.
 		);

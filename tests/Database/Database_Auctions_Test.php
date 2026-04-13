@@ -27,6 +27,13 @@ if ( ! defined( 'ARRAY_A' ) ) {
 class Database_Auctions_Test extends TestCase {
 
 	/**
+	 * Database_Auctions instance under test.
+	 *
+	 * @var Database_Auctions
+	 */
+	private Database_Auctions $db_auctions;
+
+	/**
 	 * Set up test environment.
 	 *
 	 * @return void
@@ -34,6 +41,7 @@ class Database_Auctions_Test extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+		$this->db_auctions = new Database_Auctions();
 	}
 
 	/**
@@ -81,7 +89,7 @@ class Database_Auctions_Test extends TestCase {
 			->with( 'PREPARED_SQL', ARRAY_A )
 			->andReturn( $expected );
 
-		$result = Database_Auctions::get_stale( 500 );
+		$result = $this->db_auctions->get_stale( 500 );
 
 		$this->assertSame( $expected, $result );
 	}
@@ -100,7 +108,7 @@ class Database_Auctions_Test extends TestCase {
 		$wpdb->shouldReceive( 'prepare' )->once()->andReturn( 'PREPARED_SQL' );
 		$wpdb->shouldReceive( 'get_results' )->once()->with( 'PREPARED_SQL', ARRAY_A )->andReturn( array() );
 
-		$result = Database_Auctions::get_stale( 500 );
+		$result = $this->db_auctions->get_stale( 500 );
 
 		$this->assertSame( array(), $result );
 	}
@@ -123,7 +131,7 @@ class Database_Auctions_Test extends TestCase {
 			->with( 'UPDATE_SQL' )
 			->andReturn( 3 ); // 3 rows affected
 
-		$result = Database_Auctions::update_bidding_status_batch( array( 1, 2, 3 ), 10 );
+		$result = $this->db_auctions->update_bidding_status_batch( array( 1, 2, 3 ), 10 );
 
 		$this->assertTrue( $result );
 	}
@@ -141,7 +149,7 @@ class Database_Auctions_Test extends TestCase {
 		$wpdb->shouldReceive( 'prepare' )->once()->andReturn( 'UPDATE_SQL' );
 		$wpdb->shouldReceive( 'query' )->once()->andReturn( false );
 
-		$result = Database_Auctions::update_bidding_status_batch( array( 1 ), 30 );
+		$result = $this->db_auctions->update_bidding_status_batch( array( 1 ), 30 );
 
 		$this->assertFalse( $result );
 	}
