@@ -8,6 +8,7 @@
  * @package Aucteeno
  */
 
+use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
 use The_Another\Plugin\Aucteeno\Database\Database_Items;
 use The_Another\Plugin\Aucteeno\Database\Lot_Sort_Helper;
@@ -39,4 +40,24 @@ function aucteeno_get_items_table_name(): string {
  */
 function aucteeno_compute_lot_sort_key( string $lot_no, int $product_id ): int {
 	return Lot_Sort_Helper::compute_lot_sort_key( $lot_no, $product_id );
+}
+
+/**
+ * Query auctions for listing.
+ *
+ * @param array $args Query arguments (page, per_page, sort, user_id, country, subdivision, search, product_ids).
+ * @return array { items: array, page: int, pages: int, total: int }
+ */
+function aucteeno_query_auctions( array $args = array() ): array {
+	return Container::get_instance()->get( 'database_auctions' )->query_for_listing( $args );
+}
+
+/**
+ * Query items for listing.
+ *
+ * @param array $args Query arguments (page, per_page, sort, user_id, auction_id, country, subdivision, search, product_ids).
+ * @return array { items: array, page: int, pages: int, total: int }
+ */
+function aucteeno_query_items( array $args = array() ): array {
+	return Container::get_instance()->get( 'database_items' )->query_for_listing( $args );
 }

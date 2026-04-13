@@ -21,6 +21,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 use WP_Query;
+use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\REST_API\REST_Controller;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
@@ -239,7 +240,8 @@ class REST_Controller_Test extends TestCase {
 			->with( 'page_url' )
 			->andReturn( null );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->with( Mockery::on( function ( $args ) {
@@ -281,7 +283,8 @@ class REST_Controller_Test extends TestCase {
 			'per_page' => 25,
 		) );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->with( Mockery::on( function ( $args ) {
@@ -314,7 +317,8 @@ class REST_Controller_Test extends TestCase {
 			'page' => 999999,
 		) );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->andReturn( array(
@@ -343,7 +347,8 @@ class REST_Controller_Test extends TestCase {
 			'per_page' => 100,
 		) );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->andReturn( array(
@@ -371,7 +376,8 @@ class REST_Controller_Test extends TestCase {
 			'sort' => 'status_ending_soon',
 		) );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->with( Mockery::on( function ( $args ) {
@@ -402,7 +408,8 @@ class REST_Controller_Test extends TestCase {
 			'sort' => 'invalid_sort',
 		) );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->andReturn( array(
@@ -431,7 +438,8 @@ class REST_Controller_Test extends TestCase {
 			'format' => 'invalid_format',
 		) );
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Auctions::class );
+		$mock_db = Mockery::mock( Database_Auctions::class );
+		Container::get_instance()->set( 'database_auctions', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->andReturn( array(
@@ -967,7 +975,8 @@ class REST_Controller_Test extends TestCase {
 	public function test_get_items_defaults(): void {
 		$request = $this->create_html_items_request();
 
-		$mock_db = Mockery::mock( 'alias:' . Database_Items::class );
+		$mock_db = Mockery::mock( Database_Items::class );
+		Container::get_instance()->set( 'database_items', $mock_db );
 		$mock_db->shouldReceive( 'query_for_listing' )
 			->once()
 			->with( Mockery::on( function ( $args ) {

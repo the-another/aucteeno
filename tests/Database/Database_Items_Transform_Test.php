@@ -23,11 +23,13 @@ if ( ! defined( 'ARRAY_A' ) ) {
 class Database_Items_Transform_Test extends TestCase {
 
     private \Mockery\MockInterface $wpdb;
+    private Database_Items $db_items;
 
     protected function setUp(): void {
         parent::setUp();
         Monkey\setUp();
 
+        $this->db_items     = new Database_Items();
         $this->wpdb         = Mockery::mock( 'wpdb' );
         $this->wpdb->prefix = 'wp_';
         $this->wpdb->posts  = 'wp_posts';
@@ -62,8 +64,13 @@ class Database_Items_Transform_Test extends TestCase {
 
     private function stub_wpdb_for_single_item( array $row ): void {
         $this->wpdb->shouldReceive( 'prepare' )->andReturn( 'SQL' );
-        $this->wpdb->shouldReceive( 'get_var' )->andReturn( '1' );
+        // get_status_counts calls get_var twice (running + upcoming), then
+        // get_expired_count does a cache lookup + one more get_var.
+        $this->wpdb->shouldReceive( 'get_var' )->andReturn( '1', '0', '0' );
         $this->wpdb->shouldReceive( 'get_results' )->andReturn( array( $row ) );
+        Functions\when( 'wp_cache_get' )->justReturn( false );
+        Functions\when( 'wp_cache_set' )->justReturn( true );
+        Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
     }
 
     private function base_item_row( array $overrides = array() ): array {
@@ -93,7 +100,7 @@ class Database_Items_Transform_Test extends TestCase {
         $this->stub_wpdb_for_single_item( $this->base_item_row() );
         Functions\expect( 'wc_get_product' )->never();
 
-        Database_Items::query_for_listing();
+        $this->db_items->query_for_listing();
         $this->addToAssertionCount( 1 );
     }
 
@@ -104,7 +111,7 @@ class Database_Items_Transform_Test extends TestCase {
                 return '_thumbnail_id' === $key ? '99' : '';
             } );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertArrayHasKey( 'image_id', $result['items'][0] );
         $this->assertSame( 99, $result['items'][0]['image_id'] );
@@ -117,7 +124,7 @@ class Database_Items_Transform_Test extends TestCase {
                 return '_aucteeno_current_bid' === $key ? '250.00' : '';
             } );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertSame( 250.0, $result['items'][0]['current_bid'] );
     }
@@ -129,7 +136,7 @@ class Database_Items_Transform_Test extends TestCase {
                 return '_aucteeno_asking_bid' === $key ? '100.00' : '';
             } );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertSame( 100.0, $result['items'][0]['current_bid'] );
     }
@@ -141,7 +148,7 @@ class Database_Items_Transform_Test extends TestCase {
                 return '_aucteeno_sold_price' === $key ? '350.00' : '';
             } );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertSame( 350.0, $result['items'][0]['current_bid'] );
     }
@@ -149,7 +156,7 @@ class Database_Items_Transform_Test extends TestCase {
     public function test_reserve_price_is_always_zero(): void {
         $this->stub_wpdb_for_single_item( $this->base_item_row() );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertSame( 0.0, $result['items'][0]['reserve_price'] );
     }
@@ -169,7 +176,7 @@ class Database_Items_Transform_Test extends TestCase {
                 return $default;
             } );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertStringContainsString( 'test-auction', $result['items'][0]['permalink'] );
         $this->assertStringContainsString( 'test-item', $result['items'][0]['permalink'] );
@@ -182,7 +189,7 @@ class Database_Items_Transform_Test extends TestCase {
             ->with( 20 )
             ->andReturn( 'https://example.com/?p=20' );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertSame( 'https://example.com/?p=20', $result['items'][0]['permalink'] );
     }
@@ -190,7 +197,7 @@ class Database_Items_Transform_Test extends TestCase {
     public function test_query_for_listing_item_has_location_term_id_fields(): void {
         $this->stub_wpdb_for_single_item( $this->base_item_row() );
 
-        $result = Database_Items::query_for_listing();
+        $result = $this->db_items->query_for_listing();
 
         $this->assertArrayHasKey( 'location_country_term_id', $result['items'][0] );
         $this->assertArrayHasKey( 'location_subdivision_term_id', $result['items'][0] );
@@ -207,35 +214,29 @@ class Database_Items_Transform_Test extends TestCase {
             return $value;
         } );
 
-        Database_Items::query_for_listing();
+        $this->db_items->query_for_listing();
 
         $this->assertIsArray( $captured_ids );
         $this->assertContains( 20, $captured_ids );
     }
 
     public function test_query_for_listing_by_status_does_not_call_wc_get_product(): void {
-        $this->wpdb->shouldReceive( 'prepare' )->andReturn( 'SQL' );
-        $this->wpdb->shouldReceive( 'get_var' )->andReturn( '1' );
-        $this->wpdb->shouldReceive( 'get_results' )->andReturn( array( $this->base_item_row() ) );
+        $this->stub_wpdb_for_single_item( $this->base_item_row() );
 
         Functions\expect( 'wc_get_product' )->never();
 
-        Database_Items::query_for_listing( array( 'sort' => 'ending_soon' ) );
+        $this->db_items->query_for_listing( array( 'sort' => 'ending_soon' ) );
         $this->addToAssertionCount( 1 );
     }
 
     public function test_query_for_listing_by_status_item_has_image_id_field(): void {
-        $this->wpdb->shouldReceive( 'prepare' )->andReturn( 'SQL' );
-        $this->wpdb->shouldReceive( 'get_var' )->andReturn( '1' );
-        $this->wpdb->shouldReceive( 'get_results' )->andReturn( array(
-            $this->base_item_row( array( 'bidding_status' => 10 ) ),
-        ) );
+        $this->stub_wpdb_for_single_item( $this->base_item_row( array( 'bidding_status' => 10 ) ) );
         Functions\when( 'get_post_meta' )
             ->alias( function ( $id, $key = null, $single = false ) {
                 return '_thumbnail_id' === $key ? '99' : '';
             } );
 
-        $result = Database_Items::query_for_listing( array( 'sort' => 'ending_soon' ) );
+        $result = $this->db_items->query_for_listing( array( 'sort' => 'ending_soon' ) );
 
         $this->assertArrayHasKey( 'image_id', $result['items'][0] );
         $this->assertSame( 99, $result['items'][0]['image_id'] );

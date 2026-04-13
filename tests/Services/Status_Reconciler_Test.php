@@ -16,6 +16,8 @@ use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
+use The_Another\Plugin\Aucteeno\Database\Database_Items;
 use The_Another\Plugin\Aucteeno\Hook_Manager;
 use The_Another\Plugin\Aucteeno\Services\Status_Reconciler;
 
@@ -50,14 +52,15 @@ class Status_Reconciler_Test extends TestCase {
 	}
 
 	/**
-	 * Creates a Status_Reconciler instance with a mocked Hook_Manager.
+	 * Creates a Status_Reconciler instance with a mocked Hook_Manager
+	 * and real Database_Auctions / Database_Items instances.
 	 *
 	 * @return Status_Reconciler
 	 */
 	private function make_reconciler(): Status_Reconciler {
 		$hook_manager = Mockery::mock( Hook_Manager::class );
 		$hook_manager->shouldReceive( 'register_action' )->byDefault();
-		return new Status_Reconciler( $hook_manager );
+		return new Status_Reconciler( $hook_manager, new Database_Auctions(), new Database_Items() );
 	}
 
 	/**
@@ -424,9 +427,9 @@ class Status_Reconciler_Test extends TestCase {
 		);
 
 		// run() makes two DB round-trips before exiting:
-		// 1. Database_Auctions::get_stale() returns [] → phase transitions to items.
-		// 2. Database_Items::get_stale() returns [] → loop breaks.
-		// Each static get_stale() issues one prepare + one get_results.
+		// 1. $this->database_auctions->get_stale() returns [] → phase transitions to items.
+		// 2. $this->database_items->get_stale() returns [] → loop breaks.
+		// Each get_stale() call issues one prepare + one get_results.
 		$wpdb->shouldReceive( 'prepare' )->twice()->andReturn( 'PREPARED_SQL' );
 		$wpdb->shouldReceive( 'get_results' )->twice()->andReturn( array() );
 
@@ -470,7 +473,7 @@ class Status_Reconciler_Test extends TestCase {
 		Functions\expect( 'as_has_scheduled_action' )->never();
 		Functions\expect( 'as_schedule_recurring_action' )->never();
 
-		( new Status_Reconciler( $hook_manager ) )->init();
+		( new Status_Reconciler( $hook_manager, new Database_Auctions(), new Database_Items() ) )->init();
 		$this->addToAssertionCount( 1 );
 	}
 
@@ -500,7 +503,7 @@ class Status_Reconciler_Test extends TestCase {
 		Functions\expect( 'as_schedule_recurring_action' )
 			->once();
 
-		( new Status_Reconciler( $hook_manager ) )->init();
+		( new Status_Reconciler( $hook_manager, new Database_Auctions(), new Database_Items() ) )->init();
 		$this->addToAssertionCount( 1 );
 	}
 
@@ -528,7 +531,7 @@ class Status_Reconciler_Test extends TestCase {
 		Functions\expect( 'as_has_scheduled_action' )->never();
 		Functions\expect( 'as_schedule_recurring_action' )->never();
 
-		( new Status_Reconciler( $hook_manager ) )->init();
+		( new Status_Reconciler( $hook_manager, new Database_Auctions(), new Database_Items() ) )->init();
 		$this->addToAssertionCount( 1 );
 	}
 

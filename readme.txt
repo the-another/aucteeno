@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.3.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -166,6 +166,13 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.4.1 - 2026-04-14 =
+* Optimized bidding status count queries — split OR-based queries into per-status queries leveraging composite indexes
+* Dropped wp_posts JOIN for expired counts (settled items) and added wp_cache with 60s TTL
+* Converted Database_Items and Database_Auctions from static to instance methods, registered as Container singletons
+* Added aucteeno_query_auctions() and aucteeno_query_items() global API functions for cross-plugin/theme use
 
 = 1.4.0 - 2026-04-12 =
 * New "Ending Soon" default sort for query loop — combines running and upcoming auctions/items into one group ordered by bidding end date, with expired items following

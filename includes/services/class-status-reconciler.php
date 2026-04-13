@@ -73,12 +73,30 @@ class Status_Reconciler {
 	private Hook_Manager $hook_manager;
 
 	/**
+	 * Database auctions instance.
+	 *
+	 * @var Database_Auctions
+	 */
+	private Database_Auctions $database_auctions;
+
+	/**
+	 * Database items instance.
+	 *
+	 * @var Database_Items
+	 */
+	private Database_Items $database_items;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Hook_Manager $hook_manager Hook manager instance.
+	 * @param Hook_Manager      $hook_manager      Hook manager instance.
+	 * @param Database_Auctions $database_auctions Database auctions instance.
+	 * @param Database_Items    $database_items    Database items instance.
 	 */
-	public function __construct( Hook_Manager $hook_manager ) {
-		$this->hook_manager = $hook_manager;
+	public function __construct( Hook_Manager $hook_manager, Database_Auctions $database_auctions, Database_Items $database_items ) {
+		$this->hook_manager      = $hook_manager;
+		$this->database_auctions = $database_auctions;
+		$this->database_items    = $database_items;
 	}
 
 	/**
@@ -170,7 +188,7 @@ class Status_Reconciler {
 
 		while ( $runs < self::MAX_RUNS ) {
 			if ( 'auctions' === $phase ) {
-				$rows = Database_Auctions::get_stale( self::BATCH_SIZE );
+				$rows = $this->database_auctions->get_stale( self::BATCH_SIZE );
 				if ( empty( $rows ) ) {
 					$phase = 'items';
 					continue; // Back to while condition; $runs NOT incremented.
@@ -181,7 +199,7 @@ class Status_Reconciler {
 					$phase = 'items';
 				}
 			} else {
-				$rows = Database_Items::get_stale( self::BATCH_SIZE );
+				$rows = $this->database_items->get_stale( self::BATCH_SIZE );
 				if ( empty( $rows ) ) {
 					break;
 				}
@@ -197,7 +215,7 @@ class Status_Reconciler {
 	 * Updates taxonomy term relationships first; HPS updated second only if taxonomy succeeded.
 	 * Fires wp_update_term_count once after all groups if any taxonomy write succeeded.
 	 *
-	 * @param array $rows Rows from Database_Auctions::get_stale().
+	 * @param array $rows Rows from $this->database_auctions->get_stale().
 	 * @return void
 	 */
 	private function process_auction_batch( array $rows ): void {
@@ -233,7 +251,7 @@ class Status_Reconciler {
 
 		// HPS update only for groups where taxonomy succeeded.
 		foreach ( $taxonomy_ok_groups as $new_status => $ids ) {
-			if ( ! Database_Auctions::update_bidding_status_batch( $ids, $new_status ) ) {
+			if ( ! $this->database_auctions->update_bidding_status_batch( $ids, $new_status ) ) {
 				wc_get_logger()->error(
 					'Failed to update HPS bidding_status for auction IDs: ' . implode( ', ', $ids ),
 					array( 'source' => 'aucteeno-reconciler' )
@@ -252,7 +270,7 @@ class Status_Reconciler {
 	 *
 	 * Updates HPS table only — items never hold auction-bidding-status taxonomy terms directly.
 	 *
-	 * @param array $rows Rows from Database_Items::get_stale().
+	 * @param array $rows Rows from $this->database_items->get_stale().
 	 * @return void
 	 */
 	private function process_item_batch( array $rows ): void {
@@ -271,7 +289,7 @@ class Status_Reconciler {
 				continue;
 			}
 
-			if ( ! Database_Items::update_bidding_status_batch( $ids, $new_status ) ) {
+			if ( ! $this->database_items->update_bidding_status_batch( $ids, $new_status ) ) {
 				wc_get_logger()->error(
 					'Failed to update HPS bidding_status for item IDs: ' . implode( ', ', $ids ),
 					array( 'source' => 'aucteeno-reconciler' )

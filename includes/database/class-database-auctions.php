@@ -28,6 +28,20 @@ class Database_Auctions {
 	private const TABLE_NAME = 'aucteeno_auctions';
 
 	/**
+	 * Cache group for expired counts.
+	 *
+	 * @var string
+	 */
+	private const EXPIRED_COUNT_CACHE_GROUP = 'aucteeno_expired_auctions';
+
+	/**
+	 * Cache TTL for expired auction counts (seconds).
+	 *
+	 * @var int
+	 */
+	private const EXPIRED_COUNT_TTL = 60;
+
+	/**
 	 * Get full table name with prefix.
 	 *
 	 * @return string Table name with prefix.
@@ -119,7 +133,7 @@ class Database_Auctions {
 	 *     @type int   $total Total auctions.
 	 * }
 	 */
-	public static function query_for_listing( array $args = array() ): array {
+	public function query_for_listing( array $args = array() ): array {
 		global $wpdb;
 
 		$defaults = array(
@@ -143,40 +157,30 @@ class Database_Auctions {
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
 
-		// Build WHERE clauses.
-		// Filter by status with timestamp validation to ensure accurate real-time filtering:
-		// - Running (10): started and not yet ended
-		// - Upcoming (20): not yet started
-		// - Expired (30): already ended.
-		$where_clauses = array(
-			'(
-				(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
-				OR (a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP())
-				OR (a.bidding_status = 30 AND a.bidding_ends_at <= UNIX_TIMESTAMP())
-			)',
-		);
-		$where_values  = array();
+		// Build base WHERE clauses (without status filter).
+		$base_where_clauses = array();
+		$where_values       = array();
 
 		// User filter.
 		if ( ! empty( $args['user_id'] ) ) {
-			$where_clauses[] = 'a.user_id = %d';
-			$where_values[]  = absint( $args['user_id'] );
+			$base_where_clauses[] = 'a.user_id = %d';
+			$where_values[]       = absint( $args['user_id'] );
 		}
 
 		// Location filters.
 		if ( ! empty( $args['country'] ) ) {
-			$where_clauses[] = 'a.location_country = %s';
-			$where_values[]  = sanitize_text_field( $args['country'] );
+			$base_where_clauses[] = 'a.location_country = %s';
+			$where_values[]       = sanitize_text_field( $args['country'] );
 		}
 		if ( ! empty( $args['subdivision'] ) ) {
-			$where_clauses[] = 'a.location_subdivision = %s';
-			$where_values[]  = sanitize_text_field( $args['subdivision'] );
+			$base_where_clauses[] = 'a.location_subdivision = %s';
+			$where_values[]       = sanitize_text_field( $args['subdivision'] );
 		}
 
 		// Search filter (requires posts table join which is already present).
 		if ( ! empty( $args['search'] ) ) {
-			$where_clauses[] = 'p.post_title LIKE %s';
-			$where_values[]  = '%' . $wpdb->esc_like( sanitize_text_field( $args['search'] ) ) . '%';
+			$base_where_clauses[] = 'p.post_title LIKE %s';
+			$where_values[]       = '%' . $wpdb->esc_like( sanitize_text_field( $args['search'] ) ) . '%';
 		}
 
 		// Product IDs filter.
@@ -186,13 +190,24 @@ class Database_Auctions {
 			$product_ids = array_filter( $product_ids );
 			if ( ! empty( $product_ids ) ) {
 				$placeholders          = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
-				$where_clauses[]       = "a.auction_id IN ($placeholders)";
+				$base_where_clauses[]  = "a.auction_id IN ($placeholders)";
 				$where_values          = array_merge( $where_values, $product_ids );
 				$use_product_ids_order = true;
 			}
 		}
 
-		$where_sql = implode( ' AND ', $where_clauses );
+		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
+
+		// Count via per-status queries for optimal index usage.
+		$total = $this->get_total_status_count( $table_name, $posts_table, $base_where_sql, $where_values );
+
+		// Status filter for the data query (LIMIT-bounded, less critical).
+		$status_filter = '(
+				(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
+				OR (a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP())
+				OR (a.bidding_status = 30 AND a.bidding_ends_at <= UNIX_TIMESTAMP())
+			)';
+		$where_sql     = $base_where_sql . ' AND ' . $status_filter;
 
 		// Build ORDER BY.
 		if ( $use_product_ids_order ) {
@@ -225,13 +240,6 @@ class Database_Auctions {
 				a.auction_id ASC
 			';
 		}
-
-		// Count query.
-		$count_sql = "SELECT COUNT(*) FROM {$table_name} a INNER JOIN {$posts_table} p ON a.auction_id = p.ID AND p.post_status = 'publish' WHERE {$where_sql}";
-		if ( ! empty( $where_values ) ) {
-			$count_sql = $wpdb->prepare( $count_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		}
-		$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Main query.
 		$query_sql = "
@@ -349,7 +357,7 @@ class Database_Auctions {
 	 * @param int $limit Maximum rows to return.
 	 * @return array<array{auction_id: int, bidding_starts_at: int, bidding_ends_at: int, bidding_status: int}>
 	 */
-	public static function get_stale( int $limit ): array {
+	public function get_stale( int $limit ): array {
 		global $wpdb;
 
 		$table = self::get_table_name();
@@ -382,7 +390,7 @@ class Database_Auctions {
 	 * @param int        $new_status   New bidding status (10, 20, or 30).
 	 * @return bool True on success.
 	 */
-	public static function update_bidding_status_batch( array $auction_ids, int $new_status ): bool {
+	public function update_bidding_status_batch( array $auction_ids, int $new_status ): bool {
 		if ( empty( $auction_ids ) ) {
 			return false;
 		}
@@ -402,5 +410,88 @@ class Database_Auctions {
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
 		return false !== $result;
+	}
+
+	/**
+	 * Get total auction count across all active statuses.
+	 *
+	 * Uses three separate COUNT queries so MySQL can leverage the per-status
+	 * composite indexes (idx_running_auctions, idx_upcoming_auctions, idx_expired_auctions)
+	 * instead of falling back to a full table scan with OR.
+	 *
+	 * The expired count skips the wp_posts JOIN (expired auctions are settled and
+	 * unlikely to change post_status) and is cached via wp_cache.
+	 *
+	 * @param string $table_name     Auctions table name.
+	 * @param string $posts_table    Posts table name.
+	 * @param string $base_where_sql Base WHERE clause (without status).
+	 * @param array  $where_values   Prepared statement values.
+	 * @return int Total count across all statuses.
+	 */
+	private function get_total_status_count( string $table_name, string $posts_table, string $base_where_sql, array $where_values ): int {
+		global $wpdb;
+
+		// Running and upcoming: JOIN wp_posts for publish check (small result sets).
+		$base_sql = "
+			SELECT COUNT(*) FROM {$table_name} a
+			INNER JOIN {$posts_table} p ON a.auction_id = p.ID AND p.post_status = 'publish'
+			WHERE {$base_where_sql}
+		";
+
+		$running_sql  = $base_sql . ' AND a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP()';
+		$upcoming_sql = $base_sql . ' AND a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP()';
+
+		if ( ! empty( $where_values ) ) {
+			$running_sql  = $wpdb->prepare( $running_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$upcoming_sql = $wpdb->prepare( $upcoming_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		$running  = (int) $wpdb->get_var( $running_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$upcoming = (int) $wpdb->get_var( $upcoming_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		// Expired: no JOIN (settled auctions), cached via transient.
+		$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+
+		return $running + $upcoming + $expired;
+	}
+
+	/**
+	 * Get expired auction count with wp_cache.
+	 *
+	 * Skips the wp_posts JOIN since expired auctions are settled and unlikely to
+	 * change post_status. Uses a pure index scan on idx_expired_auctions.
+	 *
+	 * @param string $table_name     Auctions table name.
+	 * @param string $base_where_sql Base WHERE clause (without status).
+	 * @param array  $where_values   Prepared statement values.
+	 * @return int Expired auction count.
+	 */
+	private function get_expired_count( string $table_name, string $base_where_sql, array $where_values ): int {
+		$cache_key = md5( $base_where_sql . wp_json_encode( $where_values ) );
+		$cached    = wp_cache_get( $cache_key, self::EXPIRED_COUNT_CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
+
+		global $wpdb;
+
+		$expired_sql = "
+			SELECT COUNT(*) FROM {$table_name} a
+			WHERE {$base_where_sql}
+			AND a.bidding_status = 30
+			AND a.bidding_ends_at <= UNIX_TIMESTAMP()
+		";
+
+		if ( ! empty( $where_values ) ) {
+			$expired_sql = $wpdb->prepare( $expired_sql, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		$count = (int) $wpdb->get_var( $expired_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined
+		wp_cache_set( $cache_key, $count, self::EXPIRED_COUNT_CACHE_GROUP, self::EXPIRED_COUNT_TTL );
+
+		return $count;
 	}
 }

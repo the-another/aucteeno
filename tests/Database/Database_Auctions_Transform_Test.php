@@ -25,9 +25,13 @@ if ( ! defined( 'ARRAY_A' ) ) {
  */
 class Database_Auctions_Transform_Test extends TestCase {
 
+	private Database_Auctions $db_auctions;
+
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+
+		$this->db_auctions = new Database_Auctions();
 
 		$wpdb         = Mockery::mock( 'wpdb' );
 		$wpdb->prefix = 'wp_';
@@ -76,6 +80,11 @@ class Database_Auctions_Transform_Test extends TestCase {
 		Functions\when( 'sanitize_title' )->returnArg();
 		Functions\when( 'home_url' )->returnArg();
 		Functions\when( 'user_trailingslashit' )->returnArg();
+
+		// Cache stubs for get_expired_count.
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
 	}
 
 	protected function tearDown(): void {
@@ -87,7 +96,7 @@ class Database_Auctions_Transform_Test extends TestCase {
 	public function test_query_for_listing_does_not_call_wc_get_product(): void {
 		Functions\expect( 'wc_get_product' )->never();
 
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertArrayHasKey( 'items', $result );
 	}
@@ -101,14 +110,14 @@ class Database_Auctions_Transform_Test extends TestCase {
 				return '';
 			} );
 
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertArrayHasKey( 'image_id', $result['items'][0] );
 		$this->assertSame( 77, $result['items'][0]['image_id'] );
 	}
 
 	public function test_query_for_listing_item_has_location_term_id_fields(): void {
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertArrayHasKey( 'location_country_term_id', $result['items'][0] );
 		$this->assertArrayHasKey( 'location_subdivision_term_id', $result['items'][0] );
@@ -124,7 +133,7 @@ class Database_Auctions_Transform_Test extends TestCase {
 		Functions\when( 'update_termmeta_cache' )->justReturn( null );
 		Functions\when( 'get_term_meta' )->justReturn( 'US' );
 
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertSame( 42, $result['items'][0]['location_country_term_id'] );
 	}
@@ -138,13 +147,13 @@ class Database_Auctions_Transform_Test extends TestCase {
 				return '';
 			} );
 
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertSame( 499.0, $result['items'][0]['current_bid'] );
 	}
 
 	public function test_query_for_listing_reserve_price_is_always_zero(): void {
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertSame( 0.0, $result['items'][0]['reserve_price'] );
 	}
@@ -157,7 +166,7 @@ class Database_Auctions_Transform_Test extends TestCase {
 			return rtrim( $s, '/' ) . '/';
 		} );
 
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertStringContainsString( 'test-auction', $result['items'][0]['permalink'] );
 	}
@@ -172,7 +181,7 @@ class Database_Auctions_Transform_Test extends TestCase {
 			return $value;
 		} );
 
-		Database_Auctions::query_for_listing();
+		$this->db_auctions->query_for_listing();
 
 		$this->assertIsArray( $captured_ids );
 		$this->assertContains( 10, $captured_ids );
@@ -187,7 +196,7 @@ class Database_Auctions_Transform_Test extends TestCase {
 			return array( 'https://example.com/img.jpg', 100, 100, false );
 		} );
 
-		$result = Database_Auctions::query_for_listing();
+		$result = $this->db_auctions->query_for_listing();
 
 		$this->assertSame( 'https://example.com/img.jpg', $result['items'][0]['image_url'] );
 	}

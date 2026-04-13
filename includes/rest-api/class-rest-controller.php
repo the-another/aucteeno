@@ -21,6 +21,7 @@ use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
 use The_Another\Plugin\Aucteeno\Helpers\DateTime_Helper;
 use The_Another\Plugin\Aucteeno\Database\Status_Mapper;
+use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
 use The_Another\Plugin\Aucteeno\Database\Database_Items;
 
@@ -528,7 +529,7 @@ class REST_Controller extends WP_REST_Controller {
 			$args['product_ids'] = array_map( 'absint', explode( ',', $product_ids_param ) );
 		}
 
-		$result = Database_Auctions::query_for_listing( $args );
+		$result = Container::get_instance()->get( 'database_auctions' )->query_for_listing( $args );
 
 		// Parse block template if provided.
 		$block_template_json = $request->get_param( 'block_template' ) ?? '';
@@ -756,7 +757,7 @@ class REST_Controller extends WP_REST_Controller {
 			$args['product_ids'] = array_map( 'absint', explode( ',', $product_ids_param ) );
 		}
 
-		$result = Database_Items::query_for_listing( $args );
+		$result = Container::get_instance()->get( 'database_items' )->query_for_listing( $args );
 
 		// Parse block template if provided.
 		$block_template_json = $request->get_param( 'block_template' ) ?? '';
