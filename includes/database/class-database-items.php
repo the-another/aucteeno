@@ -297,7 +297,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$items = $this->transform_results( $results, $image_map, $term_map );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/**
 		 * Filters the complete items array after all per-item context data is built.
@@ -428,7 +428,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$items = $this->transform_results( $results, $image_map, $term_map );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
@@ -586,7 +586,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$items = $this->transform_results( $results, $image_map, $term_map );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
@@ -721,7 +721,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$items = $this->transform_results( $results, $image_map, $term_map );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
@@ -1074,9 +1074,9 @@ class Database_Items {
 	 * eliminating the hidden wp_get_post_terms() call inside Product_Item::get_price().
 	 *
 	 * @since 2.1.0
-	 * @param array  $results      Raw database results (must include auction_post_name column).
-	 * @param array  $image_map    Map of item_id => attachment_id from Eager_Loader::prime_images().
-	 * @param array  $term_map     Map of location code => term_id from Eager_Loader::load_location_terms().
+	 * @param array $results      Raw database results (must include auction_post_name column).
+	 * @param array $image_map    Map of item_id => attachment_id from Eager_Loader::prime_images().
+	 * @param array $term_map     Map of location code => term_id from Eager_Loader::load_location_terms().
 	 * @return array Transformed item data.
 	 */
 	private function transform_results(

@@ -274,7 +274,7 @@ class Database_Auctions {
 			array_column( $results, 'location_subdivision' )
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
-		$term_map = Eager_Loader::load_location_terms( $location_codes );
+		$term_map       = Eager_Loader::load_location_terms( $location_codes );
 
 		$items = array();
 		foreach ( $results as $row ) {
