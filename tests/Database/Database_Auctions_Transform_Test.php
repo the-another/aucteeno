@@ -80,6 +80,9 @@ class Database_Auctions_Transform_Test extends TestCase {
 		Functions\when( 'sanitize_title' )->returnArg();
 		Functions\when( 'home_url' )->returnArg();
 		Functions\when( 'user_trailingslashit' )->returnArg();
+		Functions\when( 'get_permalink' )->alias( function ( $id ) {
+			return 'https://example.com/?p=' . $id;
+		} );
 
 		// Cache stubs for get_expired_count.
 		Functions\when( 'wp_cache_get' )->justReturn( false );
@@ -158,17 +161,14 @@ class Database_Auctions_Transform_Test extends TestCase {
 		$this->assertSame( 0.0, $result['items'][0]['reserve_price'] );
 	}
 
-	public function test_query_for_listing_permalink_built_from_post_name(): void {
-		Functions\when( 'home_url' )->alias( function ( $path ) {
-			return 'https://example.com' . $path;
-		} );
-		Functions\when( 'user_trailingslashit' )->alias( function ( $s ) {
-			return rtrim( $s, '/' ) . '/';
+	public function test_query_for_listing_permalink_uses_get_permalink(): void {
+		Functions\when( 'get_permalink' )->alias( function ( $id ) {
+			return 'https://example.com/kansas-auctions/wichita/test-auction.html';
 		} );
 
 		$result = $this->db_auctions->query_for_listing();
 
-		$this->assertStringContainsString( 'test-auction', $result['items'][0]['permalink'] );
+		$this->assertSame( 'https://example.com/kansas-auctions/wichita/test-auction.html', $result['items'][0]['permalink'] );
 	}
 
 	public function test_query_for_listing_batch_filter_receives_all_items(): void {

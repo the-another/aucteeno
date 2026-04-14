@@ -38,14 +38,14 @@ class Eager_Loader {
 		}
 
 		if ( function_exists( '_prime_post_caches' ) ) {
-			_prime_post_caches( $ids, false, true );
+			_prime_post_caches( $ids, true, true );
 			return;
 		}
 
-		// Fallback: load all meta per ID individually (higher query cost but safe).
+		// Fallback: load post objects + meta per ID individually (higher query cost but safe).
 		// absint() guards against non-integer elements that callers may pass.
 		foreach ( $ids as $id ) {
-			get_post_meta( absint( $id ) );
+			get_post( absint( $id ) );
 		}
 	}
 

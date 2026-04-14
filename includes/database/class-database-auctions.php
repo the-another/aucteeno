@@ -11,7 +11,6 @@
 namespace The_Another\Plugin\Aucteeno\Database;
 
 use The_Another\Plugin\Aucteeno\Database\Eager_Loader;
-use The_Another\Plugin\Aucteeno\Permalinks\Auction_Item_Permalinks;
 
 /**
  * Class Database_Auctions
@@ -276,7 +275,6 @@ class Database_Auctions {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$auction_base   = Auction_Item_Permalinks::get_auction_base();
 
 		$items = array();
 		foreach ( $results as $row ) {
@@ -302,7 +300,7 @@ class Database_Auctions {
 				array(
 					'id'                           => $auction_id,
 					'title'                        => $row['post_title'],
-					'permalink'                    => home_url( user_trailingslashit( $auction_base . '/' . $row['post_name'] ) ),
+					'permalink'                    => get_permalink( $auction_id ),
 					'image_url'                    => $image_url,
 					'image_id'                     => $image_id,
 					'user_id'                      => absint( $row['user_id'] ),

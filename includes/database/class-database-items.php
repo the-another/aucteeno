@@ -11,7 +11,7 @@
 namespace The_Another\Plugin\Aucteeno\Database;
 
 use The_Another\Plugin\Aucteeno\Database\Eager_Loader;
-use The_Another\Plugin\Aucteeno\Permalinks\Auction_Item_Permalinks;
+
 
 /**
  * Class Database_Items
@@ -286,8 +286,9 @@ class Database_Items {
 		}
 
 		// Batch-prime caches before transform — eliminates N+1 wc_get_product() calls.
-		$ids = array_column( $results, 'item_id' );
-		Eager_Loader::prime_post_meta( $ids );
+		$ids         = array_column( $results, 'item_id' );
+		$auction_ids = array_unique( array_filter( array_column( $results, 'auction_id' ) ) );
+		Eager_Loader::prime_post_meta( array_merge( $ids, $auction_ids ) );
 		$image_map = Eager_Loader::prime_images( $ids );
 
 		$merged_codes   = array_merge(
@@ -296,10 +297,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$auction_base   = Auction_Item_Permalinks::get_auction_base();
-		$item_base      = Auction_Item_Permalinks::get_item_base();
-
-		$items = $this->transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/**
 		 * Filters the complete items array after all per-item context data is built.
@@ -419,8 +417,9 @@ class Database_Items {
 			);
 		}
 
-		$ids = array_column( $results, 'item_id' );
-		Eager_Loader::prime_post_meta( $ids );
+		$ids         = array_column( $results, 'item_id' );
+		$auction_ids = array_unique( array_filter( array_column( $results, 'auction_id' ) ) );
+		Eager_Loader::prime_post_meta( array_merge( $ids, $auction_ids ) );
 		$image_map = Eager_Loader::prime_images( $ids );
 
 		$merged_codes   = array_merge(
@@ -429,10 +428,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$auction_base   = Auction_Item_Permalinks::get_auction_base();
-		$item_base      = Auction_Item_Permalinks::get_item_base();
-
-		$items = $this->transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
@@ -579,8 +575,9 @@ class Database_Items {
 		}
 
 		// Batch-prime caches before transform — all results merged first.
-		$ids = array_column( $results, 'item_id' );
-		Eager_Loader::prime_post_meta( $ids );
+		$ids         = array_column( $results, 'item_id' );
+		$auction_ids = array_unique( array_filter( array_column( $results, 'auction_id' ) ) );
+		Eager_Loader::prime_post_meta( array_merge( $ids, $auction_ids ) );
 		$image_map = Eager_Loader::prime_images( $ids );
 
 		$merged_codes   = array_merge(
@@ -589,10 +586,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$auction_base   = Auction_Item_Permalinks::get_auction_base();
-		$item_base      = Auction_Item_Permalinks::get_item_base();
-
-		$items = $this->transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
@@ -716,8 +710,9 @@ class Database_Items {
 		}
 
 		// Batch-prime caches before transform — all results merged first.
-		$ids = array_column( $results, 'item_id' );
-		Eager_Loader::prime_post_meta( $ids );
+		$ids         = array_column( $results, 'item_id' );
+		$auction_ids = array_unique( array_filter( array_column( $results, 'auction_id' ) ) );
+		Eager_Loader::prime_post_meta( array_merge( $ids, $auction_ids ) );
 		$image_map = Eager_Loader::prime_images( $ids );
 
 		$merged_codes   = array_merge(
@@ -726,10 +721,7 @@ class Database_Items {
 		);
 		$location_codes = array_values( array_unique( array_filter( $merged_codes ) ) );
 		$term_map       = Eager_Loader::load_location_terms( $location_codes );
-		$auction_base   = Auction_Item_Permalinks::get_auction_base();
-		$item_base      = Auction_Item_Permalinks::get_item_base();
-
-		$items = $this->transform_results( $results, $image_map, $term_map, $auction_base, $item_base );
+		$items          = $this->transform_results( $results, $image_map, $term_map );
 
 		/** This filter is documented in includes/database/class-database-items.php */
 		$items = (array) apply_filters( 'aucteeno_products_context_data', $items, $ids );
@@ -1082,19 +1074,15 @@ class Database_Items {
 	 * eliminating the hidden wp_get_post_terms() call inside Product_Item::get_price().
 	 *
 	 * @since 2.1.0
-	 * @param array  $results      Raw database results (must include auction_post_name column).
-	 * @param array  $image_map    Map of item_id => attachment_id from Eager_Loader::prime_images().
-	 * @param array  $term_map     Map of location code => term_id from Eager_Loader::load_location_terms().
-	 * @param string $auction_base Auction URL base slug (e.g. 'auction').
-	 * @param string $item_base    Item URL base slug (e.g. 'item').
+	 * @param array $results      Raw database results (must include auction_post_name column).
+	 * @param array $image_map    Map of item_id => attachment_id from Eager_Loader::prime_images().
+	 * @param array $term_map     Map of location code => term_id from Eager_Loader::load_location_terms().
 	 * @return array Transformed item data.
 	 */
 	private function transform_results(
 		array $results,
 		array $image_map,
-		array $term_map,
-		string $auction_base,
-		string $item_base
+		array $term_map
 	): array {
 		$items = array();
 
@@ -1113,16 +1101,7 @@ class Database_Items {
 				default => '_aucteeno_current_bid',
 			};
 
-			$auction_slug = $row['auction_post_name'] ?? '';
-			if ( $auction_slug ) {
-				$permalink = home_url(
-					user_trailingslashit(
-						$auction_base . '/' . $auction_slug . '/' . $item_base . '/' . $row['post_name']
-					) 
-				);
-			} else {
-				$permalink = get_permalink( $item_id );
-			}
+			$permalink = get_permalink( $item_id );
 
 			/**
 			 * Filters the item data array placed into block context for an item/lot.
