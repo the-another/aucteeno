@@ -47,7 +47,7 @@ class Eager_Loader_Test extends TestCase {
 	public function test_prime_post_meta_calls_prime_post_caches_with_meta_enabled(): void {
 		Functions\expect( '_prime_post_caches' )
 			->once()
-			->with( array( 1, 2 ), false, true );
+			->with( array( 1, 2 ), true, true );
 
 		Eager_Loader::prime_post_meta( array( 1, 2 ) );
 

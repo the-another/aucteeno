@@ -54,6 +54,9 @@ class Database_Items_Transform_Test extends TestCase {
         Functions\when( 'sanitize_title' )->returnArg();
         Functions\when( 'home_url' )->returnArg();
         Functions\when( 'user_trailingslashit' )->returnArg();
+        Functions\when( 'get_permalink' )->alias( function ( $id ) {
+            return 'https://example.com/?p=' . $id;
+        } );
     }
 
     protected function tearDown(): void {
@@ -161,37 +164,15 @@ class Database_Items_Transform_Test extends TestCase {
         $this->assertSame( 0.0, $result['items'][0]['reserve_price'] );
     }
 
-    public function test_permalink_built_from_auction_and_item_slugs(): void {
+    public function test_permalink_uses_get_permalink(): void {
         $this->stub_wpdb_for_single_item( $this->base_item_row() );
-        Functions\when( 'home_url' )->alias( function ( $path ) {
-            return 'https://example.com' . $path;
+        Functions\when( 'get_permalink' )->alias( function ( $id ) {
+            return 'https://example.com/texas-auctions/wichita/test-auction/test-item.html';
         } );
-        Functions\when( 'user_trailingslashit' )->alias( function ( $s ) {
-            return rtrim( $s, '/' ) . '/';
-        } );
-        Functions\when( 'get_option' )
-            ->alias( function ( $key, $default = '' ) {
-                if ( 'aucteeno_auction_base' === $key ) return 'auction';
-                if ( 'aucteeno_item_base' === $key ) return 'item';
-                return $default;
-            } );
 
         $result = $this->db_items->query_for_listing();
 
-        $this->assertStringContainsString( 'test-auction', $result['items'][0]['permalink'] );
-        $this->assertStringContainsString( 'test-item', $result['items'][0]['permalink'] );
-    }
-
-    public function test_permalink_falls_back_for_orphaned_items(): void {
-        $this->stub_wpdb_for_single_item( $this->base_item_row( array( 'auction_post_name' => null ) ) );
-        Functions\expect( 'get_permalink' )
-            ->once()
-            ->with( 20 )
-            ->andReturn( 'https://example.com/?p=20' );
-
-        $result = $this->db_items->query_for_listing();
-
-        $this->assertSame( 'https://example.com/?p=20', $result['items'][0]['permalink'] );
+        $this->assertSame( 'https://example.com/texas-auctions/wichita/test-auction/test-item.html', $result['items'][0]['permalink'] );
     }
 
     public function test_query_for_listing_item_has_location_term_id_fields(): void {
