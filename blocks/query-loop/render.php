@@ -51,10 +51,10 @@ if ( ! empty( $attributes['userId'] ) ) {
 		|| ( function_exists( 'dokan_is_store_page' ) && dokan_is_store_page() );
 
 	if ( $is_store_page ) {
-		// Try Dokan's native function.
-		if ( function_exists( 'dokan_get_current_seller_id' ) ) {
-			$vendor_id = dokan_get_current_seller_id();
-			if ( $vendor_id > 0 ) {
+		// Try Another Blocks for Dokan public API.
+		if ( function_exists( 'tanbfd_get_vendor_id' ) ) {
+			$vendor_id = tanbfd_get_vendor_id();
+			if ( $vendor_id ) {
 				$user_id = absint( $vendor_id );
 			}
 		}
