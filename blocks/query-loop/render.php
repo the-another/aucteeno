@@ -52,8 +52,8 @@ if ( ! empty( $attributes['userId'] ) ) {
 
 	if ( $is_store_page ) {
 		// Try Another Blocks for Dokan Context_Detector.
-		if ( class_exists( '\The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector' ) ) {
-			$vendor_id = \The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector::get_vendor_id();
+		if ( class_exists( '\The_Another\Plugin\Blocks_For_Dokan\Helpers\Context_Detector' ) ) {
+			$vendor_id = \The_Another\Plugin\Blocks_For_Dokan\Helpers\Context_Detector::get_vendor_id();
 			if ( $vendor_id ) {
 				$user_id = absint( $vendor_id );
 			}
