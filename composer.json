@@ -3,7 +3,7 @@
   "description": "Custom WooCommerce plugin for auction and item management",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "author": {
     "name": "The Another",
     "email": "hello@theanother.org",
@@ -68,9 +68,9 @@
     }
   },
   "scripts": {
-    "phpcs": "phpcs",
-    "phpcbf": "phpcbf",
-    "test": "phpunit",
+    "phpcs": "@php vendor/bin/phpcs",
+    "phpcbf": "@php vendor/bin/phpcbf",
+    "test": "@php vendor/bin/phpunit",
     "mozart": "mozart compose && node scripts/move-production-vendor.js",
     "build": [
       "composer install -q --no-suggest",

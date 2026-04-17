@@ -51,18 +51,10 @@ if ( ! empty( $attributes['userId'] ) ) {
 		|| ( function_exists( 'dokan_is_store_page' ) && dokan_is_store_page() );
 
 	if ( $is_store_page ) {
-		// Try Another Blocks for Dokan Context_Detector.
-		if ( class_exists( '\The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector' ) ) {
-			$vendor_id = \The_Another\Plugin\Blocks_Dokan\Helpers\Context_Detector::get_vendor_id();
+		// Try Another Blocks for Dokan public API.
+		if ( function_exists( 'tanbfd_get_vendor_id' ) ) {
+			$vendor_id = tanbfd_get_vendor_id();
 			if ( $vendor_id ) {
-				$user_id = absint( $vendor_id );
-			}
-		}
-
-		// Try Dokan's native function if still no vendor ID.
-		if ( ! $user_id && function_exists( 'dokan_get_current_seller_id' ) ) {
-			$vendor_id = dokan_get_current_seller_id();
-			if ( $vendor_id > 0 ) {
 				$user_id = absint( $vendor_id );
 			}
 		}
