@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,15 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.4.3 - 2026-04-17 =
+* Fix: Restore post_type_link filter for query loop permalinks — geo-based URLs now render correctly
+* Fix: Use local vendor/bin paths in composer scripts to resolve missing PHPCS standards
+* Fix: Update Blocks_Dokan namespace to Blocks_For_Dokan for Context_Detector compatibility
+* Refactor: Remove blocks plugin dependency for vendor ID detection, use tanbfd_get_vendor_id()
+* Perf: Optimize bidding status count queries and refactor DB classes to instance methods
+* Chore: Fix PHPCS alignment violations and re-add lockfile fsevents entry
 
 = 1.4.2 - 2026-04-14 =
 * Version bump
