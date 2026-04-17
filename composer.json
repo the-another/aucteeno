@@ -68,9 +68,9 @@
     }
   },
   "scripts": {
-    "phpcs": "phpcs",
-    "phpcbf": "phpcbf",
-    "test": "phpunit",
+    "phpcs": "@php vendor/bin/phpcs",
+    "phpcbf": "@php vendor/bin/phpcbf",
+    "test": "@php vendor/bin/phpunit",
     "mozart": "mozart compose && node scripts/move-production-vendor.js",
     "build": [
       "composer install -q --no-suggest",
