@@ -125,6 +125,11 @@ class Query_Orderer {
 		// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
 		$query->set( 'aucteeno_sort', $sort );
 
+		// Normalize include_expired to bool so downstream readers get a consistent type.
+		$include_expired = (bool) $query->get( 'aucteeno_include_expired' );
+		// phpcs:ignore WordPressVIPMinimum.Hooks.PreGetPosts.PreGetPosts -- Intentional query modification for custom product types.
+		$query->set( 'aucteeno_include_expired', $include_expired );
+
 		// Get ordered IDs and set post__in + orderby=post__in.
 		// This is simpler and more reliable than custom JOIN + GROUP BY.
 		$ordered_ids = $this->get_ordered_ids( $query );
@@ -226,10 +231,35 @@ class Query_Orderer {
 
 		// Build optimized UNION ALL query with ORDER BY and LIMIT in each subquery.
 		// Each subquery must be wrapped in parentheses when using ORDER BY/LIMIT with UNION ALL.
-		$sort = $query->get( 'aucteeno_sort' );
+		$sort            = $query->get( 'aucteeno_sort' );
+		$include_expired = (bool) $query->get( 'aucteeno_include_expired' );
 
 		if ( 'status_ending_soon' === $sort ) {
 			// 3-group UNION ALL: running, upcoming, expired (status-based ordering).
+			// Conditionally include the expired subquery based on the include_expired flag.
+			$expired_subquery = '';
+			$expired_args     = array();
+			if ( $include_expired ) {
+				$expired_subquery = "
+				UNION ALL
+				(
+					-- Expired items (status = 30) - ordered and limited early
+					-- Only include items that have already ended
+					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 3 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status = 30
+						AND i.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_ends_at DESC, i.item_id ASC
+					LIMIT %d
+				)";
+				$expired_args     = array( $ttid, $fetch_per_group );
+			}
+
 			$sql = "
 			SELECT ordered.item_id
 			FROM (
@@ -265,22 +295,7 @@ class Query_Orderer {
 					ORDER BY i.bidding_starts_at ASC, i.lot_sort_key ASC, i.item_id ASC
 					LIMIT %d
 				)
-				UNION ALL
-				(
-					-- Expired items (status = 30) - ordered and limited early
-					-- Only include items that have already ended
-					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 3 as sort_group
-					FROM {$items_table} i
-					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
-					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-					WHERE i.bidding_status = 30
-						AND i.bidding_ends_at <= UNIX_TIMESTAMP()
-						AND p.post_status = 'publish'
-						AND p.post_type = 'product'
-						{$where_conditions}
-					ORDER BY i.bidding_ends_at DESC, i.item_id ASC
-					LIMIT %d
-				)
+				{$expired_subquery}
 			) AS ordered
 			ORDER BY
 				ordered.sort_group ASC,
@@ -293,22 +308,44 @@ class Query_Orderer {
 				ordered.item_id ASC
 			LIMIT %d OFFSET %d";
 
+			$prepare_args = array_merge(
+				array( $ttid, $fetch_per_group, $ttid, $fetch_per_group ),
+				$expired_args,
+				array( $per_page, $offset )
+			);
+
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$results = $wpdb->get_col(
 				$wpdb->prepare(
 					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
-					$ttid,
-					$fetch_per_group,
-					$ttid,
-					$fetch_per_group,
-					$ttid,
-					$fetch_per_group,
-					$per_page,
-					$offset
+					...$prepare_args
 				)
 			);
 		} else {
 			// 2-group UNION ALL: active (running + upcoming), expired (ending_soon ordering).
+			// Conditionally include the expired subquery based on the include_expired flag.
+			$expired_subquery = '';
+			$expired_args     = array();
+			if ( $include_expired ) {
+				$expired_subquery = "
+				UNION ALL
+				(
+					-- Expired items
+					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 2 as sort_group
+					FROM {$items_table} i
+					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE i.bidding_status = 30
+						AND i.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY i.bidding_ends_at DESC, i.item_id ASC
+					LIMIT %d
+				)";
+				$expired_args     = array( $ttid, $fetch_per_group );
+			}
+
 			$sql = "
 			SELECT ordered.item_id
 			FROM (
@@ -329,21 +366,7 @@ class Query_Orderer {
 					ORDER BY i.bidding_ends_at ASC, i.lot_sort_key ASC, i.item_id ASC
 					LIMIT %d
 				)
-				UNION ALL
-				(
-					-- Expired items
-					SELECT i.item_id, i.bidding_ends_at as sort_time, i.lot_sort_key, 2 as sort_group
-					FROM {$items_table} i
-					INNER JOIN {$wpdb->posts} p ON i.item_id = p.ID
-					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-					WHERE i.bidding_status = 30
-						AND i.bidding_ends_at <= UNIX_TIMESTAMP()
-						AND p.post_status = 'publish'
-						AND p.post_type = 'product'
-						{$where_conditions}
-					ORDER BY i.bidding_ends_at DESC, i.item_id ASC
-					LIMIT %d
-				)
+				{$expired_subquery}
 			) AS ordered
 			ORDER BY
 				ordered.sort_group ASC,
@@ -355,16 +378,17 @@ class Query_Orderer {
 				ordered.item_id ASC
 			LIMIT %d OFFSET %d";
 
+			$prepare_args = array_merge(
+				array( $ttid, $fetch_per_group ),
+				$expired_args,
+				array( $per_page, $offset )
+			);
+
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$results = $wpdb->get_col(
 				$wpdb->prepare(
 					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
-					$ttid,
-					$fetch_per_group,
-					$ttid,
-					$fetch_per_group,
-					$per_page,
-					$offset
+					...$prepare_args
 				)
 			);
 		}
@@ -398,10 +422,35 @@ class Query_Orderer {
 
 		// Build optimized UNION ALL query with ORDER BY and LIMIT in each subquery.
 		// Each subquery must be wrapped in parentheses when using ORDER BY/LIMIT with UNION ALL.
-		$sort = $query->get( 'aucteeno_sort' );
+		$sort            = $query->get( 'aucteeno_sort' );
+		$include_expired = (bool) $query->get( 'aucteeno_include_expired' );
 
 		if ( 'status_ending_soon' === $sort ) {
 			// 3-group UNION ALL: running, upcoming, expired (status-based ordering).
+			// Conditionally include the expired subquery based on the include_expired flag.
+			$expired_subquery = '';
+			$expired_args     = array();
+			if ( $include_expired ) {
+				$expired_subquery = "
+				UNION ALL
+				(
+					-- Expired auctions (status = 30) - ordered and limited early
+					-- Only include auctions that have already ended
+					SELECT a.auction_id, a.bidding_ends_at as sort_time, 3 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status = 30
+						AND a.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
+					LIMIT %d
+				)";
+				$expired_args     = array( $ttid, $fetch_per_group );
+			}
+
 			$sql = "
 			SELECT ordered.auction_id
 			FROM (
@@ -437,22 +486,7 @@ class Query_Orderer {
 					ORDER BY a.bidding_starts_at ASC, a.auction_id ASC
 					LIMIT %d
 				)
-				UNION ALL
-				(
-					-- Expired auctions (status = 30) - ordered and limited early
-					-- Only include auctions that have already ended
-					SELECT a.auction_id, a.bidding_ends_at as sort_time, 3 as sort_group
-					FROM {$auctions_table} a
-					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
-					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-					WHERE a.bidding_status = 30
-						AND a.bidding_ends_at <= UNIX_TIMESTAMP()
-						AND p.post_status = 'publish'
-						AND p.post_type = 'product'
-						{$where_conditions}
-					ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
-					LIMIT %d
-				)
+				{$expired_subquery}
 			) AS ordered
 			ORDER BY
 				ordered.sort_group ASC,
@@ -464,22 +498,44 @@ class Query_Orderer {
 				ordered.auction_id ASC
 			LIMIT %d OFFSET %d";
 
+			$prepare_args = array_merge(
+				array( $ttid, $fetch_per_group, $ttid, $fetch_per_group ),
+				$expired_args,
+				array( $per_page, $offset )
+			);
+
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$results = $wpdb->get_col(
 				$wpdb->prepare(
 					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
-					$ttid,
-					$fetch_per_group,
-					$ttid,
-					$fetch_per_group,
-					$ttid,
-					$fetch_per_group,
-					$per_page,
-					$offset
+					...$prepare_args
 				)
 			);
 		} else {
 			// 2-group UNION ALL: active (running + upcoming), expired (ending_soon ordering).
+			// Conditionally include the expired subquery based on the include_expired flag.
+			$expired_subquery = '';
+			$expired_args     = array();
+			if ( $include_expired ) {
+				$expired_subquery = "
+				UNION ALL
+				(
+					-- Expired auctions
+					SELECT a.auction_id, a.bidding_ends_at as sort_time, 2 as sort_group
+					FROM {$auctions_table} a
+					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
+					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
+					WHERE a.bidding_status = 30
+						AND a.bidding_ends_at <= UNIX_TIMESTAMP()
+						AND p.post_status = 'publish'
+						AND p.post_type = 'product'
+						{$where_conditions}
+					ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
+					LIMIT %d
+				)";
+				$expired_args     = array( $ttid, $fetch_per_group );
+			}
+
 			$sql = "
 			SELECT ordered.auction_id
 			FROM (
@@ -500,21 +556,7 @@ class Query_Orderer {
 					ORDER BY a.bidding_ends_at ASC, a.auction_id ASC
 					LIMIT %d
 				)
-				UNION ALL
-				(
-					-- Expired auctions
-					SELECT a.auction_id, a.bidding_ends_at as sort_time, 2 as sort_group
-					FROM {$auctions_table} a
-					INNER JOIN {$wpdb->posts} p ON a.auction_id = p.ID
-					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id = %d
-					WHERE a.bidding_status = 30
-						AND a.bidding_ends_at <= UNIX_TIMESTAMP()
-						AND p.post_status = 'publish'
-						AND p.post_type = 'product'
-						{$where_conditions}
-					ORDER BY a.bidding_ends_at DESC, a.auction_id ASC
-					LIMIT %d
-				)
+				{$expired_subquery}
 			) AS ordered
 			ORDER BY
 				ordered.sort_group ASC,
@@ -525,16 +567,17 @@ class Query_Orderer {
 				ordered.auction_id ASC
 			LIMIT %d OFFSET %d";
 
+			$prepare_args = array_merge(
+				array( $ttid, $fetch_per_group ),
+				$expired_args,
+				array( $per_page, $offset )
+			);
+
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$results = $wpdb->get_col(
 				$wpdb->prepare(
 					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built dynamically with proper escaping.
-					$ttid,
-					$fetch_per_group,
-					$ttid,
-					$fetch_per_group,
-					$per_page,
-					$offset
+					...$prepare_args
 				)
 			);
 		}
@@ -619,6 +662,10 @@ class Query_Orderer {
 		}
 
 		$where_conditions = $this->build_where_conditions( $query, $order_type );
+		$include_expired  = (bool) $query->get( 'aucteeno_include_expired' );
+		$expired_branch   = $include_expired
+			? 'OR (t.bidding_status = 30 AND t.bidding_ends_at <= UNIX_TIMESTAMP())'
+			: '';
 
 		// Optimized count query with minimal join and timestamp validation.
 		$sql = "
@@ -631,7 +678,7 @@ class Query_Orderer {
 			WHERE (
 					(t.bidding_status = 10 AND t.bidding_starts_at <= UNIX_TIMESTAMP() AND t.bidding_ends_at > UNIX_TIMESTAMP())
 					OR (t.bidding_status = 20 AND t.bidding_starts_at > UNIX_TIMESTAMP())
-					OR (t.bidding_status = 30 AND t.bidding_ends_at <= UNIX_TIMESTAMP())
+					{$expired_branch}
 				)
 				AND p.post_status = 'publish'
 				AND p.post_type = 'product'
@@ -701,14 +748,15 @@ class Query_Orderer {
 		$page       = $query->get( 'paged' );
 		$per_page   = $query->get( 'posts_per_page' );
 		$filters    = array(
-			'order_type' => $order_type,
-			'sort'       => $query->get( 'aucteeno_sort' ),
-			'page'       => $page,
-			'per_page'   => $per_page,
-			'parent'     => $query->get( 'post_parent' ),
-			'search'     => $query->get( 's' ),
+			'order_type'      => $order_type,
+			'sort'            => $query->get( 'aucteeno_sort' ),
+			'page'            => $page,
+			'per_page'        => $per_page,
+			'parent'          => $query->get( 'post_parent' ),
+			'search'          => $query->get( 's' ),
 			// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
-			'tax_query'  => $query->get( 'tax_query' ),
+			'tax_query'       => $query->get( 'tax_query' ),
+			'include_expired' => (bool) $query->get( 'aucteeno_include_expired' ),
 		);
 
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Required for cache key generation.

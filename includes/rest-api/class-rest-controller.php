@@ -472,13 +472,14 @@ class REST_Controller extends WP_REST_Controller {
 			$sort     = $request->get_param( 'sort' ) ?? 'ending_soon';
 
 			$query_args = array(
-				'post_type'      => 'product',
-				'post_status'    => 'publish',
-				'posts_per_page' => $per_page,
-				'paged'          => $page,
-				'aucteeno_sort'  => $sort,
+				'post_type'                => 'product',
+				'post_status'              => 'publish',
+				'posts_per_page'           => $per_page,
+				'paged'                    => $page,
+				'aucteeno_sort'            => $sort,
+				'aucteeno_include_expired' => (bool) $request->get_param( 'include_expired' ),
 				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
-				'tax_query'      => array(
+				'tax_query'                => array(
 					array(
 						'taxonomy' => 'product_type',
 						'field'    => 'slug',
@@ -692,21 +693,22 @@ class REST_Controller extends WP_REST_Controller {
 			$sort       = $request->get_param( 'sort' ) ?? 'ending_soon';
 
 			$query_args = array(
-				'post_type'      => 'product',
-				'post_status'    => 'publish',
-				'posts_per_page' => $per_page,
-				'paged'          => $page,
-				'aucteeno_sort'  => $sort,
+				'post_type'                => 'product',
+				'post_status'              => 'publish',
+				'posts_per_page'           => $per_page,
+				'paged'                    => $page,
+				'aucteeno_sort'            => $sort,
+				'aucteeno_include_expired' => (bool) $request->get_param( 'include_expired' ),
 				// phpcs:ignore WordPress.DB.SlowDBQuery -- Required for taxonomy/meta filtering.
-				'tax_query'      => array(
+				'tax_query'                => array(
 					array(
 						'taxonomy' => 'product_type',
 						'field'    => 'slug',
 						'terms'    => Product_Item::PRODUCT_TYPE,
 					),
 				),
-				'orderby'        => 'menu_order',
-				'order'          => 'ASC',
+				'orderby'                  => 'menu_order',
+				'order'                    => 'ASC',
 			);
 
 			// Add auction parent filter.

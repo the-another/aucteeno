@@ -1853,11 +1853,12 @@ class REST_Controller_Test extends TestCase {
 	 */
 	private function create_json_auctions_request( array $overrides = array() ): Mockery\MockInterface {
 		$defaults = array(
-			'format'   => 'json',
-			'page'     => 1,
-			'per_page' => 10,
-			'location' => array(),
-			'sort'     => 'ending_soon',
+			'format'          => 'json',
+			'page'            => 1,
+			'per_page'        => 10,
+			'location'        => array(),
+			'sort'            => 'ending_soon',
+			'include_expired' => false,
 		);
 
 		$params = array_merge( $defaults, $overrides );
@@ -1915,12 +1916,13 @@ class REST_Controller_Test extends TestCase {
 	 */
 	private function create_json_items_request( array $overrides = array() ): Mockery\MockInterface {
 		$defaults = array(
-			'format'     => 'json',
-			'page'       => 1,
-			'per_page'   => 10,
-			'location'   => array(),
-			'auction_id' => 0,
-			'sort'       => 'ending_soon',
+			'format'          => 'json',
+			'page'            => 1,
+			'per_page'        => 10,
+			'location'        => array(),
+			'auction_id'      => 0,
+			'sort'            => 'ending_soon',
+			'include_expired' => false,
 		);
 
 		$params = array_merge( $defaults, $overrides );
