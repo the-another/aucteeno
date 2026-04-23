@@ -55,14 +55,14 @@ class REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'get_auctions' ),
 					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					'args'                => array(
-						'page'           => array(
+						'page'            => array(
 							'description'       => 'Page number.',
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
-						'per_page'       => array(
+						'per_page'        => array(
 							'description'       => 'Items per page.',
 							'type'              => 'integer',
 							'default'           => 10,
@@ -70,31 +70,31 @@ class REST_Controller extends WP_REST_Controller {
 							'maximum'           => 50,
 							'sanitize_callback' => 'absint',
 						),
-						'location'       => array(
+						'location'        => array(
 							'description'       => 'Location term slug or ID.',
 							'type'              => array( 'string', 'array' ),
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_location_param' ),
 						),
-						'user_id'        => array(
+						'user_id'         => array(
 							'description'       => 'Filter by user/vendor ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'country'        => array(
+						'country'         => array(
 							'description'       => 'Filter by location country code.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'subdivision'    => array(
+						'subdivision'     => array(
 							'description'       => 'Filter by location subdivision.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'search'         => array(
+						'search'          => array(
 							'description'       => 'Search keyword to filter by post title.',
 							'type'              => 'string',
 							'default'           => '',
@@ -104,19 +104,19 @@ class REST_Controller extends WP_REST_Controller {
 								return strlen( $param ) <= 200;
 							},
 						),
-						'sort'           => array(
+						'sort'            => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
 							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
-						'format'         => array(
+						'format'          => array(
 							'description' => 'Response format: html (fragments) or json (data).',
 							'type'        => 'string',
 							'default'     => 'html',
 							'enum'        => array( 'html', 'json' ),
 						),
-						'block_template' => array(
+						'block_template'  => array(
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
 							'type'              => 'string',
 							'default'           => '',
@@ -189,14 +189,14 @@ class REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'get_items' ),
 					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					'args'                => array(
-						'page'           => array(
+						'page'            => array(
 							'description'       => 'Page number.',
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
-						'per_page'       => array(
+						'per_page'        => array(
 							'description'       => 'Items per page.',
 							'type'              => 'integer',
 							'default'           => 10,
@@ -204,37 +204,37 @@ class REST_Controller extends WP_REST_Controller {
 							'maximum'           => 50,
 							'sanitize_callback' => 'absint',
 						),
-						'location'       => array(
+						'location'        => array(
 							'description'       => 'Location term slug or ID.',
 							'type'              => array( 'string', 'array' ),
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_location_param' ),
 						),
-						'auction_id'     => array(
+						'auction_id'      => array(
 							'description'       => 'Parent auction ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'user_id'        => array(
+						'user_id'         => array(
 							'description'       => 'Filter by user/vendor ID.',
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'country'        => array(
+						'country'         => array(
 							'description'       => 'Filter by location country code.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'subdivision'    => array(
+						'subdivision'     => array(
 							'description'       => 'Filter by location subdivision.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'search'         => array(
+						'search'          => array(
 							'description'       => 'Search keyword to filter by post title.',
 							'type'              => 'string',
 							'default'           => '',
@@ -244,25 +244,25 @@ class REST_Controller extends WP_REST_Controller {
 								return strlen( $param ) <= 200;
 							},
 						),
-						'sort'           => array(
+						'sort'            => array(
 							'description' => 'Sort order.',
 							'type'        => 'string',
 							'default'     => 'ending_soon',
 							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
-						'format'         => array(
+						'format'          => array(
 							'description' => 'Response format: html (fragments) or json (data).',
 							'type'        => 'string',
 							'default'     => 'html',
 							'enum'        => array( 'html', 'json' ),
 						),
-						'block_template' => array(
+						'block_template'  => array(
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_block_template_json' ),
 						),
-						'page_url'       => array(
+						'page_url'        => array(
 							'description'       => 'Original page URL for pagination link generation.',
 							'type'              => 'string',
 							'default'           => '',

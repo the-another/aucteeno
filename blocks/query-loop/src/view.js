@@ -37,7 +37,10 @@ async function fetchItems( context, page ) {
 	if ( context.search ) {
 		url.searchParams.set( 'search', context.search );
 	}
-	url.searchParams.set( 'include_expired', context.includeExpired ? '1' : '0' );
+	url.searchParams.set(
+		'include_expired',
+		context.includeExpired ? '1' : '0'
+	);
 	if ( context.productIds && context.productIds.length ) {
 		url.searchParams.set( 'product_ids', context.productIds.join( ',' ) );
 	}
