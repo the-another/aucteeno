@@ -153,4 +153,28 @@ class Database_Auctions_Test extends TestCase {
 
 		$this->assertFalse( $result );
 	}
+
+	public function test_build_status_filter_excludes_expired_by_default(): void {
+		$reflection = new \ReflectionClass( Database_Auctions::class );
+		$method     = $reflection->getMethod( 'build_status_filter' );
+		$method->setAccessible( true );
+
+		$filter = $method->invoke( null, 'a', false );
+
+		$this->assertStringContainsString( 'a.bidding_status = 10', $filter );
+		$this->assertStringContainsString( 'a.bidding_status = 20', $filter );
+		$this->assertStringNotContainsString( 'a.bidding_status = 30', $filter );
+	}
+
+	public function test_build_status_filter_includes_expired_when_opted_in(): void {
+		$reflection = new \ReflectionClass( Database_Auctions::class );
+		$method     = $reflection->getMethod( 'build_status_filter' );
+		$method->setAccessible( true );
+
+		$filter = $method->invoke( null, 'a', true );
+
+		$this->assertStringContainsString( 'a.bidding_status = 10', $filter );
+		$this->assertStringContainsString( 'a.bidding_status = 20', $filter );
+		$this->assertStringContainsString( 'a.bidding_status = 30', $filter );
+	}
 }
