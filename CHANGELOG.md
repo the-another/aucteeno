@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.0
+
+### Changed (⚠ behavior change)
+- `aucteeno/query-loop` block and `/aucteeno/v1/auctions` + `/aucteeno/v1/items` REST endpoints now **exclude expired listings by default** to reduce database load. Existing block instances that don't carry the new `includeExpired` attribute inherit the new default; REST callers that relied on receiving expired records must now pass `include_expired=1` explicitly.
+- Operators with "Past Auctions" / "Auction Results" / archive-style listing pages must toggle **Include expired listings** ON in the block inspector for those pages.
+
+### Added
+- New block attribute `includeExpired` (boolean, default `false`) on `aucteeno/query-loop`.
+- New REST query parameter `include_expired` on `/aucteeno/v1/auctions` and `/aucteeno/v1/items`.
+
 ## 1.4.1
 
 ### Changed

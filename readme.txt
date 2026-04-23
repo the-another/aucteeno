@@ -172,7 +172,10 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 = 1.5.0 - 2026-04-23 =
-* Version bump
+* Behavior change: query-loop block and REST endpoints now exclude expired listings by default. Pass `include_expired=1` to opt in.
+* New block attribute `includeExpired` (default false) on `aucteeno/query-loop`.
+* New REST parameter `include_expired` on /auctions and /items endpoints.
+* Operators with archive/results pages must toggle "Include expired listings" ON in the block inspector.
 
 = 1.4.3 - 2026-04-17 =
 * Fix: Restore post_type_link filter for query loop permalinks — geo-based URLs now render correctly
