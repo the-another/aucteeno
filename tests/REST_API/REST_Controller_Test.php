@@ -1077,6 +1077,80 @@ class REST_Controller_Test extends TestCase {
 		$this->assertEquals( 200, $response->get_status() );
 	}
 
+	/**
+	 * Test GET /items defaults include_expired to false.
+	 *
+	 * Verifies that when no include_expired param is supplied the handler
+	 * passes false to query_for_listing, reducing database load by default.
+	 *
+	 * @return void
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	public function test_get_items_defaults_to_include_expired_false(): void {
+		$request = $this->create_html_items_request();  // All params null — handler applies defaults.
+
+		$mock_db = Mockery::mock( Database_Items::class );
+		Container::get_instance()->set( 'database_items', $mock_db );
+		$mock_db->shouldReceive( 'query_for_listing' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( $args ) {
+						return array_key_exists( 'include_expired', $args )
+							&& false === $args['include_expired'];
+					}
+				)
+			)
+			->andReturn(
+				array(
+					'items' => array(),
+					'page'  => 1,
+					'pages' => 1,
+					'total' => 0,
+				)
+			);
+
+		$this->controller->get_items( $request );
+	}
+
+	/**
+	 * Test GET /items forwards include_expired when passed.
+	 *
+	 * Verifies that when include_expired is explicitly passed as true the handler
+	 * forwards true to query_for_listing.
+	 *
+	 * @return void
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	public function test_get_items_forwards_include_expired_when_passed(): void {
+		$request = $this->create_html_items_request( array( 'include_expired' => true ) );
+
+		$mock_db = Mockery::mock( Database_Items::class );
+		Container::get_instance()->set( 'database_items', $mock_db );
+		$mock_db->shouldReceive( 'query_for_listing' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( $args ) {
+						return isset( $args['include_expired'] )
+							&& true === $args['include_expired'];
+					}
+				)
+			)
+			->andReturn(
+				array(
+					'items' => array(),
+					'page'  => 1,
+					'pages' => 1,
+					'total' => 0,
+				)
+			);
+
+		$this->controller->get_items( $request );
+	}
+
 	// ==========================================
 	// POST /aucteeno/v1/items TESTS
 	// ==========================================
@@ -1806,18 +1880,19 @@ class REST_Controller_Test extends TestCase {
 	 */
 	private function create_html_items_request( array $overrides = array() ): Mockery\MockInterface {
 		$defaults = array(
-			'format'         => 'html',
-			'page'           => null,
-			'per_page'       => null,
-			'sort'           => null,
-			'user_id'        => null,
-			'country'        => null,
-			'subdivision'    => null,
-			'auction_id'     => null,
-			'search'         => null,
-			'product_ids'    => null,
-			'block_template' => null,
-			'page_url'       => null,
+			'format'          => 'html',
+			'page'            => null,
+			'per_page'        => null,
+			'sort'            => null,
+			'user_id'         => null,
+			'country'         => null,
+			'subdivision'     => null,
+			'auction_id'      => null,
+			'search'          => null,
+			'product_ids'     => null,
+			'block_template'  => null,
+			'page_url'        => null,
+			'include_expired' => null,
 		);
 
 		$params = array_merge( $defaults, $overrides );
