@@ -120,6 +120,7 @@ function Edit( { attributes, setAttributes, context } ) {
 			per_page: '6', // Fetch a few items for preview.
 			sort: orderBy,
 			format: 'json',
+			include_expired: includeExpired ? '1' : '0',
 		} );
 
 		if ( effectiveUserId ) {
@@ -147,7 +148,7 @@ function Edit( { attributes, setAttributes, context } ) {
 				);
 				setIsLoading( false );
 			} );
-	}, [ queryType, orderBy, effectiveUserId, setAttributes ] );
+	}, [ queryType, orderBy, effectiveUserId, includeExpired, setAttributes ] );
 
 	// Get preview item for context.
 	const previewItem = useMemo( () => {
