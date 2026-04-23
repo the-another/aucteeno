@@ -224,7 +224,7 @@ class Database_Auctions {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Count via per-status queries for optimal index usage.
-		$total = $this->get_total_status_count( $table_name, $posts_table, $base_where_sql, $where_values );
+		$total = $this->get_total_status_count( $table_name, $posts_table, $base_where_sql, $where_values, $include_expired );
 
 		// Status filter for the data query (LIMIT-bounded, less critical).
 		$status_filter = self::build_status_filter( 'a', $include_expired );
@@ -435,20 +435,28 @@ class Database_Auctions {
 	/**
 	 * Get total auction count across all active statuses.
 	 *
-	 * Uses three separate COUNT queries so MySQL can leverage the per-status
+	 * Uses separate COUNT queries so MySQL can leverage the per-status
 	 * composite indexes (idx_running_auctions, idx_upcoming_auctions, idx_expired_auctions)
 	 * instead of falling back to a full table scan with OR.
 	 *
 	 * The expired count skips the wp_posts JOIN (expired auctions are settled and
-	 * unlikely to change post_status) and is cached via wp_cache.
+	 * unlikely to change post_status) and is cached via wp_cache. It is only executed
+	 * when $include_expired is true.
 	 *
 	 * @param string $table_name     Auctions table name.
 	 * @param string $posts_table    Posts table name.
 	 * @param string $base_where_sql Base WHERE clause (without status).
 	 * @param array  $where_values   Prepared statement values.
-	 * @return int Total count across all statuses.
+	 * @param bool   $include_expired Whether to include expired auctions in the count.
+	 * @return int Total count across requested statuses.
 	 */
-	private function get_total_status_count( string $table_name, string $posts_table, string $base_where_sql, array $where_values ): int {
+	private function get_total_status_count(
+		string $table_name,
+		string $posts_table,
+		string $base_where_sql,
+		array $where_values,
+		bool $include_expired = false
+	): int {
 		global $wpdb;
 
 		// Running and upcoming: JOIN wp_posts for publish check (small result sets).
@@ -469,10 +477,14 @@ class Database_Auctions {
 		$running  = (int) $wpdb->get_var( $running_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$upcoming = (int) $wpdb->get_var( $upcoming_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
-		// Expired: no JOIN (settled auctions), cached via transient.
-		$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		$total = $running + $upcoming;
 
-		return $running + $upcoming + $expired;
+		if ( $include_expired ) {
+			// Expired: no JOIN (settled auctions), cached via transient.
+			$total += $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		}
+
+		return $total;
 	}
 
 	/**
