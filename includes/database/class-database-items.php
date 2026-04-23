@@ -42,6 +42,29 @@ class Database_Items {
 	private const EXPIRED_COUNT_TTL = 60;
 
 	/**
+	 * Build the bidding-status WHERE filter clause.
+	 *
+	 * Always includes running (10) and upcoming (20). Includes expired (30)
+	 * only when explicitly requested.
+	 *
+	 * @param string $alias           Table alias used in the surrounding query (e.g. 'i').
+	 * @param bool   $include_expired Whether to include the expired status branch.
+	 * @return string Parenthesised WHERE-fragment ready to AND into a base WHERE clause.
+	 */
+	private static function build_status_filter( string $alias, bool $include_expired ): string {
+		$clauses = array(
+			"({$alias}.bidding_status = 10 AND {$alias}.bidding_starts_at <= UNIX_TIMESTAMP() AND {$alias}.bidding_ends_at > UNIX_TIMESTAMP())",
+			"({$alias}.bidding_status = 20 AND {$alias}.bidding_starts_at > UNIX_TIMESTAMP())",
+		);
+
+		if ( $include_expired ) {
+			$clauses[] = "({$alias}.bidding_status = 30 AND {$alias}.bidding_ends_at <= UNIX_TIMESTAMP())";
+		}
+
+		return '(' . implode( ' OR ', $clauses ) . ')';
+	}
+
+	/**
 	 * Get full table name with prefix.
 	 *
 	 * @return string Table name with prefix.

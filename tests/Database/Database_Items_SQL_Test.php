@@ -263,4 +263,38 @@ class Database_Items_SQL_Test extends TestCase {
 			'SQL should contain LEFT JOIN for auction posts'
 		);
 	}
+
+	/**
+	 * Build status filter excludes expired status by default.
+	 *
+	 * @return void
+	 */
+	public function test_build_status_filter_excludes_expired_by_default(): void {
+		$reflection = new \ReflectionClass( Database_Items::class );
+		$method     = $reflection->getMethod( 'build_status_filter' );
+		$method->setAccessible( true );
+
+		$filter = $method->invoke( null, 'i', false );
+
+		$this->assertStringContainsString( 'i.bidding_status = 10', $filter );
+		$this->assertStringContainsString( 'i.bidding_status = 20', $filter );
+		$this->assertStringNotContainsString( 'i.bidding_status = 30', $filter );
+	}
+
+	/**
+	 * Build status filter includes expired status when opted in.
+	 *
+	 * @return void
+	 */
+	public function test_build_status_filter_includes_expired_when_opted_in(): void {
+		$reflection = new \ReflectionClass( Database_Items::class );
+		$method     = $reflection->getMethod( 'build_status_filter' );
+		$method->setAccessible( true );
+
+		$filter = $method->invoke( null, 'i', true );
+
+		$this->assertStringContainsString( 'i.bidding_status = 10', $filter );
+		$this->assertStringContainsString( 'i.bidding_status = 20', $filter );
+		$this->assertStringContainsString( 'i.bidding_status = 30', $filter );
+	}
 }
