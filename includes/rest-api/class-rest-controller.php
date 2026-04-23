@@ -122,11 +122,17 @@ class REST_Controller extends WP_REST_Controller {
 							'default'           => '',
 							'sanitize_callback' => array( $this, 'sanitize_block_template_json' ),
 						),
-						'page_url'       => array(
+						'page_url'        => array(
 							'description'       => 'Original page URL for pagination link generation.',
 							'type'              => 'string',
 							'default'           => '',
 							'sanitize_callback' => 'esc_url_raw',
+						),
+						'include_expired' => array(
+							'description'       => __( 'Include expired listings in results. Defaults to false to reduce database load.', 'aucteeno' ),
+							'type'              => 'boolean',
+							'default'           => false,
+							'sanitize_callback' => 'rest_sanitize_boolean',
 						),
 					),
 				),
@@ -514,13 +520,14 @@ class REST_Controller extends WP_REST_Controller {
 
 		// For HTML format, use HPS database query and render HTML.
 		$args = array(
-			'page'        => $request->get_param( 'page' ) ?? 1,
-			'per_page'    => $request->get_param( 'per_page' ) ?? 10,
-			'sort'        => $request->get_param( 'sort' ) ?? 'ending_soon',
-			'user_id'     => $request->get_param( 'user_id' ) ?? 0,
-			'country'     => $request->get_param( 'country' ) ?? '',
-			'subdivision' => $request->get_param( 'subdivision' ) ?? '',
-			'search'      => $request->get_param( 'search' ) ?? '',
+			'page'            => $request->get_param( 'page' ) ?? 1,
+			'per_page'        => $request->get_param( 'per_page' ) ?? 10,
+			'sort'            => $request->get_param( 'sort' ) ?? 'ending_soon',
+			'user_id'         => $request->get_param( 'user_id' ) ?? 0,
+			'country'         => $request->get_param( 'country' ) ?? '',
+			'subdivision'     => $request->get_param( 'subdivision' ) ?? '',
+			'search'          => $request->get_param( 'search' ) ?? '',
+			'include_expired' => (bool) $request->get_param( 'include_expired' ),
 		);
 
 		// Add product IDs filter (comma-separated list from query param).
