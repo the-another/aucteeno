@@ -76,14 +76,12 @@ class Database_Items_SQL_Test extends TestCase {
 
 		$sql_captured = null;
 
-		// get_status_counts: two get_var calls (running + upcoming), expired via transient.
+		// get_status_counts: two get_var calls (running + upcoming) only.
+		// With include_expired=false (the default), the expired branch is skipped.
 		$wpdb->shouldReceive( 'get_var' )->times( 2 )->andReturn( '0' );
 		Functions\when( 'wp_cache_get' )->justReturn( false );
 		Functions\when( 'wp_cache_set' )->justReturn( true );
 		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
-
-		// get_expired_count fires one more get_var (no JOIN).
-		$wpdb->shouldReceive( 'get_var' )->once()->andReturn( '0' );
 
 		// Main query prepare — capture the SQL.
 		$wpdb->shouldReceive( 'prepare' )
@@ -369,10 +367,6 @@ class Database_Items_SQL_Test extends TestCase {
 	 * @return void
 	 */
 	public function test_dispatcher_threads_include_expired_to_private_methods(): void {
-		$this->markTestSkipped(
-			'Enabled by Task 7 — requires query_for_listing_newest to honor include_expired.'
-		);
-
 		$wpdb         = Mockery::mock( 'wpdb' );
 		$wpdb->prefix = 'wp_';
 		$wpdb->posts  = 'wp_posts';
