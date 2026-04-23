@@ -95,6 +95,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		displayLayout = 'grid',
 		orderBy = 'ending_soon',
 		infiniteScroll = false,
+		includeExpired = false,
 		updateUrl = true,
 		gap = '1.5rem',
 		locationCountry = '',
@@ -359,6 +360,17 @@ function Edit( { attributes, setAttributes, context } ) {
 						] }
 						onChange={ ( value ) =>
 							setAttributes( { orderBy: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Include expired listings', 'aucteeno' ) }
+						help={ __(
+							'Off by default. Turn on for "past auctions" or archive-style listings. Excluding expired listings significantly reduces database load.',
+							'aucteeno'
+						) }
+						checked={ includeExpired }
+						onChange={ ( value ) =>
+							setAttributes( { includeExpired: value } )
 						}
 					/>
 				</PanelBody>
