@@ -364,6 +364,8 @@ class Database_Items {
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
 
+		$include_expired = ! empty( $args['include_expired'] );
+
 		// Build base WHERE clauses (without status filter).
 		$base_where_clauses = array();
 		$where_values       = $this->build_where_values( $args );
@@ -395,15 +397,14 @@ class Database_Items {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Count via per-status queries for optimal index usage.
-		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values );
-		$total  = $counts['running'] + $counts['upcoming'] + $counts['expired'];
+		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values, $include_expired );
+		$total  = $counts['running'] + $counts['upcoming'];
+		if ( $include_expired ) {
+			$total += $counts['expired'];
+		}
 
 		// Status filter for the data query (LIMIT-bounded, less critical).
-		$status_filter = '(
-				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
-				OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
-				OR (i.bidding_status = 30 AND i.bidding_ends_at <= UNIX_TIMESTAMP())
-			)';
+		$status_filter = self::build_status_filter( 'i', $include_expired );
 		$where_sql     = $base_where_sql . ' AND ' . $status_filter;
 
 		$query_sql = "

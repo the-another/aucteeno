@@ -362,6 +362,59 @@ class Database_Items_SQL_Test extends TestCase {
 	}
 
 	/**
+	 * Verify that query_for_listing_by_lot honors include_expired=false.
+	 *
+	 * With include_expired=false the data SQL must include status 10 and 20
+	 * branches but must NOT include status 30 (expired).
+	 *
+	 * @return void
+	 */
+	public function test_by_lot_honors_include_expired(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				return array_merge( (array) $defaults, (array) $args );
+			}
+		);
+
+		$wpdb->shouldReceive( 'get_var' )->andReturn( '0' );
+
+		$captured_data_sql = null;
+		$wpdb->shouldReceive( 'prepare' )
+			->andReturnUsing(
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+				function ( $sql, ...$args ) use ( &$captured_data_sql ) {
+					if ( str_contains( $sql, 'LIMIT %d OFFSET %d' ) ) {
+						$captured_data_sql = $sql;
+					}
+					return 'PREPARED_SQL';
+				}
+			);
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$this->db_items->query_for_listing(
+			array(
+				'sort'            => 'lot_number',
+				'include_expired' => false,
+			)
+		);
+
+		$this->assertNotNull( $captured_data_sql );
+		$this->assertStringContainsString( 'i.bidding_status = 10', $captured_data_sql );
+		$this->assertStringContainsString( 'i.bidding_status = 20', $captured_data_sql );
+		$this->assertStringNotContainsString( 'i.bidding_status = 30', $captured_data_sql );
+	}
+
+	/**
 	 * Verify that query_for_listing threads include_expired through to private query methods.
 	 *
 	 * @return void
