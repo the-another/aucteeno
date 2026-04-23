@@ -137,14 +137,15 @@ class Database_Auctions {
 	 * @param array $args {
 	 *     Query arguments.
 	 *
-	 *     @type int    $page        Page number (default 1).
-	 *     @type int    $per_page    Items per page (default 12, max 50).
-	 *     @type string $sort        Sort order: 'ending_soon' or 'newest'.
-	 *     @type int    $user_id     Filter by user/vendor ID.
-	 *     @type string $country     Filter by location country.
-	 *     @type string $subdivision Filter by location subdivision.
-	 *     @type string $search      Search keyword for post title.
-	 *     @type array  $product_ids Array of product IDs to filter by.
+	 *     @type int    $page            Page number (default 1).
+	 *     @type int    $per_page        Items per page (default 12, max 50).
+	 *     @type string $sort            Sort order: 'ending_soon' or 'newest'.
+	 *     @type int    $user_id         Filter by user/vendor ID.
+	 *     @type string $country         Filter by location country.
+	 *     @type string $subdivision     Filter by location subdivision.
+	 *     @type string $search          Search keyword for post title.
+	 *     @type array  $product_ids     Array of product IDs to filter by.
+	 *     @type bool   $include_expired Whether to include expired auctions (default false).
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -159,22 +160,24 @@ class Database_Auctions {
 		global $wpdb;
 
 		$defaults = array(
-			'page'        => 1,
-			'per_page'    => 12,
-			'sort'        => 'ending_soon',
-			'user_id'     => 0,
-			'country'     => '',
-			'subdivision' => '',
-			'search'      => '',
-			'product_ids' => array(),
+			'page'            => 1,
+			'per_page'        => 12,
+			'sort'            => 'ending_soon',
+			'user_id'         => 0,
+			'country'         => '',
+			'subdivision'     => '',
+			'search'          => '',
+			'product_ids'     => array(),
+			'include_expired' => false,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$page     = max( 1, absint( $args['page'] ) );
-		$per_page = min( 50, max( 1, absint( $args['per_page'] ) ) );
-		$offset   = ( $page - 1 ) * $per_page;
-		$sort     = in_array( $args['sort'], array( 'ending_soon', 'status_ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
+		$include_expired = (bool) $args['include_expired'];
+		$page            = max( 1, absint( $args['page'] ) );
+		$per_page        = min( 50, max( 1, absint( $args['per_page'] ) ) );
+		$offset          = ( $page - 1 ) * $per_page;
+		$sort            = in_array( $args['sort'], array( 'ending_soon', 'status_ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
 
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
@@ -224,11 +227,7 @@ class Database_Auctions {
 		$total = $this->get_total_status_count( $table_name, $posts_table, $base_where_sql, $where_values );
 
 		// Status filter for the data query (LIMIT-bounded, less critical).
-		$status_filter = '(
-				(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
-				OR (a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP())
-				OR (a.bidding_status = 30 AND a.bidding_ends_at <= UNIX_TIMESTAMP())
-			)';
+		$status_filter = self::build_status_filter( 'a', $include_expired );
 		$where_sql     = $base_where_sql . ' AND ' . $status_filter;
 
 		// Build ORDER BY.
