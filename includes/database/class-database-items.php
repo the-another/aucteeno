@@ -648,6 +648,8 @@ class Database_Items {
 
 		$table_name = self::get_table_name();
 
+		$include_expired = ! empty( $args['include_expired'] );
+
 		// Build base WHERE clause (without status filter).
 		$base_where_clauses = array();
 		$where_values       = $this->build_where_values( $args );
@@ -682,10 +684,10 @@ class Database_Items {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Get counts for each status group.
-		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values );
+		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values, $include_expired );
 
 		$active_count  = $counts['running'] + $counts['upcoming'];
-		$expired_count = $counts['expired'];
+		$expired_count = $include_expired ? $counts['expired'] : 0;
 		$total         = $active_count + $expired_count;
 
 		// Calculate which groups we need and their offsets/limits.
@@ -714,21 +716,23 @@ class Database_Items {
 		// Adjust offset for expired group.
 		$remaining_offset = max( 0, $remaining_offset - $active_count );
 
-		// Group 2: Expired items (status = 30).
-		if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
-			$group_offset = $remaining_offset;
-			$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
+		if ( $include_expired ) {
+			// Group 2: Expired items (status = 30).
+			if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
+				$group_offset = $remaining_offset;
+				$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
 
-			$expired_results = $this->query_status_group(
-				30,
-				$base_where_sql,
-				$where_values,
-				'i.bidding_ends_at DESC, i.item_id DESC',
-				$group_limit,
-				$group_offset
-			);
+				$expired_results = $this->query_status_group(
+					30,
+					$base_where_sql,
+					$where_values,
+					'i.bidding_ends_at DESC, i.item_id DESC',
+					$group_limit,
+					$group_offset
+				);
 
-			$results = array_merge( $results, $expired_results );
+				$results = array_merge( $results, $expired_results );
+			}
 		}
 
 		if ( empty( $results ) ) {

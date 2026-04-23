@@ -206,14 +206,13 @@ class Database_Items_SQL_Test extends TestCase {
 
 		// get_status_counts: two get_var calls (running + upcoming).
 		// Return running=2, upcoming=1 so active branch fires.
+		// With include_expired=false (the default), the expired get_var is NOT issued.
 		$wpdb->shouldReceive( 'get_var' )
 			->times( 2 )
 			->andReturn( '2', '1' );
-		// get_expired_count: cache miss, then one get_var for the count.
 		Functions\when( 'wp_cache_get' )->justReturn( false );
 		Functions\when( 'wp_cache_set' )->justReturn( true );
 		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
-		$wpdb->shouldReceive( 'get_var' )->once()->andReturn( '0' );
 
 		// query_combined_status_group: prepare called once with the combined SQL.
 		$wpdb->shouldReceive( 'prepare' )
@@ -514,6 +513,59 @@ class Database_Items_SQL_Test extends TestCase {
 		// The expired group SQL carries a unique timestamp condition; the status placeholder
 		// is %d (not literal 30) since prepare() captures the raw template.
 		$this->assertStringContainsString( 'i.bidding_ends_at <= UNIX_TIMESTAMP()', $sql_blob, 'expired group must query when opted in' );
+	}
+
+	/**
+	 * Verify that query_for_listing_ending_soon skips the expired group SQL when include_expired is false.
+	 *
+	 * The expired group's unique discriminator is `bidding_ends_at <= UNIX_TIMESTAMP()`.
+	 * When include_expired=false that SQL must never reach prepare().
+	 *
+	 * @return void
+	 */
+	public function test_ending_soon_skips_expired_group_when_excluded(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				return array_merge( (array) $defaults, (array) $args );
+			}
+		);
+
+		$wpdb->shouldReceive( 'get_var' )->andReturn( '5' );
+
+		$captured_sqls = array();
+		$wpdb->shouldReceive( 'prepare' )
+			->andReturnUsing(
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+				function ( $sql, ...$args ) use ( &$captured_sqls ) {
+					$captured_sqls[] = $sql;
+					return 'PREPARED_SQL';
+				}
+			);
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$this->db_items->query_for_listing(
+			array(
+				'sort'            => 'ending_soon',  // Default sort; explicit for clarity.
+				'per_page'        => 50,             // Large enough to spill into expired group if it ran.
+				'include_expired' => false,
+			)
+		);
+
+		// The expired group's unique discriminator is `bidding_ends_at <= UNIX_TIMESTAMP()`
+		// (status comes through as a %d placeholder, so the literal `= 30` won't appear in the captured template).
+		// Active group's combined-status query uses `bidding_status IN (10, 20)` instead.
+		$sql_blob = implode( "\n---\n", $captured_sqls );
+		$this->assertStringNotContainsString( 'i.bidding_ends_at <= UNIX_TIMESTAMP()', $sql_blob, 'expired group must not query when excluded' );
 	}
 
 	/**
