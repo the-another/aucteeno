@@ -765,14 +765,22 @@ class Database_Items {
 	 * instead of falling back to a full table scan with OR.
 	 *
 	 * The expired count skips the wp_posts JOIN (expired items are settled and
-	 * unlikely to change post_status) and is cached via wp_cache.
+	 * unlikely to change post_status) and is cached via wp_cache. It is only
+	 * executed when $include_expired is true; callers that do not need expired
+	 * items should pass false (or rely on the default) to avoid the extra query.
 	 *
-	 * @param string $table_name     Items table name.
-	 * @param string $base_where_sql Base WHERE clause (without status).
-	 * @param array  $where_values   Prepared statement values.
+	 * @param string $table_name      Items table name.
+	 * @param string $base_where_sql  Base WHERE clause (without status).
+	 * @param array  $where_values    Prepared statement values.
+	 * @param bool   $include_expired Whether to fetch and return the expired count.
 	 * @return array Counts per status: running, upcoming, expired.
 	 */
-	private function get_status_counts( string $table_name, string $base_where_sql, array $where_values ): array {
+	private function get_status_counts(
+		string $table_name,
+		string $base_where_sql,
+		array $where_values,
+		bool $include_expired = false
+	): array {
 		global $wpdb;
 
 		$posts_table = $wpdb->posts;
@@ -795,8 +803,11 @@ class Database_Items {
 		$running  = (int) $wpdb->get_var( $running_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$upcoming = (int) $wpdb->get_var( $upcoming_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
-		// Expired: no JOIN (settled items), cached via wp_cache.
-		$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		$expired = 0;
+		if ( $include_expired ) {
+			// Expired: no JOIN (settled items), cached via wp_cache.
+			$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		}
 
 		return array(
 			'running'  => $running,

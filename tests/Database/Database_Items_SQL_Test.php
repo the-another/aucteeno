@@ -297,4 +297,69 @@ class Database_Items_SQL_Test extends TestCase {
 		$this->assertStringContainsString( 'i.bidding_status = 20', $filter );
 		$this->assertStringContainsString( 'i.bidding_status = 30', $filter );
 	}
+
+	/**
+	 * Verify get_status_counts skips the expired get_var call when include_expired is false.
+	 *
+	 * Asserts exactly 2 get_var invocations (running + upcoming); the expired
+	 * branch must NOT fire, so Mockery will fail if a third call occurs.
+	 *
+	 * @return void
+	 */
+	public function test_get_status_counts_skips_expired_when_excluded(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+
+		// Running + upcoming = 2 calls; expired count must NOT fire.
+		$wpdb->shouldReceive( 'get_var' )->times( 2 )->andReturn( '0' );
+
+		$reflection = new \ReflectionClass( Database_Items::class );
+		$method     = $reflection->getMethod( 'get_status_counts' );
+		$method->setAccessible( true );
+
+		$counts = $method->invoke( $this->db_items, 'wp_aucteeno_items', '1=1', array(), false );
+
+		$this->assertSame( 0, $counts['running'] );
+		$this->assertSame( 0, $counts['upcoming'] );
+		$this->assertSame( 0, $counts['expired'] );
+	}
+
+	/**
+	 * Verify get_status_counts runs the expired get_var call when include_expired is true.
+	 *
+	 * Asserts exactly 3 get_var invocations (running + upcoming + expired).
+	 *
+	 * @return void
+	 */
+	public function test_get_status_counts_runs_expired_when_opted_in(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+
+		// Running + upcoming + expired = 3 calls.
+		$wpdb->shouldReceive( 'get_var' )->times( 3 )->andReturn( '0' );
+
+		$reflection = new \ReflectionClass( Database_Items::class );
+		$method     = $reflection->getMethod( 'get_status_counts' );
+		$method->setAccessible( true );
+
+		$counts = $method->invoke( $this->db_items, 'wp_aucteeno_items', '1=1', array(), true );
+
+		$this->assertSame( 0, $counts['running'] );
+		$this->assertSame( 0, $counts['upcoming'] );
+		$this->assertSame( 0, $counts['expired'] );
+	}
 }
