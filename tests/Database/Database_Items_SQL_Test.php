@@ -362,4 +362,58 @@ class Database_Items_SQL_Test extends TestCase {
 		$this->assertSame( 0, $counts['upcoming'] );
 		$this->assertSame( 0, $counts['expired'] );
 	}
+
+	/**
+	 * Verify that query_for_listing threads include_expired through to private query methods.
+	 *
+	 * @return void
+	 */
+	public function test_dispatcher_threads_include_expired_to_private_methods(): void {
+		$this->markTestSkipped(
+			'Enabled by Task 7 — requires query_for_listing_newest to honor include_expired.'
+		);
+
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				return array_merge( (array) $defaults, (array) $args );
+			}
+		);
+
+		$wpdb->shouldReceive( 'get_var' )->andReturn( '0' );
+
+		$captured_data_sql = null;
+
+		$wpdb->shouldReceive( 'prepare' )
+			->andReturnUsing(
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+				function ( $sql, ...$args ) use ( &$captured_data_sql ) {
+					if ( str_contains( $sql, 'LIMIT %d OFFSET %d' ) ) {
+						$captured_data_sql = $sql;
+					}
+					return 'PREPARED_SQL';
+				}
+			);
+
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$this->db_items->query_for_listing(
+			array(
+				'sort'            => 'newest',
+				'include_expired' => true,
+			)
+		);
+
+		$this->assertNotNull( $captured_data_sql );
+		$this->assertStringContainsString( 'i.bidding_status = 30', $captured_data_sql );
+	}
 }

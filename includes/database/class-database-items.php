@@ -158,7 +158,8 @@ class Database_Items {
 	 *     @type string $country     Filter by location country.
 	 *     @type string $subdivision Filter by location subdivision.
 	 *     @type string $search      Search keyword for post title.
-	 *     @type array  $product_ids Array of product IDs to filter by.
+	 *     @type array  $product_ids     Array of product IDs to filter by.
+	 *     @type bool   $include_expired Whether to include expired items (default false).
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -173,15 +174,16 @@ class Database_Items {
 		global $wpdb;
 
 		$defaults = array(
-			'page'        => 1,
-			'per_page'    => 12,
-			'sort'        => 'ending_soon',
-			'user_id'     => 0,
-			'auction_id'  => 0,
-			'country'     => '',
-			'subdivision' => '',
-			'search'      => '',
-			'product_ids' => array(),
+			'page'            => 1,
+			'per_page'        => 12,
+			'sort'            => 'ending_soon',
+			'user_id'         => 0,
+			'auction_id'      => 0,
+			'country'         => '',
+			'subdivision'     => '',
+			'search'          => '',
+			'product_ids'     => array(),
+			'include_expired' => false,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
