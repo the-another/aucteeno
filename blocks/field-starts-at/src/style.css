@@ -1,0 +1,13 @@
+.aucteeno-field-starts-at {
+	display: inline-flex;
+	gap: 0.25em;
+	align-items: baseline;
+}
+
+.aucteeno-field-starts-at__label {
+	font-weight: 600;
+}
+
+.aucteeno-field-starts-at__value {
+	font-variant-numeric: tabular-nums;
+}

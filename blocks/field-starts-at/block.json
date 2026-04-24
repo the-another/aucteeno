@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-starts-at",
+	"title": "Aucteeno Bidding Starts At",
+	"category": "aucteeno",
+	"icon": "calendar-alt",
+	"description": "Display the bidding start date/time in the visitor's local timezone.",
+	"keywords": [ "aucteeno", "starts", "date", "time", "bidding" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": {
+		"html": false,
+		"spacing": { "margin": true, "padding": true }
+	},
+	"attributes": {
+		"showLabel": { "type": "boolean", "default": true },
+		"dateTimeFormat": { "type": "string", "default": "wp_default" },
+		"customFormat": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:../../dist/blocks/field-starts-at/editor.js",
+	"viewScriptModule": "file:../../dist/blocks/field-starts-at/view.js",
+	"style": "file:../../dist/blocks/field-starts-at/style-editor.css",
+	"render": "file:./render.php"
+}
