@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/product-details",
+	"title": "Aucteeno Product Details",
+	"category": "aucteeno",
+	"icon": "store",
+	"description": "Provide auction/item context to inner blocks on single-product pages.",
+	"keywords": [ "aucteeno", "product", "details", "context" ],
+	"textdomain": "aucteeno",
+	"providesContext": {
+		"aucteeno/item": "previewItem",
+		"aucteeno/itemType": "itemType"
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": { "margin": true, "padding": true }
+	},
+	"attributes": {
+		"productId": { "type": "number", "default": 0 },
+		"previewItem": { "type": "object" },
+		"itemType": { "type": "string", "default": "auctions" }
+	},
+	"editorScript": "file:../../dist/blocks/product-details/editor.js",
+	"render": "file:./render.php"
+}

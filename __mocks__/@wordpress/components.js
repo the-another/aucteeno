@@ -27,6 +27,9 @@ const Notice = ( { children } ) =>
 const __experimentalUnitControl = ( { label } ) =>
 	React.createElement( 'div', { 'data-testid': 'unit-control' }, label );
 
+const __experimentalNumberControl = ( { label } ) =>
+	React.createElement( 'div', { 'data-testid': 'number-control' }, label );
+
 module.exports = {
 	PanelBody,
 	ToggleControl,
@@ -37,4 +40,5 @@ module.exports = {
 	Spinner,
 	Notice,
 	__experimentalUnitControl,
+	__experimentalNumberControl,
 };
