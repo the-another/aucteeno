@@ -21,6 +21,16 @@ use The_Another\Plugin\Aucteeno\Database\Database_Items;
 class Block_Data_Helper {
 
 	/**
+	 * Request-level cache keyed by post ID. Stores the resolved item data
+	 * array, or null for posts that are not auction/item products. Avoids
+	 * re-querying the HPS tables when multiple blocks on the same request
+	 * ask for the same product.
+	 *
+	 * @var array<int, array|null>
+	 */
+	private static array $cache = array();
+
+	/**
 	 * Get item data for blocks from current post or specified post ID.
 	 *
 	 * This function builds the same data structure used by the query loop
@@ -41,15 +51,21 @@ class Block_Data_Helper {
 			return null;
 		}
 
+		if ( array_key_exists( $post_id, self::$cache ) ) {
+			return self::$cache[ $post_id ];
+		}
+
 		// Get product.
 		$product = wc_get_product( $post_id );
 		if ( ! $product ) {
+			self::$cache[ $post_id ] = null;
 			return null;
 		}
 
 		// Check if it's an auction or item product type.
 		$product_type = $product->get_type();
 		if ( ! in_array( $product_type, array( 'aucteeno-ext-auction', 'aucteeno-ext-item' ), true ) ) {
+			self::$cache[ $post_id ] = null;
 			return null;
 		}
 
@@ -98,12 +114,14 @@ class Block_Data_Helper {
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		if ( ! $row ) {
+			self::$cache[ $post_id ] = null;
 			return null;
 		}
 
 		// Get post data.
 		$post = get_post( $post_id );
 		if ( ! $post ) {
+			self::$cache[ $post_id ] = null;
 			return null;
 		}
 
@@ -151,6 +169,9 @@ class Block_Data_Helper {
 		 * @param array $item_data Item context data array.
 		 * @param int   $post_id   Product post ID.
 		 */
-		return apply_filters( 'aucteeno_product_context_data', $item_data, $post_id );
+		$filtered = apply_filters( 'aucteeno_product_context_data', $item_data, $post_id );
+
+		self::$cache[ $post_id ] = $filtered;
+		return $filtered;
 	}
 }

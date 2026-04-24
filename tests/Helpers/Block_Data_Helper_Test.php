@@ -25,6 +25,12 @@ class Block_Data_Helper_Test extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+
+		// Reset static cache between tests to avoid cross-test state contamination.
+		$ref  = new \ReflectionClass( Block_Data_Helper::class );
+		$prop = $ref->getProperty( 'cache' );
+		$prop->setAccessible( true );
+		$prop->setValue( null, array() );
 	}
 
 	protected function tearDown(): void {
