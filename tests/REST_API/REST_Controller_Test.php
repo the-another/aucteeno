@@ -1893,7 +1893,7 @@ class REST_Controller_Test extends TestCase {
 			'product_ids'     => null,
 			'block_template'  => null,
 			'page_url'        => null,
-			'include_expired' => null,
+			'include_expired' => false,
 		);
 
 		$params = array_merge( $defaults, $overrides );
