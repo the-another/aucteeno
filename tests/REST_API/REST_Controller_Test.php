@@ -1111,7 +1111,8 @@ class REST_Controller_Test extends TestCase {
 				)
 			);
 
-		$this->controller->get_items( $request );
+		$response = $this->controller->get_items( $request );
+		$this->assertEquals( 200, $response->get_status() );
 	}
 
 	/**
@@ -1148,7 +1149,8 @@ class REST_Controller_Test extends TestCase {
 				)
 			);
 
-		$this->controller->get_items( $request );
+		$response = $this->controller->get_items( $request );
+		$this->assertEquals( 200, $response->get_status() );
 	}
 
 	// ==========================================
