@@ -42,6 +42,29 @@ class Database_Items {
 	private const EXPIRED_COUNT_TTL = 60;
 
 	/**
+	 * Build the bidding-status WHERE filter clause.
+	 *
+	 * Always includes running (10) and upcoming (20). Includes expired (30)
+	 * only when explicitly requested.
+	 *
+	 * @param string $alias           Table alias used in the surrounding query (e.g. 'i').
+	 * @param bool   $include_expired Whether to include the expired status branch.
+	 * @return string Parenthesised WHERE-fragment ready to AND into a base WHERE clause.
+	 */
+	private static function build_status_filter( string $alias, bool $include_expired ): string {
+		$clauses = array(
+			"({$alias}.bidding_status = 10 AND {$alias}.bidding_starts_at <= UNIX_TIMESTAMP() AND {$alias}.bidding_ends_at > UNIX_TIMESTAMP())",
+			"({$alias}.bidding_status = 20 AND {$alias}.bidding_starts_at > UNIX_TIMESTAMP())",
+		);
+
+		if ( $include_expired ) {
+			$clauses[] = "({$alias}.bidding_status = 30 AND {$alias}.bidding_ends_at <= UNIX_TIMESTAMP())";
+		}
+
+		return '(' . implode( ' OR ', $clauses ) . ')';
+	}
+
+	/**
 	 * Get full table name with prefix.
 	 *
 	 * @return string Table name with prefix.
@@ -135,7 +158,8 @@ class Database_Items {
 	 *     @type string $country     Filter by location country.
 	 *     @type string $subdivision Filter by location subdivision.
 	 *     @type string $search      Search keyword for post title.
-	 *     @type array  $product_ids Array of product IDs to filter by.
+	 *     @type array  $product_ids     Array of product IDs to filter by.
+	 *     @type bool   $include_expired Whether to include expired items (default false).
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -150,15 +174,16 @@ class Database_Items {
 		global $wpdb;
 
 		$defaults = array(
-			'page'        => 1,
-			'per_page'    => 12,
-			'sort'        => 'ending_soon',
-			'user_id'     => 0,
-			'auction_id'  => 0,
-			'country'     => '',
-			'subdivision' => '',
-			'search'      => '',
-			'product_ids' => array(),
+			'page'            => 1,
+			'per_page'        => 12,
+			'sort'            => 'ending_soon',
+			'user_id'         => 0,
+			'auction_id'      => 0,
+			'country'         => '',
+			'subdivision'     => '',
+			'search'          => '',
+			'product_ids'     => array(),
+			'include_expired' => false,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -202,6 +227,8 @@ class Database_Items {
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
 
+		$include_expired = ! empty( $args['include_expired'] );
+
 		// Build base WHERE clauses (without status filter).
 		$base_where_clauses = array();
 		$where_values       = $this->build_where_values( $args );
@@ -236,15 +263,14 @@ class Database_Items {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Count via per-status queries for optimal index usage.
-		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values );
-		$total  = $counts['running'] + $counts['upcoming'] + $counts['expired'];
+		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values, $include_expired );
+		$total  = $counts['running'] + $counts['upcoming'];
+		if ( $include_expired ) {
+			$total += $counts['expired'];
+		}
 
 		// Status filter for the data query (LIMIT-bounded, less critical).
-		$status_filter = '(
-				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
-				OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
-				OR (i.bidding_status = 30 AND i.bidding_ends_at <= UNIX_TIMESTAMP())
-			)';
+		$status_filter = self::build_status_filter( 'i', $include_expired );
 		$where_sql     = $base_where_sql . ' AND ' . $status_filter;
 
 		// Main query.
@@ -338,6 +364,8 @@ class Database_Items {
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
 
+		$include_expired = ! empty( $args['include_expired'] );
+
 		// Build base WHERE clauses (without status filter).
 		$base_where_clauses = array();
 		$where_values       = $this->build_where_values( $args );
@@ -369,15 +397,14 @@ class Database_Items {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Count via per-status queries for optimal index usage.
-		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values );
-		$total  = $counts['running'] + $counts['upcoming'] + $counts['expired'];
+		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values, $include_expired );
+		$total  = $counts['running'] + $counts['upcoming'];
+		if ( $include_expired ) {
+			$total += $counts['expired'];
+		}
 
 		// Status filter for the data query (LIMIT-bounded, less critical).
-		$status_filter = '(
-				(i.bidding_status = 10 AND i.bidding_starts_at <= UNIX_TIMESTAMP() AND i.bidding_ends_at > UNIX_TIMESTAMP())
-				OR (i.bidding_status = 20 AND i.bidding_starts_at > UNIX_TIMESTAMP())
-				OR (i.bidding_status = 30 AND i.bidding_ends_at <= UNIX_TIMESTAMP())
-			)';
+		$status_filter = self::build_status_filter( 'i', $include_expired );
 		$where_sql     = $base_where_sql . ' AND ' . $status_filter;
 
 		$query_sql = "
@@ -460,6 +487,8 @@ class Database_Items {
 
 		$table_name = self::get_table_name();
 
+		$include_expired = ! empty( $args['include_expired'] );
+
 		// Build base WHERE clause (without status filter).
 		$base_where_clauses = array();
 		$where_values       = $this->build_where_values( $args );
@@ -494,11 +523,11 @@ class Database_Items {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Get counts for each status group.
-		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values );
+		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values, $include_expired );
 
 		$running_count  = $counts['running'];
 		$upcoming_count = $counts['upcoming'];
-		$expired_count  = $counts['expired'];
+		$expired_count  = $include_expired ? $counts['expired'] : 0;
 		$total          = $running_count + $upcoming_count + $expired_count;
 
 		// Calculate which groups we need and their offsets/limits.
@@ -548,21 +577,23 @@ class Database_Items {
 		// Adjust offset for expired group.
 		$remaining_offset = max( 0, $remaining_offset - $upcoming_count );
 
-		// Group 3: Expired items (status = 30).
-		if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
-			$group_offset = $remaining_offset;
-			$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
+		if ( $include_expired ) {
+			// Group 3: Expired items (status = 30).
+			if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
+				$group_offset = $remaining_offset;
+				$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
 
-			$expired_results = $this->query_status_group(
-				30,
-				$base_where_sql,
-				$where_values,
-				'i.bidding_ends_at DESC, i.item_id DESC',
-				$group_limit,
-				$group_offset
-			);
+				$expired_results = $this->query_status_group(
+					30,
+					$base_where_sql,
+					$where_values,
+					'i.bidding_ends_at DESC, i.item_id DESC',
+					$group_limit,
+					$group_offset
+				);
 
-			$results = array_merge( $results, $expired_results );
+				$results = array_merge( $results, $expired_results );
+			}
 		}
 
 		if ( empty( $results ) ) {
@@ -617,6 +648,8 @@ class Database_Items {
 
 		$table_name = self::get_table_name();
 
+		$include_expired = ! empty( $args['include_expired'] );
+
 		// Build base WHERE clause (without status filter).
 		$base_where_clauses = array();
 		$where_values       = $this->build_where_values( $args );
@@ -651,10 +684,10 @@ class Database_Items {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Get counts for each status group.
-		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values );
+		$counts = $this->get_status_counts( $table_name, $base_where_sql, $where_values, $include_expired );
 
 		$active_count  = $counts['running'] + $counts['upcoming'];
-		$expired_count = $counts['expired'];
+		$expired_count = $include_expired ? $counts['expired'] : 0;
 		$total         = $active_count + $expired_count;
 
 		// Calculate which groups we need and their offsets/limits.
@@ -683,21 +716,23 @@ class Database_Items {
 		// Adjust offset for expired group.
 		$remaining_offset = max( 0, $remaining_offset - $active_count );
 
-		// Group 2: Expired items (status = 30).
-		if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
-			$group_offset = $remaining_offset;
-			$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
+		if ( $include_expired ) {
+			// Group 2: Expired items (status = 30).
+			if ( $remaining_limit > 0 && $remaining_offset < $expired_count ) {
+				$group_offset = $remaining_offset;
+				$group_limit  = min( $remaining_limit, $expired_count - $group_offset );
 
-			$expired_results = $this->query_status_group(
-				30,
-				$base_where_sql,
-				$where_values,
-				'i.bidding_ends_at DESC, i.item_id DESC',
-				$group_limit,
-				$group_offset
-			);
+				$expired_results = $this->query_status_group(
+					30,
+					$base_where_sql,
+					$where_values,
+					'i.bidding_ends_at DESC, i.item_id DESC',
+					$group_limit,
+					$group_offset
+				);
 
-			$results = array_merge( $results, $expired_results );
+				$results = array_merge( $results, $expired_results );
+			}
 		}
 
 		if ( empty( $results ) ) {
@@ -742,14 +777,22 @@ class Database_Items {
 	 * instead of falling back to a full table scan with OR.
 	 *
 	 * The expired count skips the wp_posts JOIN (expired items are settled and
-	 * unlikely to change post_status) and is cached via wp_cache.
+	 * unlikely to change post_status) and is cached via wp_cache. It is only
+	 * executed when $include_expired is true; callers that do not need expired
+	 * items should pass false (or rely on the default) to avoid the extra query.
 	 *
-	 * @param string $table_name     Items table name.
-	 * @param string $base_where_sql Base WHERE clause (without status).
-	 * @param array  $where_values   Prepared statement values.
+	 * @param string $table_name      Items table name.
+	 * @param string $base_where_sql  Base WHERE clause (without status).
+	 * @param array  $where_values    Prepared statement values.
+	 * @param bool   $include_expired Whether to fetch and return the expired count.
 	 * @return array Counts per status: running, upcoming, expired.
 	 */
-	private function get_status_counts( string $table_name, string $base_where_sql, array $where_values ): array {
+	private function get_status_counts(
+		string $table_name,
+		string $base_where_sql,
+		array $where_values,
+		bool $include_expired = false
+	): array {
 		global $wpdb;
 
 		$posts_table = $wpdb->posts;
@@ -772,8 +815,11 @@ class Database_Items {
 		$running  = (int) $wpdb->get_var( $running_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$upcoming = (int) $wpdb->get_var( $upcoming_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
-		// Expired: no JOIN (settled items), cached via wp_cache.
-		$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		$expired = 0;
+		if ( $include_expired ) {
+			// Expired: no JOIN (settled items), cached via wp_cache.
+			$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		}
 
 		return array(
 			'running'  => $running,

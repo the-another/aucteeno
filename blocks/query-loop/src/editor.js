@@ -95,6 +95,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		displayLayout = 'grid',
 		orderBy = 'ending_soon',
 		infiniteScroll = false,
+		includeExpired = false,
 		updateUrl = true,
 		gap = '1.5rem',
 		locationCountry = '',
@@ -119,6 +120,7 @@ function Edit( { attributes, setAttributes, context } ) {
 			per_page: '6', // Fetch a few items for preview.
 			sort: orderBy,
 			format: 'json',
+			include_expired: includeExpired ? '1' : '0',
 		} );
 
 		if ( effectiveUserId ) {
@@ -146,7 +148,7 @@ function Edit( { attributes, setAttributes, context } ) {
 				);
 				setIsLoading( false );
 			} );
-	}, [ queryType, orderBy, effectiveUserId, setAttributes ] );
+	}, [ queryType, orderBy, effectiveUserId, includeExpired, setAttributes ] );
 
 	// Get preview item for context.
 	const previewItem = useMemo( () => {
@@ -359,6 +361,17 @@ function Edit( { attributes, setAttributes, context } ) {
 						] }
 						onChange={ ( value ) =>
 							setAttributes( { orderBy: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Include expired listings', 'aucteeno' ) }
+						help={ __(
+							'Off by default. Turn on for "past auctions" or archive-style listings. Excluding expired listings significantly reduces database load.',
+							'aucteeno'
+						) }
+						checked={ includeExpired }
+						onChange={ ( value ) =>
+							setAttributes( { includeExpired: value } )
 						}
 					/>
 				</PanelBody>

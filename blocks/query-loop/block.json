@@ -76,6 +76,10 @@
 			"type": "object",
 			"default": null
 		},
+		"includeExpired": {
+			"type": "boolean",
+			"default": false
+		},
 		"locationCountry": {
 			"type": "string",
 			"default": ""

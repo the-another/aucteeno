@@ -41,6 +41,29 @@ class Database_Auctions {
 	private const EXPIRED_COUNT_TTL = 60;
 
 	/**
+	 * Build the bidding-status WHERE filter clause.
+	 *
+	 * Always includes running (10) and upcoming (20). Includes expired (30)
+	 * only when explicitly requested.
+	 *
+	 * @param string $alias           Table alias used in the surrounding query (e.g. 'a').
+	 * @param bool   $include_expired Whether to include the expired status branch.
+	 * @return string Parenthesised WHERE-fragment ready to AND into a base WHERE clause.
+	 */
+	private static function build_status_filter( string $alias, bool $include_expired ): string {
+		$clauses = array(
+			"({$alias}.bidding_status = 10 AND {$alias}.bidding_starts_at <= UNIX_TIMESTAMP() AND {$alias}.bidding_ends_at > UNIX_TIMESTAMP())",
+			"({$alias}.bidding_status = 20 AND {$alias}.bidding_starts_at > UNIX_TIMESTAMP())",
+		);
+
+		if ( $include_expired ) {
+			$clauses[] = "({$alias}.bidding_status = 30 AND {$alias}.bidding_ends_at <= UNIX_TIMESTAMP())";
+		}
+
+		return '(' . implode( ' OR ', $clauses ) . ')';
+	}
+
+	/**
 	 * Get full table name with prefix.
 	 *
 	 * @return string Table name with prefix.
@@ -114,14 +137,15 @@ class Database_Auctions {
 	 * @param array $args {
 	 *     Query arguments.
 	 *
-	 *     @type int    $page        Page number (default 1).
-	 *     @type int    $per_page    Items per page (default 12, max 50).
-	 *     @type string $sort        Sort order: 'ending_soon' or 'newest'.
-	 *     @type int    $user_id     Filter by user/vendor ID.
-	 *     @type string $country     Filter by location country.
-	 *     @type string $subdivision Filter by location subdivision.
-	 *     @type string $search      Search keyword for post title.
-	 *     @type array  $product_ids Array of product IDs to filter by.
+	 *     @type int    $page            Page number (default 1).
+	 *     @type int    $per_page        Items per page (default 12, max 50).
+	 *     @type string $sort            Sort order: 'ending_soon' or 'newest'.
+	 *     @type int    $user_id         Filter by user/vendor ID.
+	 *     @type string $country         Filter by location country.
+	 *     @type string $subdivision     Filter by location subdivision.
+	 *     @type string $search          Search keyword for post title.
+	 *     @type array  $product_ids     Array of product IDs to filter by.
+	 *     @type bool   $include_expired Whether to include expired auctions (default false).
 	 * }
 	 * @return array {
 	 *     Query result.
@@ -136,22 +160,24 @@ class Database_Auctions {
 		global $wpdb;
 
 		$defaults = array(
-			'page'        => 1,
-			'per_page'    => 12,
-			'sort'        => 'ending_soon',
-			'user_id'     => 0,
-			'country'     => '',
-			'subdivision' => '',
-			'search'      => '',
-			'product_ids' => array(),
+			'page'            => 1,
+			'per_page'        => 12,
+			'sort'            => 'ending_soon',
+			'user_id'         => 0,
+			'country'         => '',
+			'subdivision'     => '',
+			'search'          => '',
+			'product_ids'     => array(),
+			'include_expired' => false,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$page     = max( 1, absint( $args['page'] ) );
-		$per_page = min( 50, max( 1, absint( $args['per_page'] ) ) );
-		$offset   = ( $page - 1 ) * $per_page;
-		$sort     = in_array( $args['sort'], array( 'ending_soon', 'status_ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
+		$include_expired = (bool) $args['include_expired'];
+		$page            = max( 1, absint( $args['page'] ) );
+		$per_page        = min( 50, max( 1, absint( $args['per_page'] ) ) );
+		$offset          = ( $page - 1 ) * $per_page;
+		$sort            = in_array( $args['sort'], array( 'ending_soon', 'status_ending_soon', 'newest' ), true ) ? $args['sort'] : 'ending_soon';
 
 		$table_name  = self::get_table_name();
 		$posts_table = $wpdb->posts;
@@ -198,14 +224,10 @@ class Database_Auctions {
 		$base_where_sql = ! empty( $base_where_clauses ) ? implode( ' AND ', $base_where_clauses ) : '1=1';
 
 		// Count via per-status queries for optimal index usage.
-		$total = $this->get_total_status_count( $table_name, $posts_table, $base_where_sql, $where_values );
+		$total = $this->get_total_status_count( $table_name, $posts_table, $base_where_sql, $where_values, $include_expired );
 
 		// Status filter for the data query (LIMIT-bounded, less critical).
-		$status_filter = '(
-				(a.bidding_status = 10 AND a.bidding_starts_at <= UNIX_TIMESTAMP() AND a.bidding_ends_at > UNIX_TIMESTAMP())
-				OR (a.bidding_status = 20 AND a.bidding_starts_at > UNIX_TIMESTAMP())
-				OR (a.bidding_status = 30 AND a.bidding_ends_at <= UNIX_TIMESTAMP())
-			)';
+		$status_filter = self::build_status_filter( 'a', $include_expired );
 		$where_sql     = $base_where_sql . ' AND ' . $status_filter;
 
 		// Build ORDER BY.
@@ -413,20 +435,28 @@ class Database_Auctions {
 	/**
 	 * Get total auction count across all active statuses.
 	 *
-	 * Uses three separate COUNT queries so MySQL can leverage the per-status
+	 * Uses separate COUNT queries so MySQL can leverage the per-status
 	 * composite indexes (idx_running_auctions, idx_upcoming_auctions, idx_expired_auctions)
 	 * instead of falling back to a full table scan with OR.
 	 *
 	 * The expired count skips the wp_posts JOIN (expired auctions are settled and
-	 * unlikely to change post_status) and is cached via wp_cache.
+	 * unlikely to change post_status) and is cached via wp_cache. It is only executed
+	 * when $include_expired is true.
 	 *
 	 * @param string $table_name     Auctions table name.
 	 * @param string $posts_table    Posts table name.
 	 * @param string $base_where_sql Base WHERE clause (without status).
 	 * @param array  $where_values   Prepared statement values.
-	 * @return int Total count across all statuses.
+	 * @param bool   $include_expired Whether to include expired auctions in the count.
+	 * @return int Total count across requested statuses.
 	 */
-	private function get_total_status_count( string $table_name, string $posts_table, string $base_where_sql, array $where_values ): int {
+	private function get_total_status_count(
+		string $table_name,
+		string $posts_table,
+		string $base_where_sql,
+		array $where_values,
+		bool $include_expired = false
+	): int {
 		global $wpdb;
 
 		// Running and upcoming: JOIN wp_posts for publish check (small result sets).
@@ -447,10 +477,14 @@ class Database_Auctions {
 		$running  = (int) $wpdb->get_var( $running_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$upcoming = (int) $wpdb->get_var( $upcoming_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
-		// Expired: no JOIN (settled auctions), cached via transient.
-		$expired = $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		$total = $running + $upcoming;
 
-		return $running + $upcoming + $expired;
+		if ( $include_expired ) {
+			// Expired: no JOIN (settled auctions), cached via transient.
+			$total += $this->get_expired_count( $table_name, $base_where_sql, $where_values );
+		}
+
+		return $total;
 	}
 
 	/**

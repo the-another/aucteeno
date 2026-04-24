@@ -29,6 +29,7 @@ $display_layout  = $attributes['displayLayout'] ?? 'grid';
 $per_page        = absint( $attributes['perPage'] ?? 12 );
 $order_by        = $attributes['orderBy'] ?? 'ending_soon';
 $infinite_scroll = $attributes['infiniteScroll'] ?? false;
+$include_expired = ! empty( $attributes['includeExpired'] );
 $update_url      = $attributes['updateUrl'] ?? true;
 $gap             = $attributes['gap'] ?? '1.5rem';
 
@@ -147,11 +148,12 @@ if ( ! empty( $block->context['query/orderBy'] ) ) {
 }
 
 $query_args = array(
-	'page'     => $page,
-	'per_page' => min( 50, max( 1, $per_page ) ),
-	'sort'     => $order_by,
-	'user_id'  => $user_id,
-	'search'   => $search_query,
+	'page'            => $page,
+	'per_page'        => min( 50, max( 1, $per_page ) ),
+	'sort'            => $order_by,
+	'user_id'         => $user_id,
+	'search'          => $search_query,
+	'include_expired' => $include_expired,
 );
 
 // Add auction filter for items query (if auction context is available).
@@ -233,12 +235,13 @@ if ( $has_product_ids ) {
 	$location_country     = '';
 	$location_subdivision = '';
 	$query_args   = array(
-		'page'        => 1,
-		'per_page'    => $query_args['per_page'],
-		'sort'        => $query_args['sort'],
-		'user_id'     => 0,
-		'search'      => '',
-		'product_ids' => $query_args['product_ids'],
+		'page'            => 1,
+		'per_page'        => $query_args['per_page'],
+		'sort'            => $query_args['sort'],
+		'user_id'         => 0,
+		'search'          => '',
+		'product_ids'     => $query_args['product_ids'],
+		'include_expired' => $query_args['include_expired'],
 	);
 }
 
@@ -352,6 +355,7 @@ $interactivity_context = array(
 	'search'         => $search_query,
 	'infiniteScroll' => $infinite_scroll,
 	'updateUrl'      => $update_url,
+	'includeExpired' => $include_expired,
 	'restUrl'        => rest_url( 'aucteeno/v1/' . ( 'auctions' === $query_type ? 'auctions' : 'items' ) ),
 	'restNonce'      => wp_create_nonce( 'wp_rest' ),
 	'blockTemplate'  => $card_template_json,

@@ -10,6 +10,7 @@
 namespace The_Another\Plugin\Aucteeno\Tests\Database;
 
 use Brain\Monkey;
+use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
@@ -152,5 +153,217 @@ class Database_Auctions_Test extends TestCase {
 		$result = $this->db_auctions->update_bidding_status_batch( array( 1 ), 30 );
 
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Test that build_status_filter excludes expired auctions by default.
+	 *
+	 * @return void
+	 */
+	public function test_build_status_filter_excludes_expired_by_default(): void {
+		$reflection = new \ReflectionClass( Database_Auctions::class );
+		$method     = $reflection->getMethod( 'build_status_filter' );
+		$method->setAccessible( true );
+
+		$filter = $method->invoke( null, 'a', false );
+
+		$this->assertStringContainsString( 'a.bidding_status = 10', $filter );
+		$this->assertStringContainsString( 'a.bidding_status = 20', $filter );
+		$this->assertStringNotContainsString( 'a.bidding_status = 30', $filter );
+	}
+
+	/**
+	 * Test that build_status_filter includes expired auctions when opted in.
+	 *
+	 * @return void
+	 */
+	public function test_build_status_filter_includes_expired_when_opted_in(): void {
+		$reflection = new \ReflectionClass( Database_Auctions::class );
+		$method     = $reflection->getMethod( 'build_status_filter' );
+		$method->setAccessible( true );
+
+		$filter = $method->invoke( null, 'a', true );
+
+		$this->assertStringContainsString( 'a.bidding_status = 10', $filter );
+		$this->assertStringContainsString( 'a.bidding_status = 20', $filter );
+		$this->assertStringContainsString( 'a.bidding_status = 30', $filter );
+	}
+
+	/**
+	 * Test that query_for_listing excludes expired status from the data SQL by default.
+	 *
+	 * @return void
+	 */
+	public function test_query_for_listing_excludes_expired_by_default(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Monkey\Functions\when( 'wp_cache_get' )->justReturn( false );
+		Monkey\Functions\when( 'wp_cache_set' )->justReturn( true );
+		Monkey\Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Monkey\Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Monkey\Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				if ( ! is_array( $args ) ) {
+						return $defaults;
+				}
+				return array_merge( $defaults, $args );
+			} 
+		);
+
+		// Counts: running + upcoming get_var calls only when include_expired=false.
+		// The test asserts the SQL of the data query, not the count behaviour (Task 3).
+		// Stub all get_var to return '0' generously to avoid count interference.
+		$wpdb->shouldReceive( 'get_var' )->andReturn( '0' );
+
+		$captured_data_sql = null;
+
+		$wpdb->shouldReceive( 'prepare' )
+			->andReturnUsing(
+				function ( $sql, ...$args ) use ( &$captured_data_sql ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+					// The data query is the one carrying LIMIT %d OFFSET %d.
+					if ( str_contains( $sql, 'LIMIT %d OFFSET %d' ) ) {
+						$captured_data_sql = $sql;
+					}
+					return 'PREPARED_SQL';
+				}
+			);
+
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$db_auctions = new Database_Auctions();
+		$db_auctions->query_for_listing( array() );  // default args.
+
+		$this->assertNotNull( $captured_data_sql, 'data query prepare() was not called' );
+		$this->assertStringContainsString( 'a.bidding_status = 10', $captured_data_sql );
+		$this->assertStringContainsString( 'a.bidding_status = 20', $captured_data_sql );
+		$this->assertStringNotContainsString( 'a.bidding_status = 30', $captured_data_sql );
+	}
+
+	/**
+	 * Test that query_for_listing includes expired status in the data SQL when opted in.
+	 *
+	 * @return void
+	 */
+	public function test_query_for_listing_includes_expired_when_opted_in(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Monkey\Functions\when( 'wp_cache_get' )->justReturn( false );
+		Monkey\Functions\when( 'wp_cache_set' )->justReturn( true );
+		Monkey\Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Monkey\Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Monkey\Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				if ( ! is_array( $args ) ) {
+						return $defaults;
+				}
+				return array_merge( $defaults, $args );
+			} 
+		);
+
+		$wpdb->shouldReceive( 'get_var' )->andReturn( '0' );
+
+		$captured_data_sql = null;
+
+		$wpdb->shouldReceive( 'prepare' )
+			->andReturnUsing(
+				function ( $sql, ...$args ) use ( &$captured_data_sql ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+					if ( str_contains( $sql, 'LIMIT %d OFFSET %d' ) ) {
+						$captured_data_sql = $sql;
+					}
+					return 'PREPARED_SQL';
+				}
+			);
+
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$db_auctions = new Database_Auctions();
+		$db_auctions->query_for_listing( array( 'include_expired' => true ) );
+
+		$this->assertNotNull( $captured_data_sql );
+		$this->assertStringContainsString( 'a.bidding_status = 30', $captured_data_sql );
+	}
+
+	/**
+	 * Test that query_for_listing skips the expired count query when include_expired is false.
+	 *
+	 * @return void
+	 */
+	public function test_query_for_listing_skips_expired_count_when_excluded(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				if ( ! is_array( $args ) ) {
+					return $defaults;
+				}
+				return array_merge( $defaults, $args );
+			}
+		);
+
+		// Running + upcoming = 2 calls; expired count must NOT fire.
+		$wpdb->shouldReceive( 'get_var' )->times( 2 )->andReturn( '0' );
+
+		$wpdb->shouldReceive( 'prepare' )->andReturn( 'PREPARED_SQL' );
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$db_auctions = new Database_Auctions();
+		$db_auctions->query_for_listing( array() );  // include_expired defaults to false.
+
+		// Mockery verifies ->times(2) at tearDown; register a PHPUnit assertion to satisfy the risky-test check.
+		$this->addToAssertionCount( 1 );
+	}
+
+	/**
+	 * Test that query_for_listing runs the expired count query when include_expired is true.
+	 *
+	 * @return void
+	 */
+	public function test_query_for_listing_runs_expired_count_when_opted_in(): void {
+		$wpdb         = Mockery::mock( 'wpdb' );
+		$wpdb->prefix = 'wp_';
+		$wpdb->posts  = 'wp_posts';
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['wpdb'] = $wpdb;
+
+		Functions\when( 'wp_cache_get' )->justReturn( false );
+		Functions\when( 'wp_cache_set' )->justReturn( true );
+		Functions\when( 'wp_json_encode' )->alias( 'json_encode' );
+		Functions\when( 'absint' )->alias( fn( $v ) => (int) abs( (int) $v ) );
+		Functions\when( 'wp_parse_args' )->alias(
+			function ( $args, $defaults ) {
+				if ( ! is_array( $args ) ) {
+					return $defaults;
+				}
+				return array_merge( $defaults, $args );
+			}
+		);
+
+		// Running + upcoming + expired = 3 calls.
+		$wpdb->shouldReceive( 'get_var' )->times( 3 )->andReturn( '0' );
+
+		$wpdb->shouldReceive( 'prepare' )->andReturn( 'PREPARED_SQL' );
+		$wpdb->shouldReceive( 'get_results' )->andReturn( array() );
+
+		$db_auctions = new Database_Auctions();
+		$db_auctions->query_for_listing( array( 'include_expired' => true ) );
+
+		// Mockery verifies ->times(3) at tearDown; register a PHPUnit assertion to satisfy the risky-test check.
+		$this->addToAssertionCount( 1 );
 	}
 }
