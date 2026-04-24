@@ -6,7 +6,7 @@ import {
 	translateCustomFormat,
 } from '../src/datetime-utils';
 
-// Fixed UTC timestamp: 2026-01-17 12:00:00 UTC
+// Fixed UTC timestamp: 2026-01-21 12:00:00 UTC
 const FIXED_TS = 1768996800;
 
 describe( 'formatDatetime', () => {

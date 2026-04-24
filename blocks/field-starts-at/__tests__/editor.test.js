@@ -51,7 +51,7 @@ describe( 'Field Starts At Block Editor', () => {
 	} );
 
 	it( 'formats a context timestamp when provided', () => {
-		const ts = 1768996800; // 2026-01-17 12:00:00 UTC
+		const ts = 1768996800; // 2026-01-21 12:00:00 UTC
 		render(
 			<Edit
 				attributes={ { dateTimeFormat: 'wp_default' } }

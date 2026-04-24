@@ -26,7 +26,7 @@ import metadata from '../block.json';
 import './editor.css';
 
 // Fixed reference timestamp keeps previews stable across refreshes.
-// 2026-06-01 12:00:00 UTC.
+// 2026-06-05 12:00:00 UTC.
 const PREVIEW_REFERENCE = 1780660800;
 
 const PREVIEW_ITEM = {
