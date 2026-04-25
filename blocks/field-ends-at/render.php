@@ -91,19 +91,20 @@ $wrapper_attributes = get_block_wrapper_attributes( $wrapper_args );
 ob_start();
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<p class="aucteeno-field-ends-at">
+	<dl class="aucteeno-field-ends-at">
 		<?php if ( $show_label ) : ?>
-			<span class="aucteeno-field-ends-at__label"><?php echo esc_html( $label_text ); ?></span>
+			<dt class="aucteeno-field-ends-at__label"><?php echo esc_html( $label_text ); ?></dt>
 		<?php endif; ?>
-		<time
-			class="aucteeno-field-ends-at__value"
-			data-aucteeno-datetime
-			data-timestamp="<?php echo esc_attr( (string) $timestamp ); ?>"
-			data-format="<?php echo esc_attr( $datetime_format ); ?>"
-			data-custom-format="<?php echo esc_attr( $custom_format ); ?>"
-			datetime="<?php echo esc_attr( gmdate( 'c', $timestamp ) ); ?>"
-		><?php echo esc_html( $formatted ); ?></time>
-	</p>
+		<dd class="aucteeno-field-ends-at__value">
+			<time
+				data-aucteeno-datetime
+				data-timestamp="<?php echo esc_attr( (string) $timestamp ); ?>"
+				data-format="<?php echo esc_attr( $datetime_format ); ?>"
+				data-custom-format="<?php echo esc_attr( $custom_format ); ?>"
+				datetime="<?php echo esc_attr( gmdate( 'c', $timestamp ) ); ?>"
+			><?php echo esc_html( $formatted ); ?></time>
+		</dd>
+	</dl>
 </div>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

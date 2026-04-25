@@ -253,16 +253,18 @@ function Edit( { attributes, setAttributes, context } ) {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<p className="aucteeno-field-starts-at">
+				<dl className="aucteeno-field-starts-at">
 					{ labelText && (
-						<span className="aucteeno-field-starts-at__label">
+						<dt className="aucteeno-field-starts-at__label">
 							{ labelText }
-						</span>
+						</dt>
 					) }
-					<time className="aucteeno-field-starts-at__value">
-						{ displayValue || __( 'No start time', 'aucteeno' ) }
-					</time>
-				</p>
+					<dd className="aucteeno-field-starts-at__value">
+						<time>
+							{ displayValue || __( 'No start time', 'aucteeno' ) }
+						</time>
+					</dd>
+				</dl>
 			</div>
 		</>
 	);
