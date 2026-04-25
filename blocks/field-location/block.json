@@ -27,6 +27,8 @@
 		}
 	},
 	"attributes": {
+		"showLabel": { "type": "boolean", "default": true },
+		"label": { "type": "string", "default": "Location" },
 		"showIcon": { "type": "boolean", "default": true },
 		"format": { "type": "string", "default": "smart" },
 		"showLinks": { "type": "boolean", "default": false },

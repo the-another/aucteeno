@@ -8,6 +8,7 @@ import {
 	PanelBody,
 	ToggleControl,
 	SelectControl,
+	TextControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
@@ -19,6 +20,8 @@ import { formatLocation } from './location-utils';
 
 function Edit( { attributes, setAttributes, context } ) {
 	const {
+		showLabel = true,
+		label = 'Location',
 		showIcon = true,
 		format = 'smart',
 		showLinks = false,
@@ -47,6 +50,24 @@ function Edit( { attributes, setAttributes, context } ) {
 	return (
 		<>
 			<InspectorControls>
+				<PanelBody title={ __( 'Label Settings', 'aucteeno' ) }>
+					<ToggleControl
+						label={ __( 'Show label', 'aucteeno' ) }
+						checked={ showLabel }
+						onChange={ ( value ) =>
+							setAttributes( { showLabel: value } )
+						}
+					/>
+					{ showLabel && (
+						<TextControl
+							label={ __( 'Label text', 'aucteeno' ) }
+							value={ label }
+							onChange={ ( value ) =>
+								setAttributes( { label: value } )
+							}
+						/>
+					) }
+				</PanelBody>
 				<PanelBody title={ __( 'Location Settings', 'aucteeno' ) }>
 					<ToggleControl
 						label={ __( 'Show icon', 'aucteeno' ) }
@@ -144,14 +165,21 @@ function Edit( { attributes, setAttributes, context } ) {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<p className="aucteeno-field-location">
-					{ showIcon && (
-						<span className="aucteeno-field-location__icon">📍</span>
+				<dl className="aucteeno-field-location">
+					{ showLabel && (
+						<dt className="aucteeno-field-location__label">
+							{ label }
+						</dt>
 					) }
-					<span className="aucteeno-field-location__part">
-						{ locationText }
-					</span>
-				</p>
+					<dd className="aucteeno-field-location__value">
+						{ showIcon && (
+							<span className="aucteeno-field-location__icon">📍</span>
+						) }
+						<span className="aucteeno-field-location__part">
+							{ locationText }
+						</span>
+					</dd>
+				</dl>
 			</div>
 		</>
 	);
