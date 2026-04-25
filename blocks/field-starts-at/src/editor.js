@@ -9,8 +9,6 @@ import {
 	SelectControl,
 	TextControl,
 	ToggleControl,
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useMemo } from '@wordpress/element';
@@ -29,8 +27,6 @@ function Edit( { attributes, setAttributes, context } ) {
 		labelRunning = 'Bidding opened at',
 		labelExpired = 'Bidding opened at',
 		label = 'Bidding opens at',
-		widthMode = 'default',
-		fixedWidth = '',
 	} = attributes;
 
 	const itemData = context?.[ 'aucteeno/item' ] || {};
@@ -76,14 +72,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		label,
 	] );
 
-	const blockProps = useBlockProps( {
-		...( widthMode !== 'default'
-			? { className: `is-width-${ widthMode }` }
-			: {} ),
-		...( widthMode === 'fixed' && fixedWidth
-			? { style: { width: fixedWidth } }
-			: {} ),
-	} );
+	const blockProps = useBlockProps();
 
 	return (
 		<>
@@ -205,49 +194,6 @@ function Edit( { attributes, setAttributes, context } ) {
 							onChange={ ( value ) =>
 								setAttributes( { customFormat: value } )
 							}
-						/>
-					) }
-				</PanelBody>
-				<PanelBody title={ __( 'Width Settings', 'aucteeno' ) }>
-					<SelectControl
-						label={ __( 'Width', 'aucteeno' ) }
-						value={ widthMode }
-						options={ [
-							{
-								label: __( 'Default (paragraph)', 'aucteeno' ),
-								value: 'default',
-							},
-							{
-								label: __( 'Grow (fill available space)', 'aucteeno' ),
-								value: 'grow',
-							},
-							{
-								label: __( 'Fit (content width)', 'aucteeno' ),
-								value: 'fit',
-							},
-							{
-								label: __( 'Fixed', 'aucteeno' ),
-								value: 'fixed',
-							},
-						] }
-						onChange={ ( value ) =>
-							setAttributes( { widthMode: value } )
-						}
-					/>
-					{ widthMode === 'fixed' && (
-						<UnitControl
-							label={ __( 'Fixed width', 'aucteeno' ) }
-							value={ fixedWidth }
-							onChange={ ( value ) =>
-								setAttributes( { fixedWidth: value || '' } )
-							}
-							units={ [
-								{ value: 'px', label: 'px' },
-								{ value: 'rem', label: 'rem' },
-								{ value: 'em', label: 'em' },
-								{ value: '%', label: '%' },
-							] }
-							isUnitSelectTabbable
 						/>
 					) }
 				</PanelBody>

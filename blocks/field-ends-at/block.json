@@ -21,9 +21,7 @@
 		"labelUpcoming": { "type": "string", "default": "Bidding closes at" },
 		"labelRunning": { "type": "string", "default": "Bidding closes at" },
 		"labelExpired": { "type": "string", "default": "Bidding closed at" },
-		"label": { "type": "string", "default": "Bidding closes at" },
-		"widthMode": { "type": "string", "default": "default", "enum": [ "default", "fit", "grow", "fixed" ] },
-		"fixedWidth": { "type": "string", "default": "" }
+		"label": { "type": "string", "default": "Bidding closes at" }
 	},
 	"editorScript": "file:../../dist/blocks/field-ends-at/editor.js",
 	"viewScriptModule": "file:../../dist/blocks/field-ends-at/view.js",
