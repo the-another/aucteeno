@@ -180,7 +180,7 @@ $aucteeno_extension_buttons = apply_filters(
 	$attributes
 );
 
-$aucteeno_buttons     = array_merge( $aucteeno_buttons, (array) $aucteeno_extension_buttons );
+$aucteeno_buttons      = array_merge( $aucteeno_buttons, (array) $aucteeno_extension_buttons );
 $aucteeno_buttons_html = \The_Another\Plugin\Aucteeno\Blocks\Product_Cta_Renderer::render_collection( $aucteeno_buttons );
 
 if ( '' === $aucteeno_buttons_html ) {
