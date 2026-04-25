@@ -72,9 +72,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		label,
 	] );
 
-	const blockProps = useBlockProps( {
-		className: 'aucteeno-field-starts-at',
-	} );
+	const blockProps = useBlockProps();
 
 	return (
 		<>
@@ -201,14 +199,16 @@ function Edit( { attributes, setAttributes, context } ) {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ labelText && (
-					<span className="aucteeno-field-starts-at__label">
-						{ labelText }
-					</span>
-				) }
-				<time className="aucteeno-field-starts-at__value">
-					{ displayValue || __( 'No start time', 'aucteeno' ) }
-				</time>
+				<p className="aucteeno-field-starts-at">
+					{ labelText && (
+						<span className="aucteeno-field-starts-at__label">
+							{ labelText }
+						</span>
+					) }
+					<time className="aucteeno-field-starts-at__value">
+						{ displayValue || __( 'No start time', 'aucteeno' ) }
+					</time>
+				</p>
 			</div>
 		</>
 	);

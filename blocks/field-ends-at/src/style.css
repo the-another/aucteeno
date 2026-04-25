@@ -2,7 +2,6 @@
 	display: flex;
 	gap: 0.25em;
 	align-items: baseline;
-	width: 100%;
 }
 
 .aucteeno-field-ends-at__label {

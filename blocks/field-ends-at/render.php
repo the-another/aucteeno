@@ -76,23 +76,24 @@ if ( $respect_bidding_status ) {
 
 $formatted = wp_date( $php_format, $timestamp );
 
-$wrapper_classes    = 'aucteeno-field-ends-at';
-$wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
+$wrapper_attributes = get_block_wrapper_attributes();
 
 ob_start();
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $show_label ) : ?>
-		<span class="aucteeno-field-ends-at__label"><?php echo esc_html( $label_text ); ?></span>
-	<?php endif; ?>
-	<time
-		class="aucteeno-field-ends-at__value"
-		data-aucteeno-datetime
-		data-timestamp="<?php echo esc_attr( (string) $timestamp ); ?>"
-		data-format="<?php echo esc_attr( $datetime_format ); ?>"
-		data-custom-format="<?php echo esc_attr( $custom_format ); ?>"
-		datetime="<?php echo esc_attr( gmdate( 'c', $timestamp ) ); ?>"
-	><?php echo esc_html( $formatted ); ?></time>
+	<p class="aucteeno-field-ends-at">
+		<?php if ( $show_label ) : ?>
+			<span class="aucteeno-field-ends-at__label"><?php echo esc_html( $label_text ); ?></span>
+		<?php endif; ?>
+		<time
+			class="aucteeno-field-ends-at__value"
+			data-aucteeno-datetime
+			data-timestamp="<?php echo esc_attr( (string) $timestamp ); ?>"
+			data-format="<?php echo esc_attr( $datetime_format ); ?>"
+			data-custom-format="<?php echo esc_attr( $custom_format ); ?>"
+			datetime="<?php echo esc_attr( gmdate( 'c', $timestamp ) ); ?>"
+		><?php echo esc_html( $formatted ); ?></time>
+	</p>
 </div>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

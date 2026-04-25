@@ -222,30 +222,32 @@ $wrapper_attributes = get_block_wrapper_attributes();
 
 ob_start();
 ?>
-<p <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $show_icon ) : ?>
-		<span class="aucteeno-field-location__icon" aria-hidden="true">📍</span>
-	<?php endif; ?>
-	<?php
-	foreach ( $location_parts as $index => $part ) {
-		if ( $index > 0 ) {
-			echo ', ';
-		}
+<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<p class="aucteeno-field-location">
+		<?php if ( $show_icon ) : ?>
+			<span class="aucteeno-field-location__icon" aria-hidden="true">📍</span>
+		<?php endif; ?>
+		<?php
+		foreach ( $location_parts as $index => $part ) {
+			if ( $index > 0 ) {
+				echo ', ';
+			}
 
-		echo '<span class="aucteeno-field-location__part">';
-		if ( $show_links && ! empty( $part['term_id'] ) ) {
-			$term_link = get_term_link( $part['term_id'], 'aucteeno-location' );
-			if ( ! is_wp_error( $term_link ) ) {
-				echo '<a href="' . esc_url( $term_link ) . '">' . esc_html( $part['text'] ) . '</a>';
+			echo '<span class="aucteeno-field-location__part">';
+			if ( $show_links && ! empty( $part['term_id'] ) ) {
+				$term_link = get_term_link( $part['term_id'], 'aucteeno-location' );
+				if ( ! is_wp_error( $term_link ) ) {
+					echo '<a href="' . esc_url( $term_link ) . '">' . esc_html( $part['text'] ) . '</a>';
+				} else {
+					echo esc_html( $part['text'] );
+				}
 			} else {
 				echo esc_html( $part['text'] );
 			}
-		} else {
-			echo esc_html( $part['text'] );
+			echo '</span>';
 		}
-		echo '</span>';
-	}
-	?>
-</p>
+		?>
+	</p>
+</div>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Content is already escaped above.
