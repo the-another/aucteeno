@@ -2,6 +2,10 @@
 	margin-inline-start: 0;
 }
 
+.wp-block-aucteeno-field-starts-at.alignleft { text-align: left; }
+.wp-block-aucteeno-field-starts-at.aligncenter { text-align: center; }
+.wp-block-aucteeno-field-starts-at.alignright { text-align: right; }
+
 .wp-block-aucteeno-field-starts-at.is-orientation-row > dl {
 	display: flex;
 	flex-direction: row;
@@ -9,3 +13,6 @@
 	flex-wrap: wrap;
 	gap: 0.25em;
 }
+
+.wp-block-aucteeno-field-starts-at.aligncenter.is-orientation-row > dl { justify-content: center; }
+.wp-block-aucteeno-field-starts-at.alignright.is-orientation-row > dl { justify-content: flex-end; }
