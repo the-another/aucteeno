@@ -30,7 +30,7 @@ class Product_Cta_Renderer_Test extends TestCase {
         ) );
 
         $this->assertStringContainsString( '<button', $html );
-        $this->assertStringContainsString( 'class="globalag-cta-button"', $html );
+        $this->assertStringContainsString( 'class="wp-block-aucteeno-product-cta__button"', $html );
         $this->assertStringContainsString( '<span class="button-text">Click me</span>', $html );
         $this->assertStringContainsString( '</button>', $html );
     }
@@ -48,9 +48,9 @@ class Product_Cta_Renderer_Test extends TestCase {
         $html = Product_Cta_Renderer::render_button( array(
             'id'      => 'demo',
             'text'    => 'Hi',
-            'classes' => array( 'wishlist-button', 'in-wishlist' ),
+            'classes' => array( 'is-wishlist', 'is-in-wishlist' ),
         ) );
-        $this->assertStringContainsString( 'globalag-cta-button wishlist-button in-wishlist', $html );
+        $this->assertStringContainsString( 'wp-block-aucteeno-product-cta__button is-wishlist is-in-wishlist', $html );
     }
 
     public function test_attrs_emitted_and_escaped(): void {
@@ -90,13 +90,13 @@ class Product_Cta_Renderer_Test extends TestCase {
             'id'      => 'bidding',
             'wrapper' => 'form',
             'text'    => 'Bid',
-            'classes' => array( 'bidding-button' ),
+            'classes' => array( 'is-bidding' ),
             'form'    => array(
                 'action'        => 'https://example.com/p/123',
                 'method'        => 'get',
                 'target'        => '_blank',
                 'rel'           => 'noopener noreferrer',
-                'classes'       => array( 'bidding-form' ),
+                'classes'       => array( 'is-bidding' ),
                 'hidden_fields' => array(
                     'utm_source' => 'aucteeno',
                     'utm_medium' => 'syndication',
@@ -108,10 +108,10 @@ class Product_Cta_Renderer_Test extends TestCase {
         $this->assertStringContainsString( 'action="https://example.com/p/123"', $html );
         $this->assertStringContainsString( 'method="get"', $html );
         $this->assertStringContainsString( 'target="_blank"', $html );
-        $this->assertStringContainsString( 'class="globalag-cta-form bidding-form"', $html );
+        $this->assertStringContainsString( 'class="wp-block-aucteeno-product-cta__form is-bidding"', $html );
         $this->assertStringContainsString( '<input type="hidden" name="utm_source" value="aucteeno">', $html );
         $this->assertStringContainsString( '<input type="hidden" name="utm_medium" value="syndication">', $html );
-        $this->assertStringContainsString( 'globalag-cta-button bidding-button', $html );
+        $this->assertStringContainsString( 'wp-block-aucteeno-product-cta__button is-bidding', $html );
         $this->assertStringContainsString( '</form>', $html );
     }
 

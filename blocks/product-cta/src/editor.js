@@ -93,18 +93,18 @@ function Edit( { attributes, setAttributes, name } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className={ `preview layout-${ layout } align-${ buttonAlignment }` }>
+				<div className={ `wp-block-aucteeno-product-cta__preview is-layout-${ layout } is-content-justification-${ buttonAlignment }` }>
 					{ ! hasAnyButton && (
-						<div className="notice">
+						<div className="wp-block-aucteeno-product-cta__notice">
 							{ __( '⚠️ Please enable at least one button in the block settings.', 'aucteeno' ) }
 						</div>
 					) }
 
 					{ hasAnyButton && (
-						<div className="button-preview-container">
+						<div className="wp-block-aucteeno-product-cta__preview-buttons">
 							{ showBiddingButton && (
 								<button
-									className={ `preview-button bidding-button${ biddingButtonIcon !== 'none' ? ' has-icon-' + biddingButtonIcon : '' }` }
+									className={ `wp-block-aucteeno-product-cta__preview-button is-bidding${ biddingButtonIcon !== 'none' ? ' has-icon-' + biddingButtonIcon : '' }` }
 									disabled
 								>
 									<span className="button-text">{ biddingButtonText }</span>
@@ -114,7 +114,7 @@ function Edit( { attributes, setAttributes, name } ) {
 						</div>
 					) }
 
-					<p className="preview-hint">
+					<p className="wp-block-aucteeno-product-cta__preview-hint">
 						{ __( 'Button appearance will match your theme styling.', 'aucteeno' ) }
 					</p>
 				</div>

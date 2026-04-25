@@ -91,9 +91,9 @@ class Product_Cta_Render_Test extends TestCase {
 			array( 'aucteeno/item' => array( 'id' => 1 ) )
 		);
 
-		$this->assertStringContainsString( 'globalag-item-ctas', $html );
-		$this->assertStringContainsString( 'cta-buttons-container', $html );
-		$this->assertStringContainsString( 'bidding-button', $html );
+		$this->assertStringContainsString( 'is-layout-horizontal', $html );
+		$this->assertStringContainsString( 'wp-block-aucteeno-product-cta__buttons', $html );
+		$this->assertStringContainsString( 'wp-block-aucteeno-product-cta__button is-bidding', $html );
 		$this->assertStringContainsString( 'Bid Now', $html );
 	}
 

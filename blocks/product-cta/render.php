@@ -133,9 +133,8 @@ if ( $aucteeno_show_bidding ) {
 }
 
 $aucteeno_wrapper_classes = array(
-	'globalag-item-ctas',
-	'layout-' . $aucteeno_layout,
-	'align-' . $aucteeno_alignment,
+	'is-layout-' . $aucteeno_layout,
+	'is-content-justification-' . $aucteeno_alignment,
 );
 
 $aucteeno_wrapper_attributes = get_block_wrapper_attributes(
@@ -151,7 +150,7 @@ if ( $aucteeno_show_bidding ) {
 		'id'       => 'bidding',
 		'wrapper'  => 'form',
 		'text'     => $aucteeno_bidding_text,
-		'classes'  => array( 'bidding-button' ),
+		'classes'  => array( 'is-bidding' ),
 		'icon'     => $aucteeno_bidding_icon,
 		'attrs'    => array( 'type' => 'submit' ),
 		'form'     => array(
@@ -159,7 +158,7 @@ if ( $aucteeno_show_bidding ) {
 			'method'        => 'get',
 			'target'        => '_blank',
 			'rel'           => 'noopener noreferrer',
-			'classes'       => array( 'bidding-form' ),
+			'classes'       => array( 'is-bidding' ),
 			'hidden_fields' => $aucteeno_form_query_params,
 		),
 		'priority' => 10,
@@ -188,7 +187,7 @@ if ( '' === $aucteeno_buttons_html ) {
 }
 ?>
 <div <?php echo $aucteeno_wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="cta-buttons-container">
+	<div class="wp-block-aucteeno-product-cta__buttons">
 		<?php echo $aucteeno_buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside renderer ?>
 	</div>
 </div>

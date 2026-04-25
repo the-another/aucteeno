@@ -2,58 +2,58 @@
  * Aucteeno Product CTA Block - Styles.
  */
 
-.globalag-item-ctas {
+.wp-block-aucteeno-product-cta {
 	margin: 2rem 0;
 }
 
-.cta-buttons-container,
-.button-preview-container {
+.wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview-buttons {
 	display: flex;
 	gap: 1rem;
 }
 
-.globalag-item-ctas.layout-horizontal .cta-buttons-container,
-.preview.layout-horizontal .button-preview-container {
+.wp-block-aucteeno-product-cta.is-layout-horizontal .wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview.is-layout-horizontal .wp-block-aucteeno-product-cta__preview-buttons {
 	flex-direction: row;
 }
 
-.globalag-item-ctas.layout-vertical .cta-buttons-container,
-.preview.layout-vertical .button-preview-container {
+.wp-block-aucteeno-product-cta.is-layout-vertical .wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview.is-layout-vertical .wp-block-aucteeno-product-cta__preview-buttons {
 	flex-direction: column;
 }
 
-.globalag-item-ctas.align-left .cta-buttons-container,
-.preview.align-left .button-preview-container {
+.wp-block-aucteeno-product-cta.is-content-justification-left .wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview.is-content-justification-left .wp-block-aucteeno-product-cta__preview-buttons {
 	justify-content: flex-start;
 }
 
-.globalag-item-ctas.align-center .cta-buttons-container,
-.preview.align-center .button-preview-container {
+.wp-block-aucteeno-product-cta.is-content-justification-center .wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview.is-content-justification-center .wp-block-aucteeno-product-cta__preview-buttons {
 	justify-content: center;
 }
 
-.globalag-item-ctas.align-right .cta-buttons-container,
-.preview.align-right .button-preview-container {
+.wp-block-aucteeno-product-cta.is-content-justification-right .wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview.is-content-justification-right .wp-block-aucteeno-product-cta__preview-buttons {
 	justify-content: flex-end;
 }
 
-.globalag-item-ctas.align-stretch .cta-buttons-container,
-.preview.align-stretch .button-preview-container {
+.wp-block-aucteeno-product-cta.is-content-justification-stretch .wp-block-aucteeno-product-cta__buttons,
+.wp-block-aucteeno-product-cta__preview.is-content-justification-stretch .wp-block-aucteeno-product-cta__preview-buttons {
 	justify-content: stretch;
 }
 
-.globalag-item-ctas.align-stretch .globalag-cta-form,
-.preview.align-stretch .preview-button {
+.wp-block-aucteeno-product-cta.is-content-justification-stretch .wp-block-aucteeno-product-cta__form,
+.wp-block-aucteeno-product-cta__preview.is-content-justification-stretch .wp-block-aucteeno-product-cta__preview-button {
 	flex: 1;
 }
 
-.globalag-cta-form {
+.wp-block-aucteeno-product-cta__form {
 	margin: 0;
 	padding: 0;
 }
 
-.globalag-cta-button,
-.preview-button {
+.wp-block-aucteeno-product-cta__button,
+.wp-block-aucteeno-product-cta__preview-button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -71,22 +71,22 @@
 	min-width: 180px;
 }
 
-.globalag-cta-button.bidding-button,
-.preview-button.bidding-button {
+.wp-block-aucteeno-product-cta__button.is-bidding,
+.wp-block-aucteeno-product-cta__preview-button.is-bidding {
 	background-color: var(--wp--preset--color--accent-2, #1a6bd7);
 	color: #ffffff;
 	border-color: var(--wp--preset--color--accent-2, #1a6bd7);
 }
 
-.globalag-cta-button.bidding-button:hover {
+.wp-block-aucteeno-product-cta__button.is-bidding:hover {
 	background-color: var(--wp--preset--color--accent-1, #0b4d8f);
 	border-color: var(--wp--preset--color--accent-1, #0b4d8f);
 }
 
-.globalag-cta-button.has-icon-before .button-text::before,
-.globalag-cta-button.has-icon-after .button-text::after,
-.preview-button.has-icon-before .button-text::before,
-.preview-button.has-icon-after .button-text::after {
+.wp-block-aucteeno-product-cta__button.has-icon-before .button-text::before,
+.wp-block-aucteeno-product-cta__button.has-icon-after .button-text::after,
+.wp-block-aucteeno-product-cta__preview-button.has-icon-before .button-text::before,
+.wp-block-aucteeno-product-cta__preview-button.has-icon-after .button-text::after {
 	font-family: dashicons;
 	display: inline-block;
 	vertical-align: middle;
@@ -94,23 +94,23 @@
 	line-height: 1;
 }
 
-.bidding-button.has-icon-before .button-text::before {
+.is-bidding.has-icon-before .button-text::before {
 	content: "\f504";
 	margin-right: 0.5em;
 }
 
-.bidding-button.has-icon-after .button-text::after {
+.is-bidding.has-icon-after .button-text::after {
 	content: "\f504";
 	margin-left: 0.5em;
 }
 
-.globalag-cta-button:disabled,
-.preview-button:disabled {
+.wp-block-aucteeno-product-cta__button:disabled,
+.wp-block-aucteeno-product-cta__preview-button:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 }
 
-.aucteeno-product-cta-editor .preview {
+.aucteeno-product-cta-editor .wp-block-aucteeno-product-cta__preview {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -121,7 +121,7 @@
 	text-align: center;
 }
 
-.aucteeno-product-cta-editor .preview .notice {
+.aucteeno-product-cta-editor .wp-block-aucteeno-product-cta__notice {
 	background: #fff3cd;
 	border: 1px solid #ffc107;
 	color: #856404;
@@ -130,18 +130,18 @@
 	margin-bottom: 1rem;
 }
 
-.aucteeno-product-cta-editor .preview .preview-hint {
+.aucteeno-product-cta-editor .wp-block-aucteeno-product-cta__preview-hint {
 	margin-top: 1rem;
 	font-size: 0.875rem;
 	color: #666;
 }
 
 @media (max-width: 768px) {
-	.globalag-item-ctas.layout-horizontal .cta-buttons-container {
+	.wp-block-aucteeno-product-cta.is-layout-horizontal .wp-block-aucteeno-product-cta__buttons {
 		flex-direction: column;
 	}
 
-	.globalag-cta-button {
+	.wp-block-aucteeno-product-cta__button {
 		width: 100%;
 		min-width: auto;
 	}

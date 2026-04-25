@@ -25,7 +25,7 @@ class Product_Cta_Renderer {
 	public static function render_button( array $button ): string {
 		$button = self::normalize( $button );
 
-		$classes = array_merge( array( 'globalag-cta-button' ), $button['classes'] );
+		$classes = array_merge( array( 'wp-block-aucteeno-product-cta__button' ), $button['classes'] );
 		if ( 'none' !== $button['icon'] ) {
 			$classes[] = 'has-icon-' . $button['icon'];
 		}
@@ -42,7 +42,7 @@ class Product_Cta_Renderer {
 		}
 
 		$form          = $button['form'];
-		$form_classes  = array_merge( array( 'globalag-cta-form' ), $form['classes'] ?? array() );
+		$form_classes  = array_merge( array( 'wp-block-aucteeno-product-cta__form' ), $form['classes'] ?? array() );
 		$hidden_fields = $form['hidden_fields'] ?? array();
 		$hidden_html   = '';
 		foreach ( $hidden_fields as $name => $value ) {
