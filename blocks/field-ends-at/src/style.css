@@ -1,1 +1,17 @@
+.wp-block-aucteeno-field-ends-at {
+	display: flex;
+}
 
+.wp-block-aucteeno-field-ends-at.is-width-grow {
+	flex-grow: 1;
+	min-width: 0;
+}
+
+.wp-block-aucteeno-field-ends-at.is-width-fit {
+	width: fit-content;
+}
+
+.aucteeno-field-ends-at {
+	display: flex;
+	flex: 1;
+}

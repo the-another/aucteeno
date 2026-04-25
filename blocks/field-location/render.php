@@ -218,7 +218,14 @@ if ( empty( $location_parts ) ) {
 	return '';
 }
 
-$wrapper_attributes = get_block_wrapper_attributes();
+$width_mode  = $attributes['widthMode'] ?? 'grow';
+$fixed_width = $attributes['fixedWidth'] ?? '';
+
+$wrapper_args = array( 'class' => 'is-width-' . sanitize_html_class( $width_mode ) );
+if ( 'fixed' === $width_mode && ! empty( $fixed_width ) ) {
+	$wrapper_args['style'] = 'width: ' . esc_attr( $fixed_width );
+}
+$wrapper_attributes = get_block_wrapper_attributes( $wrapper_args );
 
 ob_start();
 ?>

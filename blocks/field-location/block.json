@@ -29,7 +29,9 @@
 	"attributes": {
 		"showIcon": { "type": "boolean", "default": true },
 		"format": { "type": "string", "default": "smart" },
-		"showLinks": { "type": "boolean", "default": false }
+		"showLinks": { "type": "boolean", "default": false },
+		"widthMode": { "type": "string", "default": "grow", "enum": [ "fit", "grow", "fixed" ] },
+		"fixedWidth": { "type": "string", "default": "" }
 	},
 	"editorScript": "file:../../dist/blocks/field-location/editor.js",
 	"style": "file:../../dist/blocks/field-location/style-editor.css",
