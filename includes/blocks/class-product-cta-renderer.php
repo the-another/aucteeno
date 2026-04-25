@@ -32,7 +32,7 @@ class Product_Cta_Renderer {
 
 		$button_html = sprintf(
 			'<button class="%s"%s><span class="button-text">%s</span></button>',
-			esc_attr( implode( ' ', array_map( 'esc_attr', $classes ) ) ),
+			implode( ' ', array_map( 'esc_attr', $classes ) ),
 			self::format_attrs( $button['attrs'] ),
 			esc_html( $button['text'] )
 		);
@@ -55,7 +55,7 @@ class Product_Cta_Renderer {
 
 		return sprintf(
 			'<form class="%s" action="%s" method="%s" target="%s" rel="%s">%s%s</form>',
-			esc_attr( implode( ' ', array_map( 'esc_attr', $form_classes ) ) ),
+			implode( ' ', array_map( 'esc_attr', $form_classes ) ),
 			esc_url( $form['action'] ?? '' ),
 			esc_attr( $form['method'] ?? 'get' ),
 			esc_attr( $form['target'] ?? '' ),
