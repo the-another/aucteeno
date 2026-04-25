@@ -1,0 +1,148 @@
+/**
+ * Aucteeno Product CTA Block - Styles.
+ */
+
+.globalag-item-ctas {
+	margin: 2rem 0;
+}
+
+.cta-buttons-container,
+.button-preview-container {
+	display: flex;
+	gap: 1rem;
+}
+
+.globalag-item-ctas.layout-horizontal .cta-buttons-container,
+.preview.layout-horizontal .button-preview-container {
+	flex-direction: row;
+}
+
+.globalag-item-ctas.layout-vertical .cta-buttons-container,
+.preview.layout-vertical .button-preview-container {
+	flex-direction: column;
+}
+
+.globalag-item-ctas.align-left .cta-buttons-container,
+.preview.align-left .button-preview-container {
+	justify-content: flex-start;
+}
+
+.globalag-item-ctas.align-center .cta-buttons-container,
+.preview.align-center .button-preview-container {
+	justify-content: center;
+}
+
+.globalag-item-ctas.align-right .cta-buttons-container,
+.preview.align-right .button-preview-container {
+	justify-content: flex-end;
+}
+
+.globalag-item-ctas.align-stretch .cta-buttons-container,
+.preview.align-stretch .button-preview-container {
+	justify-content: stretch;
+}
+
+.globalag-item-ctas.align-stretch .globalag-cta-form,
+.preview.align-stretch .preview-button {
+	flex: 1;
+}
+
+.globalag-cta-form {
+	margin: 0;
+	padding: 0;
+}
+
+.globalag-cta-button,
+.preview-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.75rem 1.5rem;
+	font-family: var(--wp--preset--font-family--oswald, sans-serif);
+	font-weight: 600;
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-decoration: none;
+	min-width: 180px;
+}
+
+.globalag-cta-button.bidding-button,
+.preview-button.bidding-button {
+	background-color: var(--wp--preset--color--accent-2, #1a6bd7);
+	color: #ffffff;
+	border-color: var(--wp--preset--color--accent-2, #1a6bd7);
+}
+
+.globalag-cta-button.bidding-button:hover {
+	background-color: var(--wp--preset--color--accent-1, #0b4d8f);
+	border-color: var(--wp--preset--color--accent-1, #0b4d8f);
+}
+
+.globalag-cta-button.has-icon-before .button-text::before,
+.globalag-cta-button.has-icon-after .button-text::after,
+.preview-button.has-icon-before .button-text::before,
+.preview-button.has-icon-after .button-text::after {
+	font-family: dashicons;
+	display: inline-block;
+	vertical-align: middle;
+	font-size: 1.2em;
+	line-height: 1;
+}
+
+.bidding-button.has-icon-before .button-text::before {
+	content: "\f504";
+	margin-right: 0.5em;
+}
+
+.bidding-button.has-icon-after .button-text::after {
+	content: "\f504";
+	margin-left: 0.5em;
+}
+
+.globalag-cta-button:disabled,
+.preview-button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.aucteeno-product-cta-editor .preview {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 1.5rem;
+	background: #f0f0f0;
+	border: 2px dashed #ccc;
+	border-radius: 4px;
+	text-align: center;
+}
+
+.aucteeno-product-cta-editor .preview .notice {
+	background: #fff3cd;
+	border: 1px solid #ffc107;
+	color: #856404;
+	padding: 1rem;
+	border-radius: 4px;
+	margin-bottom: 1rem;
+}
+
+.aucteeno-product-cta-editor .preview .preview-hint {
+	margin-top: 1rem;
+	font-size: 0.875rem;
+	color: #666;
+}
+
+@media (max-width: 768px) {
+	.globalag-item-ctas.layout-horizontal .cta-buttons-container {
+		flex-direction: column;
+	}
+
+	.globalag-cta-button {
+		width: 100%;
+		min-width: auto;
+	}
+}
