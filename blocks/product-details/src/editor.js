@@ -69,7 +69,7 @@ const ALLOWED_BLOCKS = [
 ];
 
 function Edit( { attributes, setAttributes } ) {
-	const { productId = 0 } = attributes;
+	const { productId = 0, layout = { type: 'constrained' } } = attributes;
 
 	// Feed preview data into providesContext via attributes so inner blocks
 	// receive it through the editor's context propagation.
@@ -90,6 +90,7 @@ function Edit( { attributes, setAttributes } ) {
 		allowedBlocks: ALLOWED_BLOCKS,
 		templateLock: false,
 		renderAppender: InnerBlocks.ButtonBlockAppender,
+		layout,
 	} );
 
 	return (

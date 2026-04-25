@@ -16,12 +16,18 @@
 	"supports": {
 		"html": false,
 		"align": [ "wide", "full" ],
-		"spacing": { "margin": true, "padding": true }
+		"spacing": { "margin": true, "padding": true },
+		"layout": {
+			"allowSwitching": true,
+			"allowInheriting": false,
+			"default": { "type": "constrained" }
+		}
 	},
 	"attributes": {
 		"productId": { "type": "number", "default": 0 },
 		"previewItem": { "type": "object" },
-		"itemType": { "type": "string", "default": "auctions" }
+		"itemType": { "type": "string", "default": "auctions" },
+		"layout": { "type": "object" }
 	},
 	"editorScript": "file:../../dist/blocks/product-details/editor.js",
 	"render": "file:./render.php"
