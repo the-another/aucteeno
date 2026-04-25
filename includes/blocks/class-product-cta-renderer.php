@@ -85,4 +85,29 @@ class Product_Cta_Renderer {
         }
         return $out;
     }
+
+    public static function render_collection( array $buttons ): string {
+        $valid = array();
+        foreach ( $buttons as $button ) {
+            if ( ! is_array( $button ) || empty( $button['id'] ) || ! is_string( $button['id'] ) ) {
+                continue;
+            }
+            $valid[ $button['id'] ] = self::normalize( $button );
+        }
+
+        if ( empty( $valid ) ) {
+            return '';
+        }
+
+        uasort(
+            $valid,
+            static fn( array $a, array $b ): int => $a['priority'] <=> $b['priority']
+        );
+
+        $out = '';
+        foreach ( $valid as $button ) {
+            $out .= self::render_button( $button );
+        }
+        return $out;
+    }
 }

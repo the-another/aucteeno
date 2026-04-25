@@ -114,4 +114,35 @@ class Product_Cta_Renderer_Test extends TestCase {
         $this->assertStringContainsString( 'globalag-cta-button bidding-button', $html );
         $this->assertStringContainsString( '</form>', $html );
     }
+
+    public function test_collection_sorts_by_priority_ascending(): void {
+        $html = Product_Cta_Renderer::render_collection( array(
+            array( 'id' => 'a', 'text' => 'A', 'priority' => 30 ),
+            array( 'id' => 'b', 'text' => 'B', 'priority' => 10 ),
+            array( 'id' => 'c', 'text' => 'C', 'priority' => 20 ),
+        ) );
+        $this->assertMatchesRegularExpression( '/B.*C.*A/s', $html );
+    }
+
+    public function test_collection_dedups_by_id_last_wins(): void {
+        $html = Product_Cta_Renderer::render_collection( array(
+            array( 'id' => 'demo', 'text' => 'first' ),
+            array( 'id' => 'demo', 'text' => 'second' ),
+        ) );
+        $this->assertStringContainsString( 'second', $html );
+        $this->assertStringNotContainsString( 'first', $html );
+    }
+
+    public function test_collection_returns_empty_string_for_empty_input(): void {
+        $this->assertSame( '', Product_Cta_Renderer::render_collection( array() ) );
+    }
+
+    public function test_collection_skips_entries_without_id(): void {
+        $html = Product_Cta_Renderer::render_collection( array(
+            array( 'text' => 'no-id' ),
+            array( 'id' => 'ok', 'text' => 'ok-button' ),
+        ) );
+        $this->assertStringContainsString( 'ok-button', $html );
+        $this->assertStringNotContainsString( 'no-id', $html );
+    }
 }
