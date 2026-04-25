@@ -16,7 +16,12 @@
 	"attributes": {
 		"showLabel": { "type": "boolean", "default": true },
 		"dateTimeFormat": { "type": "string", "default": "wp_default" },
-		"customFormat": { "type": "string", "default": "" }
+		"customFormat": { "type": "string", "default": "" },
+		"respectBiddingStatus": { "type": "boolean", "default": true },
+		"labelUpcoming": { "type": "string", "default": "Bidding starts" },
+		"labelRunning": { "type": "string", "default": "Bidding started" },
+		"labelExpired": { "type": "string", "default": "Bidding started" },
+		"label": { "type": "string", "default": "Bidding starts" }
 	},
 	"editorScript": "file:../../dist/blocks/field-starts-at/editor.js",
 	"viewScriptModule": "file:../../dist/blocks/field-starts-at/view.js",
