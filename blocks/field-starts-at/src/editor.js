@@ -73,7 +73,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		label,
 	] );
 
-	const blockProps = useBlockProps();
+	const blockProps = useBlockProps( { className: `is-orientation-${ orientation }` } );
 
 	return (
 		<>

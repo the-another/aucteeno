@@ -35,7 +35,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		formatLocation( format, city, subdivision, country ) ||
 		`${ city }, ${ country }`;
 
-	const blockProps = useBlockProps();
+	const blockProps = useBlockProps( { className: `is-orientation-${ orientation }` } );
 
 	return (
 		<>
