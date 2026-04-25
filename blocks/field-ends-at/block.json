@@ -22,7 +22,7 @@
 		"labelRunning": { "type": "string", "default": "Bidding closes at" },
 		"labelExpired": { "type": "string", "default": "Bidding closed at" },
 		"label": { "type": "string", "default": "Bidding closes at" },
-		"widthMode": { "type": "string", "default": "grow", "enum": [ "fit", "grow", "fixed" ] },
+		"widthMode": { "type": "string", "default": "default", "enum": [ "default", "fit", "grow", "fixed" ] },
 		"fixedWidth": { "type": "string", "default": "" }
 	},
 	"editorScript": "file:../../dist/blocks/field-ends-at/editor.js",

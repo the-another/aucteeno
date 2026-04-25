@@ -22,7 +22,7 @@
 		"labelRunning": { "type": "string", "default": "Bidding opened at" },
 		"labelExpired": { "type": "string", "default": "Bidding opened at" },
 		"label": { "type": "string", "default": "Bidding opens at" },
-		"widthMode": { "type": "string", "default": "grow", "enum": [ "fit", "grow", "fixed" ] },
+		"widthMode": { "type": "string", "default": "default", "enum": [ "default", "fit", "grow", "fixed" ] },
 		"fixedWidth": { "type": "string", "default": "" }
 	},
 	"editorScript": "file:../../dist/blocks/field-starts-at/editor.js",

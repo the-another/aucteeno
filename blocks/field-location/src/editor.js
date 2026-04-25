@@ -22,7 +22,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		showIcon = true,
 		format = 'smart',
 		showLinks = false,
-		widthMode = 'grow',
+		widthMode = 'default',
 		fixedWidth = '',
 	} = attributes;
 	const itemData = context?.[ 'aucteeno/item' ] || {};
@@ -36,7 +36,9 @@ function Edit( { attributes, setAttributes, context } ) {
 		`${ city }, ${ country }`;
 
 	const blockProps = useBlockProps( {
-		className: `is-width-${ widthMode }`,
+		...( widthMode !== 'default'
+			? { className: `is-width-${ widthMode }` }
+			: {} ),
 		...( widthMode === 'fixed' && fixedWidth
 			? { style: { width: fixedWidth } }
 			: {} ),
@@ -102,6 +104,10 @@ function Edit( { attributes, setAttributes, context } ) {
 						label={ __( 'Width', 'aucteeno' ) }
 						value={ widthMode }
 						options={ [
+							{
+								label: __( 'Default (paragraph)', 'aucteeno' ),
+								value: 'default',
+							},
 							{
 								label: __( 'Grow (fill available space)', 'aucteeno' ),
 								value: 'grow',

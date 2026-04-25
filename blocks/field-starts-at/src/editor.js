@@ -29,7 +29,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		labelRunning = 'Bidding opened at',
 		labelExpired = 'Bidding opened at',
 		label = 'Bidding opens at',
-		widthMode = 'grow',
+		widthMode = 'default',
 		fixedWidth = '',
 	} = attributes;
 
@@ -77,7 +77,9 @@ function Edit( { attributes, setAttributes, context } ) {
 	] );
 
 	const blockProps = useBlockProps( {
-		className: `is-width-${ widthMode }`,
+		...( widthMode !== 'default'
+			? { className: `is-width-${ widthMode }` }
+			: {} ),
 		...( widthMode === 'fixed' && fixedWidth
 			? { style: { width: fixedWidth } }
 			: {} ),
@@ -211,6 +213,10 @@ function Edit( { attributes, setAttributes, context } ) {
 						label={ __( 'Width', 'aucteeno' ) }
 						value={ widthMode }
 						options={ [
+							{
+								label: __( 'Default (paragraph)', 'aucteeno' ),
+								value: 'default',
+							},
 							{
 								label: __( 'Grow (fill available space)', 'aucteeno' ),
 								value: 'grow',
