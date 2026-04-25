@@ -18,10 +18,10 @@
 		"dateTimeFormat": { "type": "string", "default": "wp_default" },
 		"customFormat": { "type": "string", "default": "" },
 		"respectBiddingStatus": { "type": "boolean", "default": true },
-		"labelUpcoming": { "type": "string", "default": "Bidding ends" },
-		"labelRunning": { "type": "string", "default": "Bidding ends" },
-		"labelExpired": { "type": "string", "default": "Bidding ended" },
-		"label": { "type": "string", "default": "Bidding ends" }
+		"labelUpcoming": { "type": "string", "default": "Bidding closes at" },
+		"labelRunning": { "type": "string", "default": "Bidding closes at" },
+		"labelExpired": { "type": "string", "default": "Bidding closed at" },
+		"label": { "type": "string", "default": "Bidding closes at" }
 	},
 	"editorScript": "file:../../dist/blocks/field-ends-at/editor.js",
 	"viewScriptModule": "file:../../dist/blocks/field-ends-at/view.js",

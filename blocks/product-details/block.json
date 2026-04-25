@@ -8,6 +8,7 @@
 	"description": "Provide auction/item context to inner blocks on single-product pages.",
 	"keywords": [ "aucteeno", "product", "details", "context" ],
 	"textdomain": "aucteeno",
+	"usesContext": [ "postId", "postType" ],
 	"providesContext": {
 		"aucteeno/item": "previewItem",
 		"aucteeno/itemType": "itemType"

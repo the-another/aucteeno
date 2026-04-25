@@ -54,6 +54,8 @@ ob_start();
 				array_merge(
 					$block->context,
 					array(
+						'postId'            => $product_id,
+						'postType'          => 'product',
 						'aucteeno/item'     => $item_data,
 						'aucteeno/itemType' => $item_type,
 					)

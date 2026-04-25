@@ -23,10 +23,10 @@ function Edit( { attributes, setAttributes, context } ) {
 		dateTimeFormat = 'wp_default',
 		customFormat = '',
 		respectBiddingStatus = true,
-		labelUpcoming = 'Bidding ends',
-		labelRunning = 'Bidding ends',
-		labelExpired = 'Bidding ended',
-		label = 'Bidding ends',
+		labelUpcoming = 'Bidding closes at',
+		labelRunning = 'Bidding closes at',
+		labelExpired = 'Bidding closed at',
+		label = 'Bidding closes at',
 	} = attributes;
 
 	const itemData = context?.[ 'aucteeno/item' ] || {};

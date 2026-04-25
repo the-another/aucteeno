@@ -66,12 +66,12 @@ if ( $now < $bidding_starts ) {
 
 if ( $respect_bidding_status ) {
 	$label_text = match ( $current_state ) {
-		'upcoming' => $attributes['labelUpcoming'] ?? __( 'Bidding starts', 'aucteeno' ),
-		'running'  => $attributes['labelRunning'] ?? __( 'Bidding started', 'aucteeno' ),
-		default    => $attributes['labelExpired'] ?? __( 'Bidding started', 'aucteeno' ),
+		'upcoming' => $attributes['labelUpcoming'] ?? __( 'Bidding opens at', 'aucteeno' ),
+		'running'  => $attributes['labelRunning'] ?? __( 'Bidding opened at', 'aucteeno' ),
+		default    => $attributes['labelExpired'] ?? __( 'Bidding opened at', 'aucteeno' ),
 	};
 } else {
-	$label_text = $attributes['label'] ?? __( 'Bidding starts', 'aucteeno' );
+	$label_text = $attributes['label'] ?? __( 'Bidding opens at', 'aucteeno' );
 }
 
 $formatted = wp_date( $php_format, $timestamp );
