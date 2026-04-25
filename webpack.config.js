@@ -34,6 +34,9 @@ const editorEntries = {
 	// Product details block
 	'product-details/editor': path.resolve( __dirname, 'blocks/product-details/src/editor.js' ),
 
+	// Product CTA block
+	'product-cta/editor': path.resolve( __dirname, 'blocks/product-cta/src/editor.js' ),
+
 	// Pagination block
 	'pagination/editor': path.resolve( __dirname, 'blocks/pagination/src/editor.js' ),
 };
