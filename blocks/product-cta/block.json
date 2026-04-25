@@ -1,0 +1,52 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/product-cta",
+	"title": "Aucteeno Product CTA",
+	"category": "aucteeno",
+	"icon": "button",
+	"description": "Display action buttons for product bidding and watchlist.",
+	"keywords": [ "aucteeno", "cta", "button", "bidding", "wishlist", "watchlist", "product" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType", "postId", "postType" ],
+	"supports": {
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"align": [ "wide", "full" ],
+		"color": {
+			"background": true,
+			"text": true
+		}
+	},
+	"attributes": {
+		"showBiddingButton": {
+			"type": "boolean",
+			"default": true
+		},
+		"biddingButtonText": {
+			"type": "string",
+			"default": "View Bidding Page"
+		},
+		"biddingButtonIcon": {
+			"type": "string",
+			"enum": [ "none", "before", "after" ],
+			"default": "none"
+		},
+		"layout": {
+			"type": "string",
+			"enum": [ "horizontal", "vertical" ],
+			"default": "horizontal"
+		},
+		"buttonAlignment": {
+			"type": "string",
+			"enum": [ "left", "center", "right", "stretch" ],
+			"default": "center"
+		}
+	},
+	"editorScript": "file:../../dist/blocks/product-cta/editor.js",
+	"style": "file:../../dist/blocks/product-cta/style-editor.css",
+	"render": "file:./render.php"
+}
