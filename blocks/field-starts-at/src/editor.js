@@ -31,7 +31,7 @@ function Edit( { attributes, setAttributes, context } ) {
 
 	const itemData = context?.[ 'aucteeno/item' ] || {};
 	const timestamp = itemData.bidding_starts_at || 0;
-	const startsAt  = timestamp;
+	const startsAt = timestamp;
 	const endsAt = itemData.bidding_ends_at || 0;
 
 	const now = Math.floor( Date.now() / 1000 );

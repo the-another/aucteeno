@@ -50,6 +50,30 @@ switch ( $datetime_format ) {
 		break;
 }
 
+// Compute bidding state from timestamps.
+$bidding_starts         = (int) ( $item_data['bidding_starts_at'] ?? 0 );
+$bidding_ends           = $timestamp;
+$now                    = time();
+$respect_bidding_status = $attributes['respectBiddingStatus'] ?? true;
+
+if ( $now < $bidding_starts ) {
+	$current_state = 'upcoming';
+} elseif ( $bidding_ends > 0 && $now >= $bidding_ends ) {
+	$current_state = 'expired';
+} else {
+	$current_state = 'running';
+}
+
+if ( $respect_bidding_status ) {
+	$label_text = match ( $current_state ) {
+		'upcoming' => $attributes['labelUpcoming'] ?? __( 'Bidding ends', 'aucteeno' ),
+		'running'  => $attributes['labelRunning'] ?? __( 'Bidding ends', 'aucteeno' ),
+		default    => $attributes['labelExpired'] ?? __( 'Bidding ended', 'aucteeno' ),
+	};
+} else {
+	$label_text = $attributes['label'] ?? __( 'Bidding ends', 'aucteeno' );
+}
+
 $formatted = wp_date( $php_format, $timestamp );
 
 $wrapper_classes    = 'aucteeno-field-ends-at';
@@ -59,7 +83,7 @@ ob_start();
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $show_label ) : ?>
-		<span class="aucteeno-field-ends-at__label"><?php echo esc_html__( 'Ends', 'aucteeno' ); ?></span>
+		<span class="aucteeno-field-ends-at__label"><?php echo esc_html( $label_text ); ?></span>
 	<?php endif; ?>
 	<time
 		class="aucteeno-field-ends-at__value"

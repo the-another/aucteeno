@@ -22,15 +22,55 @@ function Edit( { attributes, setAttributes, context } ) {
 		showLabel = true,
 		dateTimeFormat = 'wp_default',
 		customFormat = '',
+		respectBiddingStatus = true,
+		labelUpcoming = 'Bidding ends',
+		labelRunning = 'Bidding ends',
+		labelExpired = 'Bidding ended',
+		label = 'Bidding ends',
 	} = attributes;
 
 	const itemData = context?.[ 'aucteeno/item' ] || {};
 	const timestamp = itemData.bidding_ends_at || 0;
+	const startsAt = itemData.bidding_starts_at || 0;
+	const endsAt = timestamp;
+
+	const now = Math.floor( Date.now() / 1000 );
+	let currentState;
+	if ( now < startsAt ) {
+		currentState = 'upcoming';
+	} else if ( endsAt > 0 && now >= endsAt ) {
+		currentState = 'expired';
+	} else {
+		currentState = 'running';
+	}
 
 	const displayValue = useMemo(
 		() => formatDatetime( timestamp, dateTimeFormat, customFormat ),
 		[ timestamp, dateTimeFormat, customFormat ]
 	);
+
+	const labelText = useMemo( () => {
+		if ( ! showLabel ) {
+			return null;
+		}
+		if ( respectBiddingStatus ) {
+			const map = {
+				upcoming: labelUpcoming,
+				running: labelRunning,
+				expired: labelExpired,
+			};
+			return map[ currentState ] || labelUpcoming;
+		}
+		return label;
+	}, [
+		showLabel,
+		respectBiddingStatus,
+		currentState,
+		labelUpcoming,
+		labelRunning,
+		labelExpired,
+		label,
+	] );
 
 	const blockProps = useBlockProps( {
 		className: 'aucteeno-field-ends-at',
@@ -39,7 +79,7 @@ function Edit( { attributes, setAttributes, context } ) {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Ends At Settings', 'aucteeno' ) }>
+				<PanelBody title={ __( 'Label Settings', 'aucteeno' ) }>
 					<ToggleControl
 						label={ __( 'Show label', 'aucteeno' ) }
 						checked={ showLabel }
@@ -47,6 +87,76 @@ function Edit( { attributes, setAttributes, context } ) {
 							setAttributes( { showLabel: value } )
 						}
 					/>
+					{ showLabel && (
+						<>
+							<ToggleControl
+								label={ __(
+									'Respect bidding status',
+									'aucteeno'
+								) }
+								help={ __(
+									'Show different label text depending on whether bidding is upcoming, running, or expired.',
+									'aucteeno'
+								) }
+								checked={ respectBiddingStatus }
+								onChange={ ( value ) =>
+									setAttributes( {
+										respectBiddingStatus: value,
+									} )
+								}
+							/>
+							{ respectBiddingStatus ? (
+								<>
+									<TextControl
+										label={ __(
+											'Upcoming label',
+											'aucteeno'
+										) }
+										value={ labelUpcoming }
+										onChange={ ( value ) =>
+											setAttributes( {
+												labelUpcoming: value,
+											} )
+										}
+									/>
+									<TextControl
+										label={ __(
+											'Running label',
+											'aucteeno'
+										) }
+										value={ labelRunning }
+										onChange={ ( value ) =>
+											setAttributes( {
+												labelRunning: value,
+											} )
+										}
+									/>
+									<TextControl
+										label={ __(
+											'Expired label',
+											'aucteeno'
+										) }
+										value={ labelExpired }
+										onChange={ ( value ) =>
+											setAttributes( {
+												labelExpired: value,
+											} )
+										}
+									/>
+								</>
+							) : (
+								<TextControl
+									label={ __( 'Label', 'aucteeno' ) }
+									value={ label }
+									onChange={ ( value ) =>
+										setAttributes( { label: value } )
+									}
+								/>
+							) }
+						</>
+					) }
+				</PanelBody>
+				<PanelBody title={ __( 'Format Settings', 'aucteeno' ) }>
 					<SelectControl
 						label={ __( 'Date/Time Format', 'aucteeno' ) }
 						value={ dateTimeFormat }
@@ -91,9 +201,9 @@ function Edit( { attributes, setAttributes, context } ) {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ showLabel && (
+				{ labelText && (
 					<span className="aucteeno-field-ends-at__label">
-						{ __( 'Ends', 'aucteeno' ) }
+						{ labelText }
 					</span>
 				) }
 				<time className="aucteeno-field-ends-at__value">
