@@ -11,6 +11,7 @@
 	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
 	"supports": {
 		"html": false,
+		"align": [ "wide", "full" ],
 		"spacing": { "margin": true, "padding": true }
 	},
 	"attributes": {
