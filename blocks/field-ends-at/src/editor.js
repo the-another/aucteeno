@@ -59,7 +59,7 @@ function Edit( { attributes, setAttributes, context } ) {
 				running: labelRunning,
 				expired: labelExpired,
 			};
-			return map[ currentState ] || labelUpcoming;
+			return map[ currentState ] ?? labelUpcoming;
 		}
 		return label;
 	}, [
