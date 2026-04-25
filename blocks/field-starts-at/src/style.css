@@ -1,7 +1,8 @@
 .aucteeno-field-starts-at {
-	display: inline-flex;
+	display: flex;
 	gap: 0.25em;
 	align-items: baseline;
+	width: 100%;
 }
 
 .aucteeno-field-starts-at__label {

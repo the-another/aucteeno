@@ -2,6 +2,10 @@
  * Aucteeno Field Location - Styles
  */
 
+.wp-block-aucteeno-field-location {
+	width: 100%;
+}
+
 .aucteeno-field-location__icon {
 	margin-inline-end: 0.25em;
 }
