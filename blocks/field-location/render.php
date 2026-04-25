@@ -218,8 +218,7 @@ if ( empty( $location_parts ) ) {
 	return '';
 }
 
-$wrapper_classes    = 'aucteeno-field-location';
-$wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
+$wrapper_attributes = get_block_wrapper_attributes();
 
 ob_start();
 ?>

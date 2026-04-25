@@ -23,9 +23,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		formatLocation( format, city, subdivision, country ) ||
 		`${ city }, ${ country }`;
 
-	const blockProps = useBlockProps( {
-		className: 'aucteeno-field-location',
-	} );
+	const blockProps = useBlockProps();
 
 	return (
 		<>
