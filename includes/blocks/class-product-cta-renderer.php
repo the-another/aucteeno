@@ -21,13 +21,38 @@ class Product_Cta_Renderer {
             $classes[] = 'has-icon-' . $button['icon'];
         }
 
-        $attrs = self::format_attrs( $button['attrs'] );
-
-        return sprintf(
+        $button_html = sprintf(
             '<button class="%s"%s><span class="button-text">%s</span></button>',
             esc_attr( implode( ' ', array_map( 'esc_attr', $classes ) ) ),
-            $attrs,
+            self::format_attrs( $button['attrs'] ),
             esc_html( $button['text'] )
+        );
+
+        if ( 'form' !== $button['wrapper'] ) {
+            return $button_html;
+        }
+
+        $form           = $button['form'];
+        $form_classes   = array_merge( array( 'globalag-cta-form' ), $form['classes'] ?? array() );
+        $hidden_fields  = $form['hidden_fields'] ?? array();
+        $hidden_html    = '';
+        foreach ( $hidden_fields as $name => $value ) {
+            $hidden_html .= sprintf(
+                '<input type="hidden" name="%s" value="%s">',
+                esc_attr( (string) $name ),
+                esc_attr( (string) $value )
+            );
+        }
+
+        return sprintf(
+            '<form class="%s" action="%s" method="%s" target="%s" rel="%s">%s%s</form>',
+            esc_attr( implode( ' ', array_map( 'esc_attr', $form_classes ) ) ),
+            esc_url( $form['action'] ?? '' ),
+            esc_attr( $form['method'] ?? 'get' ),
+            esc_attr( $form['target'] ?? '' ),
+            esc_attr( $form['rel'] ?? '' ),
+            $hidden_html,
+            $button_html
         );
     }
 

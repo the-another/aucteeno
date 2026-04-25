@@ -84,4 +84,34 @@ class Product_Cta_Renderer_Test extends TestCase {
         $this->assertStringNotContainsString( 'onclick', $html );
         $this->assertStringNotContainsString( 'OnFocus', $html );
     }
+
+    public function test_form_wrapper_emits_form_with_hidden_fields(): void {
+        $html = Product_Cta_Renderer::render_button( array(
+            'id'      => 'bidding',
+            'wrapper' => 'form',
+            'text'    => 'Bid',
+            'classes' => array( 'bidding-button' ),
+            'form'    => array(
+                'action'        => 'https://example.com/p/123',
+                'method'        => 'get',
+                'target'        => '_blank',
+                'rel'           => 'noopener noreferrer',
+                'classes'       => array( 'bidding-form' ),
+                'hidden_fields' => array(
+                    'utm_source' => 'aucteeno',
+                    'utm_medium' => 'syndication',
+                ),
+            ),
+        ) );
+
+        $this->assertStringContainsString( '<form', $html );
+        $this->assertStringContainsString( 'action="https://example.com/p/123"', $html );
+        $this->assertStringContainsString( 'method="get"', $html );
+        $this->assertStringContainsString( 'target="_blank"', $html );
+        $this->assertStringContainsString( 'class="globalag-cta-form bidding-form"', $html );
+        $this->assertStringContainsString( '<input type="hidden" name="utm_source" value="aucteeno">', $html );
+        $this->assertStringContainsString( '<input type="hidden" name="utm_medium" value="syndication">', $html );
+        $this->assertStringContainsString( 'globalag-cta-button bidding-button', $html );
+        $this->assertStringContainsString( '</form>', $html );
+    }
 }
