@@ -27,6 +27,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		labelRunning = 'Bidding closes at',
 		labelExpired = 'Bidding closed at',
 		label = 'Bidding closes at',
+		orientation = 'column',
 	} = attributes;
 
 	const itemData = context?.[ 'aucteeno/item' ] || {};
@@ -197,15 +198,28 @@ function Edit( { attributes, setAttributes, context } ) {
 						/>
 					) }
 				</PanelBody>
+				<PanelBody title={ __( 'Layout', 'aucteeno' ) }>
+					<SelectControl
+						label={ __( 'Orientation', 'aucteeno' ) }
+						value={ orientation }
+						options={ [
+							{ label: __( 'Stacked (column)', 'aucteeno' ), value: 'column' },
+							{ label: __( 'Inline (row)', 'aucteeno' ), value: 'row' },
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { orientation: value } )
+						}
+					/>
+				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<dl className="aucteeno-field-ends-at">
+				<dl>
 					{ labelText && (
-						<dt className="aucteeno-field-ends-at__label">
+						<dt className="wp-block-aucteeno-field-ends-at__label">
 							{ labelText }
 						</dt>
 					) }
-					<dd className="aucteeno-field-ends-at__value">
+					<dd className="wp-block-aucteeno-field-ends-at__value">
 						<time>
 							{ displayValue || __( 'No end time', 'aucteeno' ) }
 						</time>

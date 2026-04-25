@@ -22,7 +22,8 @@
 		"labelUpcoming": { "type": "string", "default": "Bidding opens at" },
 		"labelRunning": { "type": "string", "default": "Bidding opened at" },
 		"labelExpired": { "type": "string", "default": "Bidding opened at" },
-		"label": { "type": "string", "default": "Bidding opens at" }
+		"label": { "type": "string", "default": "Bidding opens at" },
+		"orientation": { "type": "string", "default": "column", "enum": [ "row", "column" ] }
 	},
 	"editorScript": "file:../../dist/blocks/field-starts-at/editor.js",
 	"viewScriptModule": "file:../../dist/blocks/field-starts-at/view.js",

@@ -23,6 +23,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		showIcon = true,
 		format = 'smart',
 		showLinks = false,
+		orientation = 'column',
 	} = attributes;
 	const itemData = context?.[ 'aucteeno/item' ] || {};
 
@@ -109,19 +110,32 @@ function Edit( { attributes, setAttributes, context } ) {
 						) }
 					/>
 				</PanelBody>
+				<PanelBody title={ __( 'Layout', 'aucteeno' ) }>
+					<SelectControl
+						label={ __( 'Orientation', 'aucteeno' ) }
+						value={ orientation }
+						options={ [
+							{ label: __( 'Stacked (column)', 'aucteeno' ), value: 'column' },
+							{ label: __( 'Inline (row)', 'aucteeno' ), value: 'row' },
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { orientation: value } )
+						}
+					/>
+				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<dl className="aucteeno-field-location">
+				<dl>
 					{ showLabel && (
-						<dt className="aucteeno-field-location__label">
+						<dt className="wp-block-aucteeno-field-location__label">
 							{ label }
 						</dt>
 					) }
-					<dd className="aucteeno-field-location__value">
+					<dd className="wp-block-aucteeno-field-location__value">
 						{ showIcon && (
-							<span className="aucteeno-field-location__icon">📍</span>
+							<span className="wp-block-aucteeno-field-location__icon">📍</span>
 						) }
-						<span className="aucteeno-field-location__part">
+						<span className="wp-block-aucteeno-field-location__part">
 							{ locationText }
 						</span>
 					</dd>

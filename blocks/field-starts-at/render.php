@@ -76,16 +76,19 @@ if ( $respect_bidding_status ) {
 
 $formatted = wp_date( $php_format, $timestamp );
 
-$wrapper_attributes = get_block_wrapper_attributes();
+$orientation        = $attributes['orientation'] ?? 'column';
+$wrapper_attributes = get_block_wrapper_attributes(
+	array( 'class' => 'is-orientation-' . sanitize_html_class( $orientation ) )
+);
 
 ob_start();
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<dl class="aucteeno-field-starts-at">
+	<dl>
 		<?php if ( $show_label ) : ?>
-			<dt class="aucteeno-field-starts-at__label"><?php echo esc_html( $label_text ); ?></dt>
+			<dt class="wp-block-aucteeno-field-starts-at__label"><?php echo esc_html( $label_text ); ?></dt>
 		<?php endif; ?>
-		<dd class="aucteeno-field-starts-at__value">
+		<dd class="wp-block-aucteeno-field-starts-at__value">
 			<time
 				data-aucteeno-datetime
 				data-timestamp="<?php echo esc_attr( (string) $timestamp ); ?>"

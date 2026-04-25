@@ -1,1 +1,11 @@
+.wp-block-aucteeno-field-ends-at dd {
+	margin-inline-start: 0;
+}
 
+.wp-block-aucteeno-field-ends-at.is-orientation-row > dl {
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.25em;
+}

@@ -32,7 +32,8 @@
 		"label": { "type": "string", "default": "Location" },
 		"showIcon": { "type": "boolean", "default": true },
 		"format": { "type": "string", "default": "smart" },
-		"showLinks": { "type": "boolean", "default": false }
+		"showLinks": { "type": "boolean", "default": false },
+		"orientation": { "type": "string", "default": "column", "enum": [ "row", "column" ] }
 	},
 	"editorScript": "file:../../dist/blocks/field-location/editor.js",
 	"style": "file:../../dist/blocks/field-location/style-editor.css",

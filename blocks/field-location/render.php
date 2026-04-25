@@ -24,6 +24,7 @@ if ( ! $item_data ) {
 
 $show_label  = $attributes['showLabel'] ?? true;
 $label       = $attributes['label'] ?? __( 'Location', 'aucteeno' );
+$orientation = $attributes['orientation'] ?? 'column';
 $show_icon   = $attributes['showIcon'] ?? true;
 $show_links  = $attributes['showLinks'] ?? false;
 $format      = $attributes['format'] ?? 'smart';
@@ -220,18 +221,20 @@ if ( empty( $location_parts ) ) {
 	return '';
 }
 
-$wrapper_attributes = get_block_wrapper_attributes();
+$wrapper_attributes = get_block_wrapper_attributes(
+	array( 'class' => 'is-orientation-' . sanitize_html_class( $orientation ) )
+);
 
 ob_start();
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<dl class="aucteeno-field-location">
+	<dl>
 		<?php if ( $show_label ) : ?>
-			<dt class="aucteeno-field-location__label"><?php echo esc_html( $label ); ?></dt>
+			<dt class="wp-block-aucteeno-field-location__label"><?php echo esc_html( $label ); ?></dt>
 		<?php endif; ?>
-		<dd class="aucteeno-field-location__value">
+		<dd class="wp-block-aucteeno-field-location__value">
 			<?php if ( $show_icon ) : ?>
-				<span class="aucteeno-field-location__icon" aria-hidden="true">📍</span>
+				<span class="wp-block-aucteeno-field-location__icon" aria-hidden="true">📍</span>
 			<?php endif; ?>
 			<?php
 			foreach ( $location_parts as $index => $part ) {
@@ -239,7 +242,7 @@ ob_start();
 					echo ', ';
 				}
 
-				echo '<span class="aucteeno-field-location__part">';
+				echo '<span class="wp-block-aucteeno-field-location__part">';
 				if ( $show_links && ! empty( $part['term_id'] ) ) {
 					$term_link = get_term_link( $part['term_id'], 'aucteeno-location' );
 					if ( ! is_wp_error( $term_link ) ) {
