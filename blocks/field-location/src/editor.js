@@ -83,14 +83,14 @@ function Edit( { attributes, setAttributes, context } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div { ...blockProps }>
+			<p { ...blockProps }>
 				{ showIcon && (
 					<span className="aucteeno-field-location__icon">📍</span>
 				) }
-				<span className="aucteeno-field-location__text">
+				<span className="aucteeno-field-location__part">
 					{ locationText }
 				</span>
-			</div>
+			</p>
 		</>
 	);
 }
