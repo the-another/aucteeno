@@ -39,8 +39,21 @@ if ( ! $item_data ) {
 
 $item_type = ! empty( $item_data['auction_id'] ) ? 'items' : 'auctions';
 
+// Calculate current state based on timestamps (not database status).
+$bidding_starts = (int) ( $item_data['bidding_starts_at'] ?? 0 );
+$bidding_ends   = (int) ( $item_data['bidding_ends_at'] ?? 0 );
+$now            = time();
+
+if ( $now < $bidding_starts ) {
+	$status_class = 'upcoming';
+} elseif ( $now >= $bidding_starts && $now < $bidding_ends ) {
+	$status_class = 'running';
+} else {
+	$status_class = 'expired';
+}
+
 $wrapper_attributes = get_block_wrapper_attributes(
-	array( 'class' => 'aucteeno-product-details' )
+	array( 'class' => 'aucteeno-product-details aucteeno-product-details--' . $status_class )
 );
 
 ob_start();
