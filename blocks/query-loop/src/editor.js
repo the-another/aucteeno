@@ -95,6 +95,7 @@ function Edit( { attributes, setAttributes, context } ) {
 		displayLayout = 'grid',
 		orderBy = 'ending_soon',
 		infiniteScroll = false,
+		infiniteScrollOffset = 400,
 		includeExpired = false,
 		updateUrl = true,
 		gap = '1.5rem',
@@ -432,17 +433,42 @@ function Edit( { attributes, setAttributes, context } ) {
 						}
 					/>
 					{ infiniteScroll && (
-						<ToggleControl
-							label={ __( 'Update URL on Scroll', 'aucteeno' ) }
-							help={ __(
-								'Update the browser URL as more items are loaded. Disable to keep the URL unchanged.',
-								'aucteeno'
-							) }
-							checked={ updateUrl }
-							onChange={ ( value ) =>
-								setAttributes( { updateUrl: value } )
-							}
-						/>
+						<>
+							<RangeControl
+								label={ __(
+									'Load More Offset (px)',
+									'aucteeno'
+								) }
+								help={ __(
+									'Distance from the bottom of the list (in pixels) at which loading of the next page starts.',
+									'aucteeno'
+								) }
+								value={ infiniteScrollOffset }
+								onChange={ ( value ) =>
+									setAttributes( {
+										infiniteScrollOffset:
+											value ?? 400,
+									} )
+								}
+								min={ 0 }
+								max={ 2000 }
+								step={ 50 }
+							/>
+							<ToggleControl
+								label={ __(
+									'Update URL on Scroll',
+									'aucteeno'
+								) }
+								help={ __(
+									'Update the browser URL as more items are loaded. Disable to keep the URL unchanged.',
+									'aucteeno'
+								) }
+								checked={ updateUrl }
+								onChange={ ( value ) =>
+									setAttributes( { updateUrl: value } )
+								}
+							/>
+						</>
 					) }
 					<UnitControl
 						label={ __( 'Gap Between Cards', 'aucteeno' ) }

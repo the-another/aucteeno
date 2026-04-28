@@ -345,8 +345,8 @@ store( 'aucteeno/query-loop', {
 					}
 				},
 				{
-					// Trigger when sentinel is 200px from entering viewport.
-					rootMargin: '200px',
+					// Trigger when sentinel is `infiniteScrollOffset` px from entering viewport.
+					rootMargin: `${ context.infiniteScrollOffset ?? 400 }px`,
 					threshold: 0,
 				}
 			);
