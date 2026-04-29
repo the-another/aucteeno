@@ -42,61 +42,113 @@ function Edit( { attributes, setAttributes, name } ) {
 			<InspectorControls>
 				<PanelBody title={ __( 'Bidding Button', 'aucteeno' ) }>
 					<ToggleControl
-						label={ __( 'Show "View Bidding Page" button', 'aucteeno' ) }
+						label={ __(
+							'Show "View Bidding Page" button',
+							'aucteeno'
+						) }
 						checked={ showBiddingButton }
-						onChange={ ( value ) => setAttributes( { showBiddingButton: value } ) }
-						help={ __( 'Redirects to the external bidding page.', 'aucteeno' ) }
+						onChange={ ( value ) =>
+							setAttributes( { showBiddingButton: value } )
+						}
+						help={ __(
+							'Redirects to the external bidding page.',
+							'aucteeno'
+						) }
 					/>
 					{ showBiddingButton && (
 						<>
 							<TextControl
 								label={ __( 'Button Text', 'aucteeno' ) }
 								value={ biddingButtonText }
-								onChange={ ( value ) => setAttributes( { biddingButtonText: value } ) }
+								onChange={ ( value ) =>
+									setAttributes( {
+										biddingButtonText: value,
+									} )
+								}
 							/>
 							<SelectControl
 								label={ __( 'Icon Position', 'aucteeno' ) }
 								value={ biddingButtonIcon }
 								options={ [
-									{ label: __( 'No Icon', 'aucteeno' ), value: 'none' },
-									{ label: __( 'Before Text', 'aucteeno' ), value: 'before' },
-									{ label: __( 'After Text', 'aucteeno' ), value: 'after' },
+									{
+										label: __( 'No Icon', 'aucteeno' ),
+										value: 'none',
+									},
+									{
+										label: __( 'Before Text', 'aucteeno' ),
+										value: 'before',
+									},
+									{
+										label: __( 'After Text', 'aucteeno' ),
+										value: 'after',
+									},
 								] }
-								onChange={ ( value ) => setAttributes( { biddingButtonIcon: value } ) }
+								onChange={ ( value ) =>
+									setAttributes( {
+										biddingButtonIcon: value,
+									} )
+								}
 							/>
 						</>
 					) }
 				</PanelBody>
 
-				<PanelBody title={ __( 'Layout Settings', 'aucteeno' ) } initialOpen={ false }>
+				<PanelBody
+					title={ __( 'Layout Settings', 'aucteeno' ) }
+					initialOpen={ false }
+				>
 					<SelectControl
 						label={ __( 'Button Layout', 'aucteeno' ) }
 						value={ layout }
 						options={ [
-							{ label: __( 'Horizontal', 'aucteeno' ), value: 'horizontal' },
-							{ label: __( 'Vertical', 'aucteeno' ), value: 'vertical' },
+							{
+								label: __( 'Horizontal', 'aucteeno' ),
+								value: 'horizontal',
+							},
+							{
+								label: __( 'Vertical', 'aucteeno' ),
+								value: 'vertical',
+							},
 						] }
-						onChange={ ( value ) => setAttributes( { layout: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { layout: value } )
+						}
 					/>
 					<SelectControl
 						label={ __( 'Button Alignment', 'aucteeno' ) }
 						value={ buttonAlignment }
 						options={ [
 							{ label: __( 'Left', 'aucteeno' ), value: 'left' },
-							{ label: __( 'Center', 'aucteeno' ), value: 'center' },
-							{ label: __( 'Right', 'aucteeno' ), value: 'right' },
-							{ label: __( 'Stretch', 'aucteeno' ), value: 'stretch' },
+							{
+								label: __( 'Center', 'aucteeno' ),
+								value: 'center',
+							},
+							{
+								label: __( 'Right', 'aucteeno' ),
+								value: 'right',
+							},
+							{
+								label: __( 'Stretch', 'aucteeno' ),
+								value: 'stretch',
+							},
 						] }
-						onChange={ ( value ) => setAttributes( { buttonAlignment: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { buttonAlignment: value } )
+						}
 					/>
 				</PanelBody>
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className={ `wp-block-aucteeno-product-cta__preview is-layout-${ layout } is-content-justification-${ buttonAlignment }` }>
+				<div
+					className={ `wp-block-aucteeno-product-cta__preview is-layout-${ layout } is-content-justification-${ buttonAlignment }` }
+				>
 					{ ! hasAnyButton && (
 						<div className="wp-block-aucteeno-product-cta__notice">
-							{ __( '⚠️ Please enable at least one button in the block settings.', 'aucteeno' ) }
+							{ __(
+								'⚠️ Please enable at least one button in the block settings.',
+								'aucteeno'
+							) }
 						</div>
 					) }
 
@@ -104,10 +156,16 @@ function Edit( { attributes, setAttributes, name } ) {
 						<div className="wp-block-aucteeno-product-cta__preview-buttons">
 							{ showBiddingButton && (
 								<button
-									className={ `wp-block-aucteeno-product-cta__preview-button is-bidding${ biddingButtonIcon !== 'none' ? ' has-icon-' + biddingButtonIcon : '' }` }
+									className={ `wp-block-aucteeno-product-cta__preview-button is-bidding${
+										biddingButtonIcon !== 'none'
+											? ' has-icon-' + biddingButtonIcon
+											: ''
+									}` }
 									disabled
 								>
-									<span className="button-text">{ biddingButtonText }</span>
+									<span className="button-text">
+										{ biddingButtonText }
+									</span>
 								</button>
 							) }
 							{ previewButtons }
@@ -115,7 +173,10 @@ function Edit( { attributes, setAttributes, name } ) {
 					) }
 
 					<p className="wp-block-aucteeno-product-cta__preview-hint">
-						{ __( 'Button appearance will match your theme styling.', 'aucteeno' ) }
+						{ __(
+							'Button appearance will match your theme styling.',
+							'aucteeno'
+						) }
 					</p>
 				</div>
 			</div>

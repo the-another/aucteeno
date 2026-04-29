@@ -446,8 +446,7 @@ function Edit( { attributes, setAttributes, context } ) {
 								value={ infiniteScrollOffset }
 								onChange={ ( value ) =>
 									setAttributes( {
-										infiniteScrollOffset:
-											value ?? 400,
+										infiniteScrollOffset: value ?? 400,
 									} )
 								}
 								min={ 0 }

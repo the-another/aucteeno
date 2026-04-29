@@ -66,12 +66,14 @@ function Edit( { attributes, setAttributes, context } ) {
 
 	const isUpcoming = biddingStatus === 20;
 	const autoTimestamp = isUpcoming ? biddingStarts : biddingEnds;
-	const timestamp =
-		targetDate === 'starts_at'
-			? biddingStarts
-			: targetDate === 'ends_at'
-			? biddingEnds
-			: autoTimestamp;
+	let timestamp;
+	if ( targetDate === 'starts_at' ) {
+		timestamp = biddingStarts;
+	} else if ( targetDate === 'ends_at' ) {
+		timestamp = biddingEnds;
+	} else {
+		timestamp = autoTimestamp;
+	}
 
 	const { label, displayValue, statusClass } = useMemo( () => {
 		// Get current UTC timestamp - Date.now() returns milliseconds since Unix epoch (UTC)
@@ -152,7 +154,10 @@ function Edit( { attributes, setAttributes, context } ) {
 								value: 'auto',
 							},
 							{
-								label: __( 'Always count to start', 'aucteeno' ),
+								label: __(
+									'Always count to start',
+									'aucteeno'
+								),
 								value: 'starts_at',
 							},
 							{
@@ -268,10 +273,7 @@ function Edit( { attributes, setAttributes, context } ) {
 								}
 							/>
 							<TextControl
-								label={ __(
-									'Upcoming — date',
-									'aucteeno'
-								) }
+								label={ __( 'Upcoming — date', 'aucteeno' ) }
 								value={ labelUpcomingDate }
 								onChange={ ( value ) =>
 									setAttributes( {
@@ -292,10 +294,7 @@ function Edit( { attributes, setAttributes, context } ) {
 								}
 							/>
 							<TextControl
-								label={ __(
-									'Running — date',
-									'aucteeno'
-								) }
+								label={ __( 'Running — date', 'aucteeno' ) }
 								value={ labelRunningDate }
 								onChange={ ( value ) =>
 									setAttributes( {

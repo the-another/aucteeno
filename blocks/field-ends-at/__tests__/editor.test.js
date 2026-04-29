@@ -46,7 +46,7 @@ describe( 'Field Ends At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding ends' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding closes at' ) ).toBeTruthy();
 	} );
 
 	it( 'hides the label when showLabel is false', () => {
@@ -62,8 +62,8 @@ describe( 'Field Ends At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.queryByText( 'Bidding ends' ) ).toBeNull();
-		expect( screen.queryByText( 'Bidding ended' ) ).toBeNull();
+		expect( screen.queryByText( 'Bidding closes at' ) ).toBeNull();
+		expect( screen.queryByText( 'Bidding closed at' ) ).toBeNull();
 	} );
 
 	it( 'shows "Bidding ends" for running state', () => {
@@ -79,7 +79,7 @@ describe( 'Field Ends At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding ends' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding closes at' ) ).toBeTruthy();
 	} );
 
 	it( 'shows "Bidding ended" for expired state', () => {
@@ -95,7 +95,7 @@ describe( 'Field Ends At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding ended' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding closed at' ) ).toBeTruthy();
 	} );
 
 	it( 'shows "Bidding ends" for upcoming state', () => {
@@ -111,7 +111,7 @@ describe( 'Field Ends At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding ends' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding closes at' ) ).toBeTruthy();
 	} );
 
 	it( 'uses custom label attribute when respectBiddingStatus is false', () => {
@@ -143,8 +143,8 @@ describe( 'Field Ends At Block Editor', () => {
 				} }
 			/>
 		);
-		// State should be 'running' (not 'expired') so label is 'Bidding ends'
-		expect( screen.getByText( 'Bidding ends' ) ).toBeTruthy();
+		// State should be 'running' (not 'expired') so label is 'Bidding closes at'
+		expect( screen.getByText( 'Bidding closes at' ) ).toBeTruthy();
 	} );
 
 	it( 'formats a context timestamp when provided', () => {

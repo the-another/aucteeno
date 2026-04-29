@@ -73,7 +73,9 @@ function Edit( { attributes, setAttributes, context } ) {
 		label,
 	] );
 
-	const blockProps = useBlockProps( { className: `is-orientation-${ orientation }` } );
+	const blockProps = useBlockProps( {
+		className: `is-orientation-${ orientation }`,
+	} );
 
 	return (
 		<>
@@ -203,8 +205,14 @@ function Edit( { attributes, setAttributes, context } ) {
 						label={ __( 'Orientation', 'aucteeno' ) }
 						value={ orientation }
 						options={ [
-							{ label: __( 'Stacked (column)', 'aucteeno' ), value: 'column' },
-							{ label: __( 'Inline (row)', 'aucteeno' ), value: 'row' },
+							{
+								label: __( 'Stacked (column)', 'aucteeno' ),
+								value: 'column',
+							},
+							{
+								label: __( 'Inline (row)', 'aucteeno' ),
+								value: 'row',
+							},
 						] }
 						onChange={ ( value ) =>
 							setAttributes( { orientation: value } )
@@ -221,7 +229,8 @@ function Edit( { attributes, setAttributes, context } ) {
 					) }
 					<dd className="wp-block-aucteeno-field-starts-at__value">
 						<time>
-							{ displayValue || __( 'No start time', 'aucteeno' ) }
+							{ displayValue ||
+								__( 'No start time', 'aucteeno' ) }
 						</time>
 					</dd>
 				</dl>

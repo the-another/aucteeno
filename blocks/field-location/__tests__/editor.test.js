@@ -50,7 +50,7 @@ describe( 'Field Location Block Editor', () => {
 
 	it( 'shows icon by default', () => {
 		const { container } = render( <Edit { ...defaultProps } /> );
-		const icon = container.querySelector( '.aucteeno-field-location__icon' );
+		const icon = container.querySelector( '.wp-block-aucteeno-field-location__icon' );
 		expect( icon ).toBeTruthy();
 	} );
 } );

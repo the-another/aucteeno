@@ -195,18 +195,13 @@ export function formatLocation( format, city, subdivision, countryCode ) {
 				parts.push( city );
 			}
 			if ( subdivision ) {
-				const subName = getSubdivisionName(
-					countryCode,
-					subdivision
-				);
+				const subName = getSubdivisionName( countryCode, subdivision );
 				if ( subName ) {
 					parts.push( subName );
 				}
 			}
 			if ( countryCode ) {
-				parts.push(
-					COUNTRY_NAMES[ countryCode ] || countryCode
-				);
+				parts.push( COUNTRY_NAMES[ countryCode ] || countryCode );
 			}
 			return parts.join( ', ' );
 

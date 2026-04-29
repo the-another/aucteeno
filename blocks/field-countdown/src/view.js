@@ -48,10 +48,14 @@ function updateCountdown( element ) {
 	const targetDate = element.dataset.targetDate || 'auto';
 	const respectStatus = element.dataset.respectBiddingStatus !== '0';
 	const singleLabel = element.dataset.label || 'Bidding ends in';
-	const labelUpcomingTime = element.dataset.labelUpcomingTime || 'Bidding starts in';
-	const labelUpcomingDate = element.dataset.labelUpcomingDate || 'Bidding starts on';
-	const labelRunningTime = element.dataset.labelRunningTime || 'Bidding ends in';
-	const labelRunningDate = element.dataset.labelRunningDate || 'Bidding ends on';
+	const labelUpcomingTime =
+		element.dataset.labelUpcomingTime || 'Bidding starts in';
+	const labelUpcomingDate =
+		element.dataset.labelUpcomingDate || 'Bidding starts on';
+	const labelRunningTime =
+		element.dataset.labelRunningTime || 'Bidding ends in';
+	const labelRunningDate =
+		element.dataset.labelRunningDate || 'Bidding ends on';
 	const labelExpired = element.dataset.labelExpired || 'Bidding ended';
 
 	if ( ! startsAt || ! endsAt ) {
@@ -91,10 +95,14 @@ function updateCountdown( element ) {
 		label = labelExpired;
 	} else if ( isShowingDate ) {
 		label =
-			effectiveState === 'upcoming' ? labelUpcomingDate : labelRunningDate;
+			effectiveState === 'upcoming'
+				? labelUpcomingDate
+				: labelRunningDate;
 	} else {
 		label =
-			effectiveState === 'upcoming' ? labelUpcomingTime : labelRunningTime;
+			effectiveState === 'upcoming'
+				? labelUpcomingTime
+				: labelRunningTime;
 	}
 
 	// Update the countdown value.

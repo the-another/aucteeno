@@ -48,7 +48,7 @@ describe( 'Field Starts At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding starts' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding opens at' ) ).toBeTruthy();
 	} );
 
 	it( 'hides the label when showLabel is false', () => {
@@ -64,8 +64,8 @@ describe( 'Field Starts At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.queryByText( 'Bidding starts' ) ).toBeNull();
-		expect( screen.queryByText( 'Bidding started' ) ).toBeNull();
+		expect( screen.queryByText( 'Bidding opens at' ) ).toBeNull();
+		expect( screen.queryByText( 'Bidding opened at' ) ).toBeNull();
 	} );
 
 	it( 'shows "Bidding started" for running state', () => {
@@ -81,7 +81,7 @@ describe( 'Field Starts At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding started' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding opened at' ) ).toBeTruthy();
 	} );
 
 	it( 'shows "Bidding started" for expired state', () => {
@@ -97,7 +97,7 @@ describe( 'Field Starts At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding started' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding opened at' ) ).toBeTruthy();
 	} );
 
 	it( 'shows "Bidding starts" for upcoming state', () => {
@@ -113,7 +113,7 @@ describe( 'Field Starts At Block Editor', () => {
 				} }
 			/>
 		);
-		expect( screen.getByText( 'Bidding starts' ) ).toBeTruthy();
+		expect( screen.getByText( 'Bidding opens at' ) ).toBeTruthy();
 	} );
 
 	it( 'uses custom label attribute when respectBiddingStatus is false', () => {
@@ -145,8 +145,8 @@ describe( 'Field Starts At Block Editor', () => {
 				} }
 			/>
 		);
-		// State should be 'running' (not 'expired') so label is 'Bidding started'
-		expect( screen.getByText( 'Bidding started' ) ).toBeTruthy();
+		// State should be 'running' (not 'expired') so label is 'Bidding opened at'
+		expect( screen.getByText( 'Bidding opened at' ) ).toBeTruthy();
 	} );
 
 	it( 'formats a context timestamp when provided', () => {
