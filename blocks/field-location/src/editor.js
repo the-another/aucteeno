@@ -75,6 +75,10 @@ function Edit( { attributes, setAttributes, context } ) {
 								value: 'smart',
 							},
 							{
+								label: __( 'City, State, Country', 'aucteeno' ),
+								value: 'city_subdivision_country',
+							},
+							{
 								label: __( 'City, Country', 'aucteeno' ),
 								value: 'city_country',
 							},

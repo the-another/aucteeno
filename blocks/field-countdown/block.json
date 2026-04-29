@@ -24,6 +24,39 @@
 		"dateFormat": {
 			"type": "string",
 			"default": "default"
+		},
+		"targetDate": {
+			"type": "string",
+			"default": "auto",
+			"enum": [ "auto", "starts_at", "ends_at" ]
+		},
+		"respectBiddingStatus": {
+			"type": "boolean",
+			"default": true
+		},
+		"label": {
+			"type": "string",
+			"default": "Bidding ends in"
+		},
+		"labelUpcomingTime": {
+			"type": "string",
+			"default": "Bidding starts in"
+		},
+		"labelUpcomingDate": {
+			"type": "string",
+			"default": "Bidding starts on"
+		},
+		"labelRunningTime": {
+			"type": "string",
+			"default": "Bidding ends in"
+		},
+		"labelRunningDate": {
+			"type": "string",
+			"default": "Bidding ends on"
+		},
+		"labelExpired": {
+			"type": "string",
+			"default": "Bidding ended"
 		}
 	},
 	"editorScript": "file:../../dist/blocks/field-countdown/editor.js",

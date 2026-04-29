@@ -162,6 +162,40 @@ switch ( $format ) {
 		}
 		break;
 
+	case 'city_subdivision_country':
+		if ( $city ) {
+			$location_parts[] = array(
+				'text'    => $city,
+				'term_id' => null,
+			);
+		}
+		$country_term_id = $item_data['location_country_term_id']
+			?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
+
+		if ( $subdivision_name ) {
+			$subdivision_term_id = $item_data['location_subdivision_term_id']
+				?? ( $show_links && $country && $subdivision_code
+					? $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id )
+					: 0 );
+
+			$location_parts[] = array(
+				'text'    => $subdivision_name,
+				'term_id' => $subdivision_term_id > 0 ? $subdivision_term_id : null,
+			);
+		}
+		if ( $country_name ) {
+			$location_parts[] = array(
+				'text'    => $country_name,
+				'term_id' => $country_term_id > 0 ? $country_term_id : null,
+			);
+		} elseif ( $country ) {
+			$location_parts[] = array(
+				'text'    => $country,
+				'term_id' => $country_term_id > 0 ? $country_term_id : null,
+			);
+		}
+		break;
+
 	case 'city_country':
 		if ( $city ) {
 			$location_parts[] = array(

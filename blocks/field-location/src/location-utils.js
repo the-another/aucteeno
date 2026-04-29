@@ -190,6 +190,26 @@ export function formatLocation( format, city, subdivision, countryCode ) {
 			}
 			return parts.join( ', ' );
 
+		case 'city_subdivision_country':
+			if ( city ) {
+				parts.push( city );
+			}
+			if ( subdivision ) {
+				const subName = getSubdivisionName(
+					countryCode,
+					subdivision
+				);
+				if ( subName ) {
+					parts.push( subName );
+				}
+			}
+			if ( countryCode ) {
+				parts.push(
+					COUNTRY_NAMES[ countryCode ] || countryCode
+				);
+			}
+			return parts.join( ', ' );
+
 		default:
 			return formatSmartLocation( city, subdivision, countryCode );
 	}

@@ -82,8 +82,8 @@ if ( ! $aucteeno_product instanceof \WC_Product ) {
 	return '';
 }
 
-// Only render for aucteeno-ext-item products.
-if ( 'aucteeno-ext-item' !== $aucteeno_product->get_type() ) {
+// Only render for aucteeno-ext-item and aucteeno-ext-auction products.
+if ( ! in_array( $aucteeno_product->get_type(), array( 'aucteeno-ext-item', 'aucteeno-ext-auction' ), true ) ) {
 	return '';
 }
 

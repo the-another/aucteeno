@@ -4,7 +4,12 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
+import {
+	PanelBody,
+	ToggleControl,
+	SelectControl,
+	TextControl,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useMemo } from '@wordpress/element';
 
@@ -41,7 +46,18 @@ function formatCountdown( diff, timestamp ) {
 }
 
 function Edit( { attributes, setAttributes, context } ) {
-	const { showLabel = true, dateFormat = 'default' } = attributes;
+	const {
+		showLabel = true,
+		dateFormat = 'default',
+		targetDate = 'auto',
+		respectBiddingStatus = true,
+		label: singleLabel = 'Bidding ends in',
+		labelUpcomingTime = 'Bidding starts in',
+		labelUpcomingDate = 'Bidding starts on',
+		labelRunningTime = 'Bidding ends in',
+		labelRunningDate = 'Bidding ends on',
+		labelExpired = 'Bidding ended',
+	} = attributes;
 	const itemData = context?.[ 'aucteeno/item' ] || {};
 
 	const biddingStatus = itemData.bidding_status || 10;
@@ -49,7 +65,13 @@ function Edit( { attributes, setAttributes, context } ) {
 	const biddingEnds = itemData.bidding_ends_at || 0;
 
 	const isUpcoming = biddingStatus === 20;
-	const timestamp = isUpcoming ? biddingStarts : biddingEnds;
+	const autoTimestamp = isUpcoming ? biddingStarts : biddingEnds;
+	const timestamp =
+		targetDate === 'starts_at'
+			? biddingStarts
+			: targetDate === 'ends_at'
+			? biddingEnds
+			: autoTimestamp;
 
 	const { label, displayValue, statusClass } = useMemo( () => {
 		// Get current UTC timestamp - Date.now() returns milliseconds since Unix epoch (UTC)
@@ -57,18 +79,31 @@ function Edit( { attributes, setAttributes, context } ) {
 		const now = Math.floor( Date.now() / 1000 );
 		const diff = timestamp - now;
 
-		let lbl;
 		let cls;
-
 		if ( isUpcoming ) {
-			lbl = __( 'Bidding starts in', 'aucteeno' );
 			cls = 'upcoming';
 		} else if ( biddingStatus === 30 ) {
-			lbl = __( 'Bidding ended', 'aucteeno' );
 			cls = 'expired';
 		} else {
-			lbl = __( 'Bidding ends in', 'aucteeno' );
 			cls = 'running';
+		}
+
+		let effectiveState = cls;
+		if ( targetDate === 'starts_at' ) {
+			effectiveState = now < biddingStarts ? 'upcoming' : 'expired';
+		} else if ( targetDate === 'ends_at' ) {
+			effectiveState = now < biddingEnds ? 'running' : 'expired';
+		}
+
+		let lbl;
+		if ( ! respectBiddingStatus ) {
+			lbl = singleLabel;
+		} else if ( effectiveState === 'expired' ) {
+			lbl = labelExpired;
+		} else if ( effectiveState === 'upcoming' ) {
+			lbl = labelUpcomingTime;
+		} else {
+			lbl = labelRunningTime;
 		}
 
 		return {
@@ -76,7 +111,19 @@ function Edit( { attributes, setAttributes, context } ) {
 			displayValue: formatCountdown( diff, timestamp ),
 			statusClass: cls,
 		};
-	}, [ timestamp, isUpcoming, biddingStatus ] );
+	}, [
+		timestamp,
+		isUpcoming,
+		biddingStatus,
+		biddingStarts,
+		biddingEnds,
+		targetDate,
+		respectBiddingStatus,
+		singleLabel,
+		labelUpcomingTime,
+		labelRunningTime,
+		labelExpired,
+	] );
 
 	const blockProps = useBlockProps( {
 		className: `aucteeno-field-countdown aucteeno-field-countdown--${ statusClass }`,
@@ -91,6 +138,30 @@ function Edit( { attributes, setAttributes, context } ) {
 						checked={ showLabel }
 						onChange={ ( value ) =>
 							setAttributes( { showLabel: value } )
+						}
+					/>
+					<SelectControl
+						label={ __( 'Target Date', 'aucteeno' ) }
+						value={ targetDate }
+						options={ [
+							{
+								label: __(
+									'Auto (start before bidding, end during/after)',
+									'aucteeno'
+								),
+								value: 'auto',
+							},
+							{
+								label: __( 'Always count to start', 'aucteeno' ),
+								value: 'starts_at',
+							},
+							{
+								label: __( 'Always count to end', 'aucteeno' ),
+								value: 'ends_at',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { targetDate: value } )
 						}
 					/>
 					<SelectControl
@@ -152,6 +223,97 @@ function Edit( { attributes, setAttributes, context } ) {
 							'aucteeno'
 						) }
 					/>
+				</PanelBody>
+				<PanelBody
+					title={ __( 'Labels', 'aucteeno' ) }
+					initialOpen={ false }
+				>
+					<ToggleControl
+						label={ __(
+							'Vary label by bidding status',
+							'aucteeno'
+						) }
+						help={ __(
+							'When off, a single label is used in every state.',
+							'aucteeno'
+						) }
+						checked={ respectBiddingStatus }
+						onChange={ ( value ) =>
+							setAttributes( {
+								respectBiddingStatus: value,
+							} )
+						}
+					/>
+					{ ! respectBiddingStatus && (
+						<TextControl
+							label={ __( 'Label', 'aucteeno' ) }
+							value={ singleLabel }
+							onChange={ ( value ) =>
+								setAttributes( { label: value } )
+							}
+						/>
+					) }
+					{ respectBiddingStatus && (
+						<>
+							<TextControl
+								label={ __(
+									'Upcoming — time interval',
+									'aucteeno'
+								) }
+								value={ labelUpcomingTime }
+								onChange={ ( value ) =>
+									setAttributes( {
+										labelUpcomingTime: value,
+									} )
+								}
+							/>
+							<TextControl
+								label={ __(
+									'Upcoming — date',
+									'aucteeno'
+								) }
+								value={ labelUpcomingDate }
+								onChange={ ( value ) =>
+									setAttributes( {
+										labelUpcomingDate: value,
+									} )
+								}
+							/>
+							<TextControl
+								label={ __(
+									'Running — time interval',
+									'aucteeno'
+								) }
+								value={ labelRunningTime }
+								onChange={ ( value ) =>
+									setAttributes( {
+										labelRunningTime: value,
+									} )
+								}
+							/>
+							<TextControl
+								label={ __(
+									'Running — date',
+									'aucteeno'
+								) }
+								value={ labelRunningDate }
+								onChange={ ( value ) =>
+									setAttributes( {
+										labelRunningDate: value,
+									} )
+								}
+							/>
+							<TextControl
+								label={ __( 'Expired', 'aucteeno' ) }
+								value={ labelExpired }
+								onChange={ ( value ) =>
+									setAttributes( {
+										labelExpired: value,
+									} )
+								}
+							/>
+						</>
+					) }
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
