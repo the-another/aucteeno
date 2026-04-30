@@ -64,6 +64,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"infiniteScrollOffset": {
+			"type": "number",
+			"default": 400
+		},
 		"updateUrl": {
 			"type": "boolean",
 			"default": true

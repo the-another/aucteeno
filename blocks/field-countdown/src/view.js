@@ -45,6 +45,18 @@ function updateCountdown( element ) {
 	const endsAt = parseInt( element.dataset.endsAt, 10 );
 	const previousState = element.dataset.currentState || '';
 	const dateFormat = element.dataset.dateFormat || 'default';
+	const targetDate = element.dataset.targetDate || 'auto';
+	const respectStatus = element.dataset.respectBiddingStatus !== '0';
+	const singleLabel = element.dataset.label || 'Bidding ends in';
+	const labelUpcomingTime =
+		element.dataset.labelUpcomingTime || 'Bidding starts in';
+	const labelUpcomingDate =
+		element.dataset.labelUpcomingDate || 'Bidding starts on';
+	const labelRunningTime =
+		element.dataset.labelRunningTime || 'Bidding ends in';
+	const labelRunningDate =
+		element.dataset.labelRunningDate || 'Bidding ends on';
+	const labelExpired = element.dataset.labelExpired || 'Bidding ended';
 
 	if ( ! startsAt || ! endsAt ) {
 		return;
@@ -54,27 +66,43 @@ function updateCountdown( element ) {
 	// Calculations are done in UTC to ensure consistency regardless of user's timezone
 	const now = Math.floor( Date.now() / 1000 );
 	const stateInfo = calculateState( now, startsAt, endsAt );
-	const { state, timestamp } = stateInfo;
+	const { state } = stateInfo;
+	let { timestamp } = stateInfo;
+	let effectiveState = state;
+
+	if ( targetDate === 'starts_at' ) {
+		timestamp = startsAt;
+		effectiveState = now < startsAt ? 'upcoming' : 'expired';
+	} else if ( targetDate === 'ends_at' ) {
+		timestamp = endsAt;
+		effectiveState = now < endsAt ? 'running' : 'expired';
+	}
 
 	// Calculate countdown display.
 	const diff = timestamp - now;
 	const { displayValue, isShowingDate } = formatCountdown(
 		diff,
 		timestamp,
-		state,
+		effectiveState,
 		dateFormat
 	);
 
-	// Determine label based on state and whether showing date.
+	// Determine label based on effective state and whether showing date.
 	let label;
-	if ( state === 'expired' ) {
-		label = 'Bidding ended';
+	if ( ! respectStatus ) {
+		label = singleLabel;
+	} else if ( effectiveState === 'expired' ) {
+		label = labelExpired;
 	} else if ( isShowingDate ) {
-		// When showing a date, use "on" instead of "in".
-		label = state === 'upcoming' ? 'Bidding starts on' : 'Bidding ends on';
+		label =
+			effectiveState === 'upcoming'
+				? labelUpcomingDate
+				: labelRunningDate;
 	} else {
-		// When showing time intervals, use "in".
-		label = state === 'upcoming' ? 'Bidding starts in' : 'Bidding ends in';
+		label =
+			effectiveState === 'upcoming'
+				? labelUpcomingTime
+				: labelRunningTime;
 	}
 
 	// Update the countdown value.

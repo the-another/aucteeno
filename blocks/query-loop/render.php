@@ -28,7 +28,8 @@ $columns         = absint( $attributes['columns'] ?? 4 );
 $display_layout  = $attributes['displayLayout'] ?? 'grid';
 $per_page        = absint( $attributes['perPage'] ?? 12 );
 $order_by        = $attributes['orderBy'] ?? 'ending_soon';
-$infinite_scroll = $attributes['infiniteScroll'] ?? false;
+$infinite_scroll        = $attributes['infiniteScroll'] ?? false;
+$infinite_scroll_offset = absint( $attributes['infiniteScrollOffset'] ?? 400 );
 $include_expired = ! empty( $attributes['includeExpired'] );
 $update_url      = $attributes['updateUrl'] ?? true;
 $gap             = $attributes['gap'] ?? '1.5rem';
@@ -354,6 +355,7 @@ $interactivity_context = array(
 	'subdivision'    => $query_args['subdivision'] ?? '',
 	'search'         => $search_query,
 	'infiniteScroll' => $infinite_scroll,
+	'infiniteScrollOffset' => $infinite_scroll_offset,
 	'updateUrl'      => $update_url,
 	'includeExpired' => $include_expired,
 	'restUrl'        => rest_url( 'aucteeno/v1/' . ( 'auctions' === $query_type ? 'auctions' : 'items' ) ),

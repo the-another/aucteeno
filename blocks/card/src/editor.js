@@ -41,6 +41,8 @@ const ALLOWED_BLOCKS = [
 	'aucteeno/field-reserve-price',
 	'aucteeno/field-lot-number',
 	'aucteeno/field-bidding-status',
+	'aucteeno/field-starts-at',
+	'aucteeno/field-ends-at',
 	'core/group',
 	'core/columns',
 	'core/column',

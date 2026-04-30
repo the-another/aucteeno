@@ -22,6 +22,9 @@ if ( ! $item_data ) {
 	return '';
 }
 
+$show_label  = $attributes['showLabel'] ?? true;
+$label       = $attributes['label'] ?? __( 'Location', 'aucteeno' );
+$orientation = $attributes['orientation'] ?? 'column';
 $show_icon   = $attributes['showIcon'] ?? true;
 $show_links  = $attributes['showLinks'] ?? false;
 $format      = $attributes['format'] ?? 'smart';
@@ -159,6 +162,40 @@ switch ( $format ) {
 		}
 		break;
 
+	case 'city_subdivision_country':
+		if ( $city ) {
+			$location_parts[] = array(
+				'text'    => $city,
+				'term_id' => null,
+			);
+		}
+		$country_term_id = $item_data['location_country_term_id']
+			?? ( $show_links && $country ? $get_term_by_code( $country, 0 ) : 0 );
+
+		if ( $subdivision_name ) {
+			$subdivision_term_id = $item_data['location_subdivision_term_id']
+				?? ( $show_links && $country && $subdivision_code
+					? $get_term_by_code( $country . ':' . $subdivision_code, $country_term_id )
+					: 0 );
+
+			$location_parts[] = array(
+				'text'    => $subdivision_name,
+				'term_id' => $subdivision_term_id > 0 ? $subdivision_term_id : null,
+			);
+		}
+		if ( $country_name ) {
+			$location_parts[] = array(
+				'text'    => $country_name,
+				'term_id' => $country_term_id > 0 ? $country_term_id : null,
+			);
+		} elseif ( $country ) {
+			$location_parts[] = array(
+				'text'    => $country,
+				'term_id' => $country_term_id > 0 ? $country_term_id : null,
+			);
+		}
+		break;
+
 	case 'city_country':
 		if ( $city ) {
 			$location_parts[] = array(
@@ -218,37 +255,43 @@ if ( empty( $location_parts ) ) {
 	return '';
 }
 
-$wrapper_classes    = 'aucteeno-field-location';
-$wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
+$wrapper_attributes = get_block_wrapper_attributes(
+	array( 'class' => 'is-orientation-' . sanitize_html_class( $orientation ) )
+);
 
 ob_start();
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $show_icon ) : ?>
-		<span class="aucteeno-field-location__icon" aria-hidden="true">📍</span>
-	<?php endif; ?>
-	<span class="aucteeno-field-location__text">
-		<?php
-		foreach ( $location_parts as $index => $part ) {
-			// Add comma separator between parts.
-			if ( $index > 0 ) {
-				echo ', ';
-			}
+	<dl>
+		<?php if ( $show_label ) : ?>
+			<dt class="wp-block-aucteeno-field-location__label"><?php echo esc_html( $label ); ?></dt>
+		<?php endif; ?>
+		<dd class="wp-block-aucteeno-field-location__value">
+			<?php if ( $show_icon ) : ?>
+				<span class="wp-block-aucteeno-field-location__icon" aria-hidden="true">📍</span>
+			<?php endif; ?>
+			<?php
+			foreach ( $location_parts as $index => $part ) {
+				if ( $index > 0 ) {
+					echo ', ';
+				}
 
-			// Render part with optional link.
-			if ( $show_links && ! empty( $part['term_id'] ) ) {
-				$term_link = get_term_link( $part['term_id'], 'aucteeno-location' );
-				if ( ! is_wp_error( $term_link ) ) {
-					echo '<a href="' . esc_url( $term_link ) . '">' . esc_html( $part['text'] ) . '</a>';
+				echo '<span class="wp-block-aucteeno-field-location__part">';
+				if ( $show_links && ! empty( $part['term_id'] ) ) {
+					$term_link = get_term_link( $part['term_id'], 'aucteeno-location' );
+					if ( ! is_wp_error( $term_link ) ) {
+						echo '<a href="' . esc_url( $term_link ) . '">' . esc_html( $part['text'] ) . '</a>';
+					} else {
+						echo esc_html( $part['text'] );
+					}
 				} else {
 					echo esc_html( $part['text'] );
 				}
-			} else {
-				echo esc_html( $part['text'] );
+				echo '</span>';
 			}
-		}
-		?>
-	</span>
+			?>
+		</dd>
+	</dl>
 </div>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Content is already escaped above.

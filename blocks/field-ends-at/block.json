@@ -1,0 +1,73 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "aucteeno/field-ends-at",
+	"title": "Aucteeno Bidding Ends At",
+	"category": "aucteeno",
+	"icon": "calendar-alt",
+	"description": "Display the bidding end date/time in the visitor's local timezone.",
+	"keywords": [ "aucteeno", "ends", "date", "time", "bidding" ],
+	"textdomain": "aucteeno",
+	"usesContext": [ "aucteeno/item", "aucteeno/itemType" ],
+	"supports": {
+		"html": false,
+		"align": [ "left", "center", "right", "wide", "full" ],
+		"color": {
+			"gradients": true,
+			"link": true,
+			"__experimentalDefaultControls": {
+				"background": true,
+				"text": true,
+				"link": true
+			}
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"__experimentalDefaultControls": {
+				"margin": false,
+				"padding": false
+			}
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"color": false,
+				"radius": false,
+				"style": false,
+				"width": false
+			}
+		}
+	},
+	"attributes": {
+		"showLabel": { "type": "boolean", "default": true },
+		"dateTimeFormat": { "type": "string", "default": "wp_default" },
+		"customFormat": { "type": "string", "default": "" },
+		"respectBiddingStatus": { "type": "boolean", "default": true },
+		"labelUpcoming": { "type": "string", "default": "Bidding closes at" },
+		"labelRunning": { "type": "string", "default": "Bidding closes at" },
+		"labelExpired": { "type": "string", "default": "Bidding closed at" },
+		"label": { "type": "string", "default": "Bidding closes at" },
+		"orientation": { "type": "string", "default": "column", "enum": [ "row", "column" ] }
+	},
+	"editorScript": "file:../../dist/blocks/field-ends-at/editor.js",
+	"viewScriptModule": "file:../../dist/blocks/field-ends-at/view.js",
+	"style": "file:../../dist/blocks/field-ends-at/style-editor.css",
+	"render": "file:./render.php"
+}

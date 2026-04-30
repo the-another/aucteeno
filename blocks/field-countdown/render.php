@@ -22,10 +22,18 @@ if ( ! $item_data ) {
 	return '';
 }
 
-$show_label      = $attributes['showLabel'] ?? true;
-$date_format     = $attributes['dateFormat'] ?? 'default';
-$bidding_starts  = $item_data['bidding_starts_at'] ?? 0;
-$bidding_ends    = $item_data['bidding_ends_at'] ?? 0;
+$show_label             = $attributes['showLabel'] ?? true;
+$date_format            = $attributes['dateFormat'] ?? 'default';
+$target_date            = $attributes['targetDate'] ?? 'auto';
+$respect_bidding_status = $attributes['respectBiddingStatus'] ?? true;
+$single_label           = $attributes['label'] ?? __( 'Bidding ends in', 'aucteeno' );
+$label_upcoming_time    = $attributes['labelUpcomingTime'] ?? __( 'Bidding starts in', 'aucteeno' );
+$label_upcoming_date    = $attributes['labelUpcomingDate'] ?? __( 'Bidding starts on', 'aucteeno' );
+$label_running_time     = $attributes['labelRunningTime'] ?? __( 'Bidding ends in', 'aucteeno' );
+$label_running_date     = $attributes['labelRunningDate'] ?? __( 'Bidding ends on', 'aucteeno' );
+$label_expired          = $attributes['labelExpired'] ?? __( 'Bidding ended', 'aucteeno' );
+$bidding_starts         = $item_data['bidding_starts_at'] ?? 0;
+$bidding_ends           = $item_data['bidding_ends_at'] ?? 0;
 
 if ( ! function_exists( 'aucteeno_format_date' ) ) {
 	/**
@@ -64,13 +72,32 @@ if ( ! function_exists( 'aucteeno_format_date' ) ) {
 $now = time();
 if ( $now < $bidding_starts ) {
 	$current_state = 'upcoming';
-	$timestamp     = $bidding_starts;
+	$auto_target   = $bidding_starts;
 } elseif ( $now >= $bidding_starts && $now < $bidding_ends ) {
 	$current_state = 'running';
-	$timestamp     = $bidding_ends;
+	$auto_target   = $bidding_ends;
 } else {
 	$current_state = 'expired';
-	$timestamp     = $bidding_ends;
+	$auto_target   = $bidding_ends;
+}
+
+// Resolve target timestamp from picker.
+if ( 'starts_at' === $target_date ) {
+	$timestamp = $bidding_starts;
+} elseif ( 'ends_at' === $target_date ) {
+	$timestamp = $bidding_ends;
+} else {
+	$timestamp = $auto_target;
+}
+
+// Effective state: when targetDate is forced, derive from now-vs-target;
+// otherwise mirror the auction's actual state.
+if ( 'starts_at' === $target_date ) {
+	$effective_state = ( $now < $bidding_starts ) ? 'upcoming' : 'expired';
+} elseif ( 'ends_at' === $target_date ) {
+	$effective_state = ( $now < $bidding_ends ) ? 'running' : 'expired';
+} else {
+	$effective_state = $current_state;
 }
 
 // Calculate countdown display.
@@ -78,7 +105,7 @@ $diff        = $timestamp - $now;
 $is_showing_date = false;
 
 // For expired items, calculate elapsed time.
-if ( 'expired' === $current_state ) {
+if ( 'expired' === $effective_state ) {
 	$elapsed = abs( $diff );
 
 	if ( $elapsed < 3600 ) {
@@ -116,7 +143,7 @@ if ( 'expired' === $current_state ) {
 		$display_value   = aucteeno_format_date( $timestamp, $date_format );
 		$is_showing_date = true;
 	}
-} elseif ( $diff <= 0 && 'upcoming' !== $current_state ) {
+} elseif ( $diff <= 0 && 'upcoming' !== $effective_state ) {
 	$display_value = __( 'Ended', 'aucteeno' );
 } elseif ( $diff < 3600 ) {
 	// Less than 1 hour - show minutes and seconds.
@@ -150,22 +177,14 @@ if ( 'expired' === $current_state ) {
 }
 
 // Determine label based on state and whether showing date.
-if ( 'expired' === $current_state ) {
-	$label = __( 'Bidding ended', 'aucteeno' );
+if ( ! $respect_bidding_status ) {
+	$label = $single_label;
+} elseif ( 'expired' === $effective_state ) {
+	$label = $label_expired;
 } elseif ( $is_showing_date ) {
-	// When showing a date, use "on" instead of "in".
-	if ( 'upcoming' === $current_state ) {
-		$label = __( 'Bidding starts on', 'aucteeno' );
-	} else {
-		$label = __( 'Bidding ends on', 'aucteeno' );
-	}
+	$label = ( 'upcoming' === $effective_state ) ? $label_upcoming_date : $label_running_date;
 } else {
-	// When showing time intervals, use "in".
-	if ( 'upcoming' === $current_state ) {
-		$label = __( 'Bidding starts in', 'aucteeno' );
-	} else {
-		$label = __( 'Bidding ends in', 'aucteeno' );
-	}
+	$label = ( 'upcoming' === $effective_state ) ? $label_upcoming_time : $label_running_time;
 }
 
 $wrapper_classes = 'aucteeno-field-countdown';
@@ -174,7 +193,7 @@ $wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_c
 
 ob_start();
 ?>
-<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> data-aucteeno-countdown data-starts-at="<?php echo esc_attr( $bidding_starts ); ?>" data-ends-at="<?php echo esc_attr( $bidding_ends ); ?>" data-current-state="<?php echo esc_attr( $current_state ); ?>" data-date-format="<?php echo esc_attr( $date_format ); ?>">
+<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> data-aucteeno-countdown data-starts-at="<?php echo esc_attr( $bidding_starts ); ?>" data-ends-at="<?php echo esc_attr( $bidding_ends ); ?>" data-current-state="<?php echo esc_attr( $current_state ); ?>" data-date-format="<?php echo esc_attr( $date_format ); ?>" data-target-date="<?php echo esc_attr( $target_date ); ?>" data-respect-bidding-status="<?php echo $respect_bidding_status ? '1' : '0'; ?>" data-label="<?php echo esc_attr( $single_label ); ?>" data-label-upcoming-time="<?php echo esc_attr( $label_upcoming_time ); ?>" data-label-upcoming-date="<?php echo esc_attr( $label_upcoming_date ); ?>" data-label-running-time="<?php echo esc_attr( $label_running_time ); ?>" data-label-running-date="<?php echo esc_attr( $label_running_date ); ?>" data-label-expired="<?php echo esc_attr( $label_expired ); ?>">
 	<?php if ( $show_label ) : ?>
 		<span class="aucteeno-field-countdown__label"><?php echo esc_html( $label ); ?></span>
 	<?php endif; ?>

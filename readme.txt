@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,6 +170,25 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.6.0 - 2026-04-29 =
+* Add: `aucteeno/product-details` context block — fetches item data once on single auction/item pages and injects context into inner blocks, eliminating per-block DB queries
+* Add: `aucteeno/field-starts-at` and `aucteeno/field-ends-at` blocks — SSR initial value in WordPress timezone, progressively hydrated to visitor's local browser timezone via `Intl.DateTimeFormat`
+* Add: configurable state-aware labels for field-starts-at / field-ends-at (upcoming, running, expired)
+* Add: `blocks/shared/src/datetime-utils.js` shared formatter (`formatDatetime`, `translateCustomFormat`)
+* Add: `align` (wide/full), layout, and full paragraph-equivalent block supports on datetime and location blocks
+* Add: dl/dt/dd structure with orientation control for field-location and datetime blocks
+* Add: configurable infinite-scroll trigger offset on `aucteeno/query-loop`
+* Add: target-date options and customizable labels to `aucteeno/field-countdown` based on bidding status
+* Add: timestamp-derived status modifier class to `aucteeno/product-details`
+* Refactor: rename product-cta classes to Gutenberg/BEM convention; route bidding through PHP renderer with filter; drop wishlist/loading code, view.js, and webpack entry
+* Refactor: drop custom `widthMode`/`fixedWidth` in favour of native Gutenberg layout
+* Perf: request-level static cache in `Block_Data_Helper::get_item_data()` with null-miss caching
+* Fix: map align* classes to text-align for datetime and location blocks
+* Fix: pass is-orientation class to useBlockProps so editor preview reflects orientation
+* Fix: use nullish coalescing for label fallbacks so empty string labels are honored
+* Style: apply prettier and stylelint formatting fixes across blocks
 
 = 1.5.0 - 2026-04-23 =
 * Behavior change: query-loop block and REST endpoints now exclude expired listings by default. Pass `include_expired=1` to opt in.

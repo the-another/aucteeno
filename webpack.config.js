@@ -28,6 +28,14 @@ const editorEntries = {
 	'field-reserve-price/editor': path.resolve( __dirname, 'blocks/field-reserve-price/src/editor.js' ),
 	'field-lot-number/editor': path.resolve( __dirname, 'blocks/field-lot-number/src/editor.js' ),
 	'field-bidding-status/editor': path.resolve( __dirname, 'blocks/field-bidding-status/src/editor.js' ),
+	'field-starts-at/editor': path.resolve( __dirname, 'blocks/field-starts-at/src/editor.js' ),
+	'field-ends-at/editor': path.resolve( __dirname, 'blocks/field-ends-at/src/editor.js' ),
+
+	// Product details block
+	'product-details/editor': path.resolve( __dirname, 'blocks/product-details/src/editor.js' ),
+
+	// Product CTA block
+	'product-cta/editor': path.resolve( __dirname, 'blocks/product-cta/src/editor.js' ),
 
 	// Pagination block
 	'pagination/editor': path.resolve( __dirname, 'blocks/pagination/src/editor.js' ),
@@ -36,6 +44,8 @@ const editorEntries = {
 const viewEntries = {
 	'query-loop/view': path.resolve( __dirname, 'blocks/query-loop/src/view.js' ),
 	'field-countdown/view': path.resolve( __dirname, 'blocks/field-countdown/src/view.js' ),
+	'field-starts-at/view': path.resolve( __dirname, 'blocks/field-starts-at/src/view.js' ),
+	'field-ends-at/view': path.resolve( __dirname, 'blocks/field-ends-at/src/view.js' ),
 };
 
 // Editor config - standard @wordpress/scripts config.
