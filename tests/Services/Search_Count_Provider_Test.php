@@ -1,5 +1,5 @@
 <?php
-namespace The_Another\Plugin\Aucteeno\Tests;
+namespace The_Another\Plugin\Aucteeno\Tests\Services;
 
 use The_Another\Plugin\Aucteeno\Services\Search_Count_Provider;
 use The_Another\Plugin\Aucteeno\Hook_Manager;
