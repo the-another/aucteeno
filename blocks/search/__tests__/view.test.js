@@ -97,3 +97,113 @@ describe( 'Aucteeno Search modal scaffold', () => {
 		expect( labels.indexOf( 'view-all' ) ).toBeLessThan( labels.indexOf( 'close' ) );
 	} );
 } );
+
+describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
+	afterEach( () => {
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+		jest.useRealTimers();
+		delete global.fetch;
+	} );
+
+	it( 'debounces input and fires one fetch', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '50';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		block.onInputChange( 'a' );
+		block.onInputChange( 'ab' );
+		block.onInputChange( 'abc' );
+		await new Promise( ( r ) => setTimeout( r, 80 ) );
+		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'switching type re-runs fetch with current text', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'foo';
+		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		block.setActiveType( 'auctions' );
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+		expect( global.fetch.mock.calls[ 0 ][ 0 ].toString() ).toMatch( /\/auctions\?.*search=foo/ );
+	} );
+
+	it( 'discards stale fetch responses', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		const block = new SearchBlock( root );
+		block.open();
+		let resolveFirst;
+		global.fetch = jest
+			.fn()
+			.mockImplementationOnce( () => new Promise( ( r ) => { resolveFirst = r; } ) )
+			.mockResolvedValueOnce( {
+				ok: true,
+				json: async () => [
+					{ id: 2, title: 'Two', image_url: '', ends_at: 0, permalink: '#two' },
+				],
+			} );
+		block.fetchNow( 'first' );
+		await Promise.resolve();
+		block.fetchNow( 'second' );
+		await new Promise( ( r ) => setTimeout( r, 10 ) );
+		resolveFirst( {
+			ok: true,
+			json: async () => [
+				{ id: 1, title: 'One', image_url: '', ends_at: 0, permalink: '#one' },
+			],
+		} );
+		await new Promise( ( r ) => setTimeout( r, 10 ) );
+		const titles = [
+			...document.querySelectorAll( '.aucteeno-search-modal__result-title' ),
+		].map( ( e ) => e.textContent );
+		expect( titles ).toEqual( [ 'Two' ] );
+	} );
+
+	it( 'sets view-all href with ?s= when results present and page configured', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => [
+				{ id: 1, title: 'X', image_url: '', ends_at: 0, permalink: '#x' },
+			],
+		} );
+		await block.fetchNow( 'widget' );
+		expect( block.modal.viewAll.hidden ).toBe( false );
+		expect( block.modal.viewAll.href ).toContain( '/search-items/' );
+		expect( block.modal.viewAll.href ).toContain( 's=widget' );
+	} );
+
+	it( 'hides view-all when no page configured', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.itemsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => [
+				{ id: 1, title: 'X', image_url: '', ends_at: 0, permalink: '#x' },
+			],
+		} );
+		await block.fetchNow( 'widget' );
+		expect( block.modal.viewAll.hidden ).toBe( true );
+	} );
+
+	it( 'renders no-results state for empty result set with non-empty query', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		await block.fetchNow( 'nope' );
+		expect( document.querySelector( '.aucteeno-search-modal__no-results' ) ).not.toBeNull();
+	} );
+} );

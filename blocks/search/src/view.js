@@ -68,7 +68,7 @@ class SearchBlock {
 		this.modal = this.buildModal();
 		document.body.appendChild( this.modal.root );
 		SearchBlock.openInstance = this;
-		setTimeout( () => this.modal.input.focus(), 0 );
+		setTimeout( () => this.modal && this.modal.input.focus(), 0 );
 		this.renderResults( [], '', this.activeType );
 		document.addEventListener( 'keydown', this.onKeydown );
 	}
@@ -208,17 +208,81 @@ class SearchBlock {
 		this.fetchNow( this.modal.input.value );
 	}
 
-	onInputChange() {
-		// Debounce + fetch implemented in Task 3.2.
+	onInputChange( value ) {
+		if ( this.debounceTimer ) {
+			clearTimeout( this.debounceTimer );
+		}
+		if ( this.pendingPauseTimer ) {
+			clearTimeout( this.pendingPauseTimer );
+			this.pendingPauseTimer = null;
+		}
+		this.debounceTimer = setTimeout(
+			() => this.fetchNow( value ),
+			this.cfg.debounceMs
+		);
 	}
 
-	fetchNow() {
-		// Implemented in Task 3.2.
+	async fetchNow( value ) {
+		// Toggle/refetch must cancel any pending pause-timer (spec: type-toggle clears the timer).
+		if ( this.pendingPauseTimer ) {
+			clearTimeout( this.pendingPauseTimer );
+			this.pendingPauseTimer = null;
+		}
+		const q = ( value || '' ).trim();
+		const type = this.activeType;
+		const fetchKey = Symbol( 'fetch' );
+		this.lastFetchKey = fetchKey;
+
+		if ( q === '' ) {
+			this.renderResults( [], q, type );
+			return;
+		}
+
+		// REST internal params: `search`, `sort`, `format=search_row`, `per_page`.
+		const url = new URL( this.cfg.restRoot + type, window.location.origin );
+		url.searchParams.set( 'search', q );
+		url.searchParams.set( 'format', 'search_row' );
+		url.searchParams.set( 'sort', this.cfg.orderBy[ type ] );
+		url.searchParams.set( 'per_page', String( this.cfg.perPage[ type ] ) );
+
+		let data = [];
+		try {
+			const res = await fetch( url, {
+				headers: { 'X-WP-Nonce': this.cfg.restNonce },
+			} );
+			if ( ! res.ok ) {
+				throw new Error( 'fetch failed: ' + res.status );
+			}
+			data = await res.json();
+		} catch ( err ) {
+			// eslint-disable-next-line no-console
+			console.warn( 'Aucteeno search fetch failed', err );
+			data = [];
+		}
+
+		if ( this.lastFetchKey !== fetchKey ) {
+			return; // stale
+		}
+		this.renderResults( Array.isArray( data ) ? data : [], q, type );
+		if ( Array.isArray( data ) && data.length > 0 ) {
+			this.armPauseTimer( q, type );
+		}
 	}
 
-	renderResults( rows, q ) {
+	armPauseTimer( /* q, type */ ) {
+		if ( this.pendingPauseTimer ) {
+			clearTimeout( this.pendingPauseTimer );
+		}
+		this.pendingPauseTimer = setTimeout( () => {
+			// Persistence wired in Task 4.1 — for now the timer just clears itself.
+			this.pendingPauseTimer = null;
+		}, this.cfg.recentTimeoutSec * 1000 );
+	}
+
+	renderResults( rows, q, type ) {
 		const ul = this.modal.results;
 		ul.innerHTML = '';
+
 		if ( q === '' ) {
 			ul.innerHTML =
 				'<li class="aucteeno-search-modal__empty">Start typing to search…</li>';
@@ -226,6 +290,90 @@ class SearchBlock {
 			ul.innerHTML = `<li class="aucteeno-search-modal__no-results">No results for "${ this.escape(
 				q
 			) }"</li>`;
+		} else {
+			rows.forEach( ( row ) => {
+				const li = document.createElement( 'li' );
+				li.className = 'aucteeno-search-modal__result';
+				li.tabIndex = 0;
+				li.innerHTML = `
+				<img src="${ this.escape( row.image_url ) }" alt="" />
+				<span class="aucteeno-search-modal__result-title">${ this.escape(
+					row.title
+				) }</span>
+				<span class="aucteeno-search-modal__result-countdown" data-ends-at="${
+					row.ends_at
+				}"></span>
+			`;
+				const navigate = () => this.onResultClick( row, q, type );
+				li.addEventListener( 'click', navigate );
+				li.addEventListener( 'keydown', ( e ) => {
+					if ( e.key === 'Enter' || e.key === ' ' ) {
+						e.preventDefault();
+						navigate();
+					}
+				} );
+				ul.appendChild( li );
+			} );
+		}
+
+		// View all link.
+		const pageUrl = this.cfg.pageUrl[ type ];
+		if ( rows && rows.length > 0 && pageUrl ) {
+			const u = new URL( pageUrl, window.location.origin );
+			u.searchParams.set( 's', q );
+			this.modal.viewAll.href = u.toString();
+			this.modal.viewAll.hidden = false;
+		} else {
+			this.modal.viewAll.hidden = true;
+		}
+
+		this.startCountdownTicker();
+	}
+
+	startCountdownTicker() {
+		if ( this.countdownInterval ) {
+			clearInterval( this.countdownInterval );
+		}
+		const tick = () => {
+			if ( ! this.modal ) {
+				return;
+			}
+			const now = Math.floor( Date.now() / 1000 );
+			this.modal.results
+				.querySelectorAll( '[data-ends-at]' )
+				.forEach( ( el ) => {
+					const endsAt = parseInt( el.dataset.endsAt, 10 );
+					const diff = Math.max( 0, endsAt - now );
+					el.textContent = this.formatCountdown( diff );
+				} );
+		};
+		tick();
+		this.countdownInterval = setInterval( tick, 1000 );
+	}
+
+	formatCountdown( seconds ) {
+		if ( seconds <= 0 ) {
+			return 'Ended';
+		}
+		const d = Math.floor( seconds / 86400 );
+		if ( d > 0 ) {
+			return `${ d }d ${ Math.floor( ( seconds % 86400 ) / 3600 ) }h`;
+		}
+		const h = Math.floor( seconds / 3600 );
+		if ( h > 0 ) {
+			return `${ h }h ${ Math.floor( ( seconds % 3600 ) / 60 ) }m`;
+		}
+		const m = Math.floor( seconds / 60 );
+		if ( m > 0 ) {
+			return `${ m }m ${ seconds % 60 }s`;
+		}
+		return `${ seconds }s`;
+	}
+
+	onResultClick( row /*, q, type */ ) {
+		// Recent-search persistence + last-term chip wired in Task 4.1 / 4.2.
+		if ( row && row.permalink ) {
+			window.location.href = row.permalink;
 		}
 	}
 
