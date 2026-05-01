@@ -205,7 +205,7 @@
 	cursor: pointer;
 }
 
-/* Front-end trigger — input on left, submit button on right, visually connected */
+/* Front-end trigger — input on left, submit button on right, connected */
 .wp-block-aucteeno-search__trigger {
 	display: flex;
 	align-items: stretch;

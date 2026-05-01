@@ -467,7 +467,7 @@ class REST_Controller extends WP_REST_Controller {
 		// search_row uses the HPS query path so we get title-only LIKE matching
 		// and pre-resolved image_url for free.
 		if ( 'search_row' === $format ) {
-			$args = array(
+			$args   = array(
 				'page'            => $request->get_param( 'page' ) ?? 1,
 				'per_page'        => $request->get_param( 'per_page' ) ?? 25,
 				'sort'            => $request->get_param( 'sort' ) ?? 'ending_soon',
@@ -704,7 +704,7 @@ class REST_Controller extends WP_REST_Controller {
 		// search_row uses the HPS query path so we get title-only LIKE matching
 		// and pre-resolved image_url for free.
 		if ( 'search_row' === $format ) {
-			$args = array(
+			$args   = array(
 				'page'            => $request->get_param( 'page' ) ?? 1,
 				'per_page'        => $request->get_param( 'per_page' ) ?? 25,
 				'sort'            => $request->get_param( 'sort' ) ?? 'ending_soon',
