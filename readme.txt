@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,23 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.7.0 - 2026-05-01 =
+* Add: Aucteeno Search block — WP-style trigger that opens a Jetpack-inspired modal with debounced REST autosearch (Auctions / Items toggle), result rows (thumbnail + title + "City, State, CT" location + bold countdown), recent-searches sidebar, and "View all" link to the configured query-loop page.
+* Add: Search_Count_Provider — cached running+upcoming items count for the trigger placeholder ("N items to search from").
+* Add: Search_Block_Service — parses the configured "view all" page's aucteeno/query-loop block to inherit perPage/orderBy and invalidates transients on edits.
+* Add: REST format=search_row projection on /auctions and /items, routed through the HPS query path so search and image_url honor the listing query.
+* Add: query-loop reads ?keyword= (search-block "view all") in addition to ?s= and the WP query var.
+* Add: Last-search chip — stores the term + type and pre-fills on next modal open via storage events.
+* Refactor: style.css → style.scss, mobile-first using the globalag-wp-theme $break-* breakpoints; theme-tinted via --ats-* custom properties chained through --wp--preset--color--* slugs (accent-4, white, foreground).
+* Add: Mobile sheet offsets the WP admin bar via --wp-admin--admin-bar--height; min-height 90dvh on mobile only.
+* Add: Search input/buttons use --wp--preset--font-size--small; trigger fixed at 3rem tall, 15rem wide on tablet+, vertically centered placeholder.
+* Fix: Placeholder count truncated "5,289" to 5 because sprintf %d parsed up to the comma — now uses str_replace.
+* Fix: project_search_row resolves images at "thumbnail" size (was "medium") for the small modal previews.
+* Fix: View-all link clears href when hidden so a stale URL can't fire; dynamic label per type ("View all auctions" / "View all items").
+* Fix: Modal init handles already-loaded module scripts (DOMContentLoaded already fired); close→trigger.focus no longer reopens the modal via _returningFocus guard.
+* Fix: Reopening the modal now re-reads the stored chip on every open instead of consuming it once.
 
 = 1.6.0 - 2026-04-29 =
 * Add: `aucteeno/product-details` context block — fetches item data once on single auction/item pages and injects context into inner blocks, eliminating per-block DB queries
