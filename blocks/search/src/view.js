@@ -1,4 +1,82 @@
+/* global localStorage */
 const DEBOUNCE_MS_MAP = { instant: 0, fast: 150, normal: 250, relaxed: 500 };
+
+const STORAGE_KEY_RECENT = 'aucteeno_search_recent_v1';
+const STORAGE_KEY_LAST = 'aucteeno_search_last_v1';
+const RECENT_CAP = 10;
+const LAST_TTL_MS = 30 * 60 * 1000;
+
+function readRecent() {
+	try {
+		const raw = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
+		);
+		return Array.isArray( raw ) ? raw : [];
+	} catch ( _ ) {
+		return [];
+	}
+}
+
+function writeRecent( list ) {
+	try {
+		localStorage.setItem(
+			STORAGE_KEY_RECENT,
+			JSON.stringify( list.slice( 0, RECENT_CAP ) )
+		);
+	} catch ( _ ) {
+		/* localStorage unavailable; degrade silently */
+	}
+}
+
+function pushRecent( q, type ) {
+	if ( ! q ) {
+		return;
+	}
+	const list = readRecent().filter(
+		( e ) => ! ( e.q === q && e.type === type )
+	);
+	list.unshift( { q, type, ts: Date.now() } );
+	writeRecent( list );
+}
+
+function readLast() {
+	try {
+		const raw = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_LAST ) || 'null'
+		);
+		if ( ! raw ) {
+			return null;
+		}
+		if ( Date.now() - raw.ts > LAST_TTL_MS ) {
+			return null;
+		}
+		return raw;
+	} catch ( _ ) {
+		return null;
+	}
+}
+
+function writeLast( q, type ) {
+	if ( ! q ) {
+		return;
+	}
+	try {
+		localStorage.setItem(
+			STORAGE_KEY_LAST,
+			JSON.stringify( { q, type, ts: Date.now() } )
+		);
+	} catch ( _ ) {
+		/* noop */
+	}
+}
+
+function clearLast() {
+	try {
+		localStorage.removeItem( STORAGE_KEY_LAST );
+	} catch ( _ ) {
+		/* noop */
+	}
+}
 
 class SearchBlock {
 	constructor( root ) {
@@ -70,6 +148,7 @@ class SearchBlock {
 		SearchBlock.openInstance = this;
 		setTimeout( () => this.modal && this.modal.input.focus(), 0 );
 		this.renderResults( [], '', this.activeType );
+		this.renderRecent();
 		document.addEventListener( 'keydown', this.onKeydown );
 	}
 
@@ -269,14 +348,63 @@ class SearchBlock {
 		}
 	}
 
-	armPauseTimer( /* q, type */ ) {
+	armPauseTimer( q, type ) {
 		if ( this.pendingPauseTimer ) {
 			clearTimeout( this.pendingPauseTimer );
 		}
 		this.pendingPauseTimer = setTimeout( () => {
-			// Persistence wired in Task 4.1 — for now the timer just clears itself.
+			pushRecent( q, type );
+			this.renderRecent();
 			this.pendingPauseTimer = null;
 		}, this.cfg.recentTimeoutSec * 1000 );
+	}
+
+	renderRecent() {
+		if ( ! this.modal ) {
+			return;
+		}
+		const ul = this.modal.root.querySelector(
+			'.aucteeno-search-modal__recent-list'
+		);
+		const clearBtn = this.modal.root.querySelector(
+			'.aucteeno-search-modal__recent-clear'
+		);
+		ul.innerHTML = '';
+		const list = readRecent();
+		list.forEach( ( entry ) => {
+			const li = document.createElement( 'li' );
+			li.innerHTML = `
+				<button type="button" class="recent-q">${ this.escape(
+					entry.q
+				) } <span class="type">(${ this.escape(
+					entry.type
+				) })</span></button>
+				<button type="button" class="recent-x" aria-label="Remove">✕</button>
+			`;
+			li.querySelector( '.recent-q' ).addEventListener( 'click', () => {
+				this.activeType = entry.type;
+				this.modal.toggleBtns.forEach( ( b ) =>
+					b.setAttribute(
+						'aria-checked',
+						String( b.dataset.type === entry.type )
+					)
+				);
+				this.modal.input.value = entry.q;
+				this.fetchNow( entry.q );
+			} );
+			li.querySelector( '.recent-x' ).addEventListener( 'click', () => {
+				const remaining = readRecent().filter(
+					( e ) => ! ( e.q === entry.q && e.type === entry.type )
+				);
+				writeRecent( remaining );
+				this.renderRecent();
+			} );
+			ul.appendChild( li );
+		} );
+		clearBtn.onclick = () => {
+			writeRecent( [] );
+			this.renderRecent();
+		};
 	}
 
 	renderResults( rows, q, type ) {
@@ -370,8 +498,11 @@ class SearchBlock {
 		return `${ seconds }s`;
 	}
 
-	onResultClick( row /*, q, type */ ) {
-		// Recent-search persistence + last-term chip wired in Task 4.1 / 4.2.
+	onResultClick( row, q, type ) {
+		if ( q ) {
+			pushRecent( q, type );
+			writeLast( q, type );
+		}
 		if ( row && row.permalink ) {
 			window.location.href = row.permalink;
 		}
@@ -392,4 +523,15 @@ document.addEventListener( 'DOMContentLoaded', () => {
 		.forEach( ( el ) => new SearchBlock( el ) );
 } );
 
-export { SearchBlock, DEBOUNCE_MS_MAP };
+export {
+	SearchBlock,
+	DEBOUNCE_MS_MAP,
+	STORAGE_KEY_RECENT,
+	STORAGE_KEY_LAST,
+	pushRecent,
+	readRecent,
+	writeRecent,
+	readLast,
+	writeLast,
+	clearLast,
+};

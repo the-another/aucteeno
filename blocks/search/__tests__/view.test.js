@@ -2,9 +2,17 @@
  * Tests for Aucteeno Search Block - View runtime (modal scaffold).
  */
 
+/* eslint-env jest */
+/* global localStorage, KeyboardEvent */
 jest.mock( '../src/style.css', () => ( {} ), { virtual: true } );
 
-import { SearchBlock } from '../src/view';
+import {
+	SearchBlock,
+	STORAGE_KEY_RECENT,
+	STORAGE_KEY_LAST,
+	pushRecent,
+	readRecent,
+} from '../src/view';
 
 function makeRoot() {
 	const root = document.createElement( 'div' );
@@ -20,7 +28,8 @@ function makeRoot() {
 	root.dataset.auctionsPageUrl = '';
 	root.dataset.restRoot = '/wp-json/aucteeno/v1/';
 	root.dataset.restNonce = 'x';
-	root.innerHTML = '<button class="wp-block-aucteeno-search__trigger">Open</button>';
+	root.innerHTML =
+		'<button class="wp-block-aucteeno-search__trigger">Open</button>';
 	document.body.appendChild( root );
 	return root;
 }
@@ -34,13 +43,17 @@ describe( 'Aucteeno Search modal scaffold', () => {
 	it( 'opens a modal on open()', () => {
 		const block = new SearchBlock( makeRoot() );
 		block.open();
-		expect( document.querySelector( '.aucteeno-search-modal' ) ).not.toBeNull();
+		expect(
+			document.querySelector( '.aucteeno-search-modal' )
+		).not.toBeNull();
 	} );
 
 	it( 'closes on Escape', () => {
 		const block = new SearchBlock( makeRoot() );
 		block.open();
-		document.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Escape' } )
+		);
 		expect( document.querySelector( '.aucteeno-search-modal' ) ).toBeNull();
 	} );
 
@@ -59,20 +72,25 @@ describe( 'Aucteeno Search modal scaffold', () => {
 		const b = new SearchBlock( makeRoot() );
 		a.open();
 		b.open();
-		expect( document.querySelectorAll( '.aucteeno-search-modal' ).length ).toBe( 1 );
+		expect(
+			document.querySelectorAll( '.aucteeno-search-modal' ).length
+		).toBe( 1 );
 	} );
 
 	it( 'shows empty state when input is empty', () => {
 		const block = new SearchBlock( makeRoot() );
 		block.open();
-		expect( document.querySelector( '.aucteeno-search-modal__empty' ) ).not.toBeNull();
+		expect(
+			document.querySelector( '.aucteeno-search-modal__empty' )
+		).not.toBeNull();
 	} );
 
 	it( 'modal DOM tab order matches: input → type-toggle → results → view-all → close', () => {
 		const block = new SearchBlock( makeRoot() );
 		block.open();
 		// Inject a fake result row.
-		block.modal.results.innerHTML = '<li class="aucteeno-search-modal__result" tabindex="0">row</li>';
+		block.modal.results.innerHTML =
+			'<li class="aucteeno-search-modal__result" tabindex="0">row</li>';
 		block.modal.viewAll.hidden = false;
 
 		const focusables = [
@@ -82,19 +100,37 @@ describe( 'Aucteeno Search modal scaffold', () => {
 		];
 		const labels = focusables
 			.map( ( el ) => {
-				if ( el.matches( '.aucteeno-search-modal__input' ) ) return 'input';
-				if ( el.matches( '[role="radio"]' ) ) return 'toggle';
-				if ( el.matches( '.aucteeno-search-modal__result' ) ) return 'result';
-				if ( el.matches( '.aucteeno-search-modal__view-all' ) ) return 'view-all';
-				if ( el.matches( '.aucteeno-search-modal__close' ) ) return 'close';
+				if ( el.matches( '.aucteeno-search-modal__input' ) ) {
+					return 'input';
+				}
+				if ( el.matches( '[role="radio"]' ) ) {
+					return 'toggle';
+				}
+				if ( el.matches( '.aucteeno-search-modal__result' ) ) {
+					return 'result';
+				}
+				if ( el.matches( '.aucteeno-search-modal__view-all' ) ) {
+					return 'view-all';
+				}
+				if ( el.matches( '.aucteeno-search-modal__close' ) ) {
+					return 'close';
+				}
 				return null;
 			} )
 			.filter( Boolean );
 
-		expect( labels.indexOf( 'input' ) ).toBeLessThan( labels.indexOf( 'toggle' ) );
-		expect( labels.indexOf( 'toggle' ) ).toBeLessThan( labels.indexOf( 'result' ) );
-		expect( labels.indexOf( 'result' ) ).toBeLessThan( labels.indexOf( 'view-all' ) );
-		expect( labels.indexOf( 'view-all' ) ).toBeLessThan( labels.indexOf( 'close' ) );
+		expect( labels.indexOf( 'input' ) ).toBeLessThan(
+			labels.indexOf( 'toggle' )
+		);
+		expect( labels.indexOf( 'toggle' ) ).toBeLessThan(
+			labels.indexOf( 'result' )
+		);
+		expect( labels.indexOf( 'result' ) ).toBeLessThan(
+			labels.indexOf( 'view-all' )
+		);
+		expect( labels.indexOf( 'view-all' ) ).toBeLessThan(
+			labels.indexOf( 'close' )
+		);
 	} );
 } );
 
@@ -111,7 +147,9 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		root.dataset.debounceMs = '50';
 		const block = new SearchBlock( root );
 		block.open();
-		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
 		block.onInputChange( 'a' );
 		block.onInputChange( 'ab' );
 		block.onInputChange( 'abc' );
@@ -125,10 +163,14 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		const block = new SearchBlock( root );
 		block.open();
 		block.modal.input.value = 'foo';
-		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
 		block.setActiveType( 'auctions' );
 		await new Promise( ( r ) => setTimeout( r, 5 ) );
-		expect( global.fetch.mock.calls[ 0 ][ 0 ].toString() ).toMatch( /\/auctions\?.*search=foo/ );
+		expect( global.fetch.mock.calls[ 0 ][ 0 ].toString() ).toMatch(
+			/\/auctions\?.*search=foo/
+		);
 	} );
 
 	it( 'discards stale fetch responses', async () => {
@@ -139,11 +181,22 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		let resolveFirst;
 		global.fetch = jest
 			.fn()
-			.mockImplementationOnce( () => new Promise( ( r ) => { resolveFirst = r; } ) )
+			.mockImplementationOnce(
+				() =>
+					new Promise( ( r ) => {
+						resolveFirst = r;
+					} )
+			)
 			.mockResolvedValueOnce( {
 				ok: true,
 				json: async () => [
-					{ id: 2, title: 'Two', image_url: '', ends_at: 0, permalink: '#two' },
+					{
+						id: 2,
+						title: 'Two',
+						image_url: '',
+						ends_at: 0,
+						permalink: '#two',
+					},
 				],
 			} );
 		block.fetchNow( 'first' );
@@ -153,12 +206,20 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		resolveFirst( {
 			ok: true,
 			json: async () => [
-				{ id: 1, title: 'One', image_url: '', ends_at: 0, permalink: '#one' },
+				{
+					id: 1,
+					title: 'One',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#one',
+				},
 			],
 		} );
 		await new Promise( ( r ) => setTimeout( r, 10 ) );
 		const titles = [
-			...document.querySelectorAll( '.aucteeno-search-modal__result-title' ),
+			...document.querySelectorAll(
+				'.aucteeno-search-modal__result-title'
+			),
 		].map( ( e ) => e.textContent );
 		expect( titles ).toEqual( [ 'Two' ] );
 	} );
@@ -172,7 +233,13 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		global.fetch = jest.fn().mockResolvedValue( {
 			ok: true,
 			json: async () => [
-				{ id: 1, title: 'X', image_url: '', ends_at: 0, permalink: '#x' },
+				{
+					id: 1,
+					title: 'X',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#x',
+				},
 			],
 		} );
 		await block.fetchNow( 'widget' );
@@ -190,7 +257,13 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		global.fetch = jest.fn().mockResolvedValue( {
 			ok: true,
 			json: async () => [
-				{ id: 1, title: 'X', image_url: '', ends_at: 0, permalink: '#x' },
+				{
+					id: 1,
+					title: 'X',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#x',
+				},
 			],
 		} );
 		await block.fetchNow( 'widget' );
@@ -202,8 +275,202 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		root.dataset.debounceMs = '0';
 		const block = new SearchBlock( root );
 		block.open();
-		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
 		await block.fetchNow( 'nope' );
-		expect( document.querySelector( '.aucteeno-search-modal__no-results' ) ).not.toBeNull();
+		expect(
+			document.querySelector( '.aucteeno-search-modal__no-results' )
+		).not.toBeNull();
+	} );
+} );
+
+describe( 'Aucteeno Search recent searches', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		jest.useRealTimers();
+		delete global.fetch;
+	} );
+
+	it( 'pushRecent dedupes by q+type and caps at 10', () => {
+		for ( let i = 0; i < 12; i++ ) {
+			pushRecent( 'q' + i, 'items' );
+		}
+		// re-add an existing entry; should bump to head and not increase length
+		pushRecent( 'q5', 'items' );
+		const list = readRecent();
+		expect( list.length ).toBe( 10 );
+		expect( list[ 0 ].q ).toBe( 'q5' );
+	} );
+
+	it( 'arms pause timer only after successful non-empty fetch', async () => {
+		jest.useFakeTimers();
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.recentTimeoutSec = '2';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => [
+				{
+					id: 1,
+					title: 'X',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#',
+				},
+			],
+		} );
+		await block.fetchNow( 'foo' );
+		jest.advanceTimersByTime( 2100 );
+		const stored = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
+		);
+		expect( stored[ 0 ] ).toEqual(
+			expect.objectContaining( { q: 'foo', type: 'items' } )
+		);
+	} );
+
+	it( 'pause timer is cancelled by new keystroke', async () => {
+		jest.useFakeTimers();
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.recentTimeoutSec = '2';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => [
+				{
+					id: 1,
+					title: 'X',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#',
+				},
+			],
+		} );
+		await block.fetchNow( 'foo' );
+		jest.advanceTimersByTime( 1000 );
+		block.onInputChange( 'foob' );
+		jest.advanceTimersByTime( 5000 );
+		expect( localStorage.getItem( STORAGE_KEY_RECENT ) ).toBeNull();
+	} );
+
+	it( 'pause timer is cancelled when modal closes', async () => {
+		jest.useFakeTimers();
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.recentTimeoutSec = '2';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => [
+				{
+					id: 1,
+					title: 'X',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#',
+				},
+			],
+		} );
+		await block.fetchNow( 'foo' );
+		block.close();
+		jest.advanceTimersByTime( 5000 );
+		expect( localStorage.getItem( STORAGE_KEY_RECENT ) ).toBeNull();
+	} );
+
+	it( 'onResultClick persists recent + last and navigates', () => {
+		// Mock window.location to avoid jsdom navigation error
+		const realLocation = window.location;
+		delete window.location;
+		window.location = { href: '' };
+
+		const block = new SearchBlock( makeRoot() );
+		block.open();
+		const row = {
+			id: 1,
+			title: 'X',
+			image_url: '',
+			ends_at: 0,
+			permalink: 'https://x/result',
+		};
+		block.onResultClick( row, 'foo', 'items' );
+		const recent = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
+		);
+		const last = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_LAST ) || 'null'
+		);
+		expect( recent[ 0 ] ).toEqual(
+			expect.objectContaining( { q: 'foo', type: 'items' } )
+		);
+		expect( last ).toEqual(
+			expect.objectContaining( { q: 'foo', type: 'items' } )
+		);
+		expect( window.location.href ).toBe( 'https://x/result' );
+
+		// Restore so subsequent tests get a valid origin.
+		window.location = realLocation;
+	} );
+
+	it( 'renderRecent shows entries; clicking one runs that search', async () => {
+		pushRecent( 'widget', 'items' );
+		pushRecent( 'gizmo', 'auctions' );
+
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		const block = new SearchBlock( root );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+		block.open();
+
+		const items = block.modal.root.querySelectorAll(
+			'.aucteeno-search-modal__recent-list li'
+		);
+		expect( items.length ).toBe( 2 );
+
+		// Click the second-most-recent ('widget') — should set type to items and run fetch.
+		const btn = items[ 1 ].querySelector( '.recent-q' );
+		btn.click();
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+		expect( block.activeType ).toBe( 'items' );
+		expect( block.modal.input.value ).toBe( 'widget' );
+		expect( global.fetch ).toHaveBeenCalled();
+	} );
+
+	it( 'recent ✕ removes a single entry', () => {
+		pushRecent( 'a', 'items' );
+		pushRecent( 'b', 'items' );
+
+		const block = new SearchBlock( makeRoot() );
+		block.open();
+		const items = block.modal.root.querySelectorAll(
+			'.aucteeno-search-modal__recent-list li'
+		);
+		items[ 0 ].querySelector( '.recent-x' ).click();
+		expect( readRecent().length ).toBe( 1 );
+		expect( readRecent()[ 0 ].q ).toBe( 'a' );
+	} );
+
+	it( 'Clear all empties recent list', () => {
+		pushRecent( 'a', 'items' );
+		pushRecent( 'b', 'items' );
+
+		const block = new SearchBlock( makeRoot() );
+		block.open();
+		block.modal.root
+			.querySelector( '.aucteeno-search-modal__recent-clear' )
+			.click();
+		expect( readRecent().length ).toBe( 0 );
 	} );
 } );
