@@ -580,11 +580,19 @@ class SearchBlock {
 
 SearchBlock.openInstance = null;
 
-document.addEventListener( 'DOMContentLoaded', () => {
+function initSearchBlocks() {
 	document
 		.querySelectorAll( '.wp-block-aucteeno-search' )
 		.forEach( ( el ) => new SearchBlock( el ) );
-} );
+}
+
+// Module scripts have implicit `defer`, so DOMContentLoaded may already have
+// fired by the time this code runs. Handle both cases.
+if ( document.readyState === 'loading' ) {
+	document.addEventListener( 'DOMContentLoaded', initSearchBlocks );
+} else {
+	initSearchBlocks();
+}
 
 export {
 	SearchBlock,
