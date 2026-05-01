@@ -48,6 +48,9 @@
 /* Main column */
 .aucteeno-search-modal__main {
 	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
 }
 
 /* Close button — visually top-right, last in DOM tab order */
@@ -102,6 +105,14 @@
 	overflow: auto;
 }
 
+@media (max-width: 768px) {
+
+	.aucteeno-search-modal__results {
+		max-height: none;
+		flex: 1;
+	}
+}
+
 .aucteeno-search-modal__result {
 	display: flex;
 	align-items: center;
@@ -117,10 +128,26 @@
 }
 
 .aucteeno-search-modal__result img {
+	flex-shrink: 0;
 	width: 48px;
 	height: 48px;
 	object-fit: cover;
 	border-radius: 4px;
+}
+
+.aucteeno-search-modal__result-title {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.aucteeno-search-modal__result-countdown {
+	flex-shrink: 0;
+	font-variant-numeric: tabular-nums;
+	color: #555;
+	font-size: 0.875rem;
 }
 
 /* Empty / no-results state */
@@ -180,16 +207,37 @@
 
 /* Front-end trigger button */
 .wp-block-aucteeno-search__trigger {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
 	gap: 0.5em;
+	width: 100%;
+	min-width: 14em;
 	padding: 0.6em 1em;
 	border: 1px solid #ccd0d4;
 	border-radius: 4px;
 	background: #fff;
-	cursor: text;
+	cursor: pointer;
 	color: #555;
 	font: inherit;
+	text-align: left;
+}
+
+.wp-block-aucteeno-search__trigger:hover,
+.wp-block-aucteeno-search__trigger:focus {
+	border-color: #2271b1;
+	outline: none;
+}
+
+.wp-block-aucteeno-search__icon {
+	flex-shrink: 0;
+}
+
+.wp-block-aucteeno-search__placeholder {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* Search chip */
