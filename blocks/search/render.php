@@ -21,13 +21,20 @@ use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\Services\Search_Block_Service;
 use The_Another\Plugin\Aucteeno\Services\Search_Count_Provider;
 
-$container = Container::get_instance();
+// Defensive: render.php may be invoked in contexts where Aucteeno hasn't booted
+// (e.g. plugin active but WooCommerce inactive, REST preview, WP-CLI cache warmups).
+// In those cases, render an empty placeholder rather than fataling.
+try {
+	$container = Container::get_instance();
 
-/** @var Search_Count_Provider $count_provider */
-$count_provider = $container->get( 'search_count_provider' );
+	/** @var Search_Count_Provider $count_provider */
+	$count_provider = $container->get( 'search_count_provider' );
 
-/** @var Search_Block_Service $block_service */
-$block_service = $container->get( 'search_block_service' );
+	/** @var Search_Block_Service $block_service */
+	$block_service = $container->get( 'search_block_service' );
+} catch ( \Throwable $e ) {
+	return '';
+}
 
 $default_type         = ( 'auctions' === ( $attributes['defaultType'] ?? 'items' ) ) ? 'auctions' : 'items';
 $debounce_preset      = (string) ( $attributes['debouncePreset'] ?? 'normal' );

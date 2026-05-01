@@ -397,6 +397,9 @@ class SearchBlock {
 		if ( this.lastFetchKey !== fetchKey ) {
 			return; // stale
 		}
+		if ( ! this.modal ) {
+			return; // modal closed during fetch
+		}
 		this.renderResults( Array.isArray( data ) ? data : [], q, type );
 		if ( Array.isArray( data ) && data.length > 0 ) {
 			this.armPauseTimer( q, type );
@@ -510,7 +513,12 @@ class SearchBlock {
 			this.modal.viewAll.hidden = true;
 		}
 
-		this.startCountdownTicker();
+		if ( rows && rows.length > 0 ) {
+			this.startCountdownTicker();
+		} else if ( this.countdownInterval ) {
+			clearInterval( this.countdownInterval );
+			this.countdownInterval = null;
+		}
 	}
 
 	startCountdownTicker() {
