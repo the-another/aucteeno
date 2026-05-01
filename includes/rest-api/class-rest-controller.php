@@ -20,6 +20,7 @@ use WP_Block;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
 use The_Another\Plugin\Aucteeno\Helpers\DateTime_Helper;
+use The_Another\Plugin\Aucteeno\Helpers\Location_Helper;
 use The_Another\Plugin\Aucteeno\Database\Status_Mapper;
 use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
@@ -1123,8 +1124,19 @@ class REST_Controller extends WP_REST_Controller {
 	 * @return array{id:int,title:string,image_url:string,ends_at:int,permalink:string}
 	 */
 	private function project_search_row( array $row ): array {
-		$id    = (int) ( $row['id'] ?? 0 );
-		$image = (string) ( $row['image_url'] ?? '' );
+		$id = (int) ( $row['id'] ?? 0 );
+
+		// HPS resolves image_url at "medium" size; resolve "thumbnail" instead since
+		// the modal renders 48–56px previews and a smaller asset is plenty.
+		$image    = '';
+		$image_id = (int) ( $row['image_id'] ?? 0 );
+		if ( $image_id > 0 ) {
+			$src   = wp_get_attachment_image_src( $image_id, 'thumbnail' );
+			$image = is_array( $src ) ? (string) $src[0] : '';
+		}
+		if ( '' === $image ) {
+			$image = (string) ( $row['image_url'] ?? '' );
+		}
 		if ( '' === $image ) {
 			$image = (string) wc_placeholder_img_src( 'thumbnail' );
 		}
@@ -1135,7 +1147,38 @@ class REST_Controller extends WP_REST_Controller {
 			'image_url' => $image,
 			'ends_at'   => (int) ( $row['bidding_ends_at'] ?? 0 ),
 			'permalink' => (string) ( $row['permalink'] ?? '' ),
+			'location'  => $this->format_location( $row ),
 		);
+	}
+
+	/**
+	 * Format an HPS row's location triplet as "City, State, CT".
+	 *
+	 * @param array $row HPS-shaped row.
+	 * @return string Comma-joined location, empty if no parts present.
+	 */
+	private function format_location( array $row ): string {
+		$city        = trim( (string) ( $row['location_city'] ?? '' ) );
+		$subdivision = (string) ( $row['location_subdivision'] ?? '' );
+		$country     = (string) ( $row['location_country'] ?? '' );
+
+		// Subdivisions are stored as "COUNTRY:SUBDIVISION" — use the trailing code.
+		$subdivision_code = $subdivision;
+		if ( '' !== $subdivision && false !== strpos( $subdivision, ':' ) ) {
+			$parts            = explode( ':', $subdivision, 2 );
+			$subdivision_code = $parts[1] ?? '';
+		}
+
+		$subdivision_name = '' !== $subdivision_code
+			? Location_Helper::get_subdivision_name( $country, $subdivision_code )
+			: '';
+
+		$parts = array_filter(
+			array( $city, $subdivision_name, strtoupper( $country ) ),
+			static fn( $v ) => '' !== $v
+		);
+
+		return implode( ', ', $parts );
 	}
 
 	/**

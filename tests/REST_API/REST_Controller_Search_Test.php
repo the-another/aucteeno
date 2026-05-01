@@ -32,6 +32,9 @@ class REST_Controller_Search_Test extends TestCase {
 		Monkey\tearDown();
 		Mockery::close();
 		Monkey\setUp();
+		// Default to no attachment so the projection falls back to the row's image_url.
+		// Individual tests can override with their own Functions\when() expectation.
+		Functions\when( 'wp_get_attachment_image_src' )->justReturn( false );
 		$this->controller = new REST_Controller();
 		$this->method     = new ReflectionMethod( REST_Controller::class, 'project_search_row' );
 		$this->method->setAccessible( true );
@@ -58,7 +61,7 @@ class REST_Controller_Search_Test extends TestCase {
 
 		$keys = array_keys( $result );
 		sort( $keys );
-		$this->assertSame( array( 'ends_at', 'id', 'image_url', 'permalink', 'title' ), $keys );
+		$this->assertSame( array( 'ends_at', 'id', 'image_url', 'location', 'permalink', 'title' ), $keys );
 
 		$this->assertSame( 42, $result['id'] );
 		$this->assertSame( 'Test Auction', $result['title'] );
@@ -114,7 +117,7 @@ class REST_Controller_Search_Test extends TestCase {
 
 		$keys = array_keys( $result );
 		sort( $keys );
-		$this->assertSame( array( 'ends_at', 'id', 'image_url', 'permalink', 'title' ), $keys );
+		$this->assertSame( array( 'ends_at', 'id', 'image_url', 'location', 'permalink', 'title' ), $keys );
 
 		$this->assertSame( 201, $result['id'] );
 		$this->assertSame( 'Spring Farm Auction', $result['title'] );

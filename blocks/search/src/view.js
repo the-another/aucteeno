@@ -169,7 +169,7 @@ class SearchBlock {
 
 		placeholderEl.innerHTML = `
 			<span class="aucteeno-search-chip">
-				${ this.escape( last.q ) }
+				<span class="aucteeno-search-chip__text">${ this.escape( last.q ) }</span>
 				<button type="button" class="aucteeno-search-chip__x" aria-label="Clear">✕</button>
 			</span>
 		`;
@@ -199,11 +199,21 @@ class SearchBlock {
 		setTimeout( () => this.modal && this.modal.input.focus(), 0 );
 		this.renderResults( [], '', this.activeType );
 		this.renderRecent();
-		if ( this.lastChip ) {
-			this.modal.input.value = this.lastChip.q;
-			this.fetchNow( this.lastChip.q );
-			this.lastChip = null;
+		// Re-read the stored chip on every open so reopening the modal still
+		// pre-fills the term (don't rely on this.lastChip which is consumed once).
+		const last = readLast();
+		if ( last ) {
+			this.activeType = last.type;
+			this.modal.toggleBtns.forEach( ( b ) =>
+				b.setAttribute(
+					'aria-checked',
+					String( b.dataset.type === last.type )
+				)
+			);
+			this.modal.input.value = last.q;
+			this.fetchNow( last.q );
 		}
+		this.lastChip = null;
 		document.addEventListener( 'keydown', this.onKeydown );
 	}
 
@@ -285,8 +295,8 @@ class SearchBlock {
 					<div class="aucteeno-search-modal__header">
 						<input type="search" class="aucteeno-search-modal__input" placeholder="Search…" autocomplete="off" />
 						<div class="aucteeno-search-modal__type-toggle" role="radiogroup">
-							<button type="button" data-type="items" role="radio">Items</button>
 							<button type="button" data-type="auctions" role="radio">Auctions</button>
+							<button type="button" data-type="items" role="radio">Items</button>
 						</div>
 					</div>
 					<ul class="aucteeno-search-modal__results" role="listbox"></ul>
@@ -481,14 +491,25 @@ class SearchBlock {
 				const li = document.createElement( 'li' );
 				li.className = 'aucteeno-search-modal__result';
 				li.tabIndex = 0;
+				const location = row.location
+					? `<span class="aucteeno-search-modal__result-location">${ this.escape(
+							row.location
+					  ) }</span>`
+					: '';
 				li.innerHTML = `
 				<img src="${ this.escape( row.image_url ) }" alt="" />
-				<span class="aucteeno-search-modal__result-title">${ this.escape(
-					row.title
-				) }</span>
+				<div class="aucteeno-search-modal__result-text">
+					<span class="aucteeno-search-modal__result-title">${ this.escape(
+						row.title
+					) }</span>
+					${ location }
+				</div>
 				<span class="aucteeno-search-modal__result-countdown" data-ends-at="${
 					row.ends_at
-				}"></span>
+				}">
+					<span class="aucteeno-search-modal__result-countdown-label">Ends in</span>
+					<span class="aucteeno-search-modal__result-countdown-value"></span>
+				</span>
 			`;
 				const navigate = () => this.onResultClick( row, q, type );
 				li.addEventListener( 'click', navigate );
@@ -506,11 +527,14 @@ class SearchBlock {
 		const pageUrl = this.cfg.pageUrl[ type ];
 		if ( rows && rows.length > 0 && pageUrl ) {
 			const u = new URL( pageUrl, window.location.origin );
-			u.searchParams.set( 's', q );
+			u.searchParams.set( 'keyword', q );
 			this.modal.viewAll.href = u.toString();
+			this.modal.viewAll.textContent =
+				type === 'auctions' ? 'View all auctions' : 'View all items';
 			this.modal.viewAll.hidden = false;
 		} else {
 			this.modal.viewAll.hidden = true;
+			this.modal.viewAll.removeAttribute( 'href' );
 		}
 
 		if ( rows && rows.length > 0 ) {
@@ -535,7 +559,28 @@ class SearchBlock {
 				.forEach( ( el ) => {
 					const endsAt = parseInt( el.dataset.endsAt, 10 );
 					const diff = Math.max( 0, endsAt - now );
-					el.textContent = this.formatCountdown( diff );
+					const label = el.querySelector(
+						'.aucteeno-search-modal__result-countdown-label'
+					);
+					const value = el.querySelector(
+						'.aucteeno-search-modal__result-countdown-value'
+					);
+					if ( ! value ) {
+						return;
+					}
+					if ( diff <= 0 ) {
+						el.classList.add( 'is-ended' );
+						if ( label ) {
+							label.hidden = true;
+						}
+						value.textContent = 'Ended';
+					} else {
+						el.classList.remove( 'is-ended' );
+						if ( label ) {
+							label.hidden = false;
+						}
+						value.textContent = this.formatDuration( diff );
+					}
 				} );
 		};
 		tick();
@@ -546,6 +591,10 @@ class SearchBlock {
 		if ( seconds <= 0 ) {
 			return 'Ended';
 		}
+		return `Ends in ${ this.formatDuration( seconds ) }`;
+	}
+
+	formatDuration( seconds ) {
 		const d = Math.floor( seconds / 86400 );
 		if ( d > 0 ) {
 			return `${ d }d ${ Math.floor( ( seconds % 86400 ) / 3600 ) }h`;

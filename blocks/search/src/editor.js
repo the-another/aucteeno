@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 import metadata from '../block.json';
 
 import './editor.css';
-import './style.css';
+import './style.scss';
 
 const DEBOUNCE_OPTIONS = [
 	{ label: __( 'Instant (0 ms)', 'aucteeno' ), value: 'instant' },

@@ -4,7 +4,7 @@
 
 /* eslint-env jest */
 /* global localStorage, KeyboardEvent */
-jest.mock( '../src/style.css', () => ( {} ), { virtual: true } );
+jest.mock( '../src/style.scss', () => ( {} ), { virtual: true } );
 
 import {
 	SearchBlock,
@@ -245,7 +245,7 @@ describe( 'Aucteeno Search modal: debounce + fetch + render', () => {
 		await block.fetchNow( 'widget' );
 		expect( block.modal.viewAll.hidden ).toBe( false );
 		expect( block.modal.viewAll.href ).toContain( '/search-items/' );
-		expect( block.modal.viewAll.href ).toContain( 's=widget' );
+		expect( block.modal.viewAll.href ).toContain( 'keyword=widget' );
 	} );
 
 	it( 'hides view-all when no page configured', async () => {

@@ -53,7 +53,9 @@ $debounce_ms_map = array(
 $debounce_ms     = $debounce_ms_map[ $debounce_preset ] ?? 250;
 
 $count       = $count_provider->get_running_upcoming_items_count( $count_cache_minutes );
-$placeholder = sprintf( $placeholder_template, number_format_i18n( $count ) );
+// Token replacement (not sprintf) so the already-formatted, comma-separated count survives intact;
+// sprintf( '%d', '5,289' ) would parse to 5.
+$placeholder = str_replace( '%d', number_format_i18n( $count ), $placeholder_template );
 
 $items_opts    = $block_service->get_page_options( $items_page_id );
 $auctions_opts = $block_service->get_page_options( $auctions_page_id );
