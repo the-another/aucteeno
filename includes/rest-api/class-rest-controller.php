@@ -111,10 +111,10 @@ class REST_Controller extends WP_REST_Controller {
 							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'          => array(
-							'description' => 'Response format: html (fragments) or json (data).',
+							'description' => 'Response format: html (fragments), json (full data), or search_row (compact projection for search modal).',
 							'type'        => 'string',
 							'default'     => 'html',
-							'enum'        => array( 'html', 'json' ),
+							'enum'        => array( 'html', 'json', 'search_row' ),
 						),
 						'block_template'  => array(
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
@@ -251,10 +251,10 @@ class REST_Controller extends WP_REST_Controller {
 							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'          => array(
-							'description' => 'Response format: html (fragments) or json (data).',
+							'description' => 'Response format: html (fragments), json (full data), or search_row (compact projection for search modal).',
 							'type'        => 'string',
 							'default'     => 'html',
-							'enum'        => array( 'html', 'json' ),
+							'enum'        => array( 'html', 'json', 'search_row' ),
 						),
 						'block_template'  => array(
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
@@ -464,8 +464,8 @@ class REST_Controller extends WP_REST_Controller {
 	public function get_auctions( $request ) {
 		$format = $request->get_param( 'format' ) ?? 'html';
 
-		// For JSON format, query products directly.
-		if ( 'json' === $format ) {
+		// For JSON or search_row format, query products directly.
+		if ( 'json' === $format || 'search_row' === $format ) {
 			$page     = $request->get_param( 'page' ) ?? 1;
 			$per_page = $request->get_param( 'per_page' ) ?? 10;
 			$location = $request->get_param( 'location' ) ?? array();
@@ -520,6 +520,10 @@ class REST_Controller extends WP_REST_Controller {
 					}
 				}
 				wp_reset_postdata();
+			}
+
+			if ( 'search_row' === $format ) {
+				return new WP_REST_Response( array_map( array( $this, 'project_search_row' ), $auctions ), 200 );
 			}
 
 			return new WP_REST_Response( $auctions, 200 );
@@ -684,8 +688,8 @@ class REST_Controller extends WP_REST_Controller {
 	public function get_items( $request ) {
 		$format = $request->get_param( 'format' ) ?? 'html';
 
-		// For JSON format, query products directly.
-		if ( 'json' === $format ) {
+		// For JSON or search_row format, query products directly.
+		if ( 'json' === $format || 'search_row' === $format ) {
 			$page       = $request->get_param( 'page' ) ?? 1;
 			$per_page   = $request->get_param( 'per_page' ) ?? 10;
 			$location   = $request->get_param( 'location' ) ?? array();
@@ -749,6 +753,10 @@ class REST_Controller extends WP_REST_Controller {
 					}
 				}
 				wp_reset_postdata();
+			}
+
+			if ( 'search_row' === $format ) {
+				return new WP_REST_Response( array_map( array( $this, 'project_search_row' ), $items ), 200 );
 			}
 
 			return new WP_REST_Response( $items, 200 );
@@ -1079,6 +1087,31 @@ class REST_Controller extends WP_REST_Controller {
 		);
 
 		return $data;
+	}
+
+	/**
+	 * Project a full auction/item array to the compact shape used by the Aucteeno Search modal.
+	 *
+	 * @param array $row Full row produced by product_to_auction_array() or product_to_item_array().
+	 * @return array{id:int,title:string,image_url:string,ends_at:int,permalink:string}
+	 */
+	private function project_search_row( array $row ): array {
+		$id       = (int) ( $row['id'] ?? 0 );
+		$thumb_id = $id > 0 ? (int) get_post_thumbnail_id( $id ) : 0;
+		$image    = $thumb_id > 0
+			? (string) wp_get_attachment_image_url( $thumb_id, 'thumbnail' )
+			: '';
+		if ( '' === $image ) {
+			$image = (string) wc_placeholder_img_src( 'thumbnail' );
+		}
+
+		return array(
+			'id'        => $id,
+			'title'     => (string) ( $row['name'] ?? '' ),
+			'image_url' => $image,
+			'ends_at'   => (int) ( $row['bidding_ends_at_timestamp'] ?? 0 ),
+			'permalink' => (string) ( $row['permalink'] ?? '' ),
+		);
 	}
 
 	/**
