@@ -81,7 +81,9 @@ $wrapper_attrs = get_block_wrapper_attributes(
 			aria-label="<?php esc_attr_e( 'Open search', 'aucteeno' ); ?>"
 			aria-haspopup="dialog"
 			data-original-placeholder="<?php echo esc_attr( $placeholder ); ?>">
-		<svg class="wp-block-aucteeno-search__icon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
 		<span class="wp-block-aucteeno-search__placeholder"><?php echo esc_html( $placeholder ); ?></span>
+		<span class="wp-block-aucteeno-search__submit" aria-hidden="true">
+			<svg class="wp-block-aucteeno-search__icon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+		</span>
 	</button>
 </div>
