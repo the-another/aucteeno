@@ -557,17 +557,17 @@ class SearchBlock {
 			this.modal.results
 				.querySelectorAll( '[data-ends-at]' )
 				.forEach( ( el ) => {
-					const endsAt = parseInt( el.dataset.endsAt, 10 );
-					const diff = Math.max( 0, endsAt - now );
-					const label = el.querySelector(
-						'.aucteeno-search-modal__result-countdown-label'
-					);
 					const value = el.querySelector(
 						'.aucteeno-search-modal__result-countdown-value'
 					);
 					if ( ! value ) {
 						return;
 					}
+					const endsAt = parseInt( el.dataset.endsAt, 10 );
+					const diff = Math.max( 0, endsAt - now );
+					const label = el.querySelector(
+						'.aucteeno-search-modal__result-countdown-label'
+					);
 					if ( diff <= 0 ) {
 						el.classList.add( 'is-ended' );
 						if ( label ) {
