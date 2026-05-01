@@ -13,6 +13,7 @@ class SearchBlock {
 		this.pendingPauseTimer = null;
 		this.debounceTimer = null;
 		this.countdownInterval = null;
+		this._returningFocus = false;
 		this.bind();
 	}
 
@@ -95,6 +96,7 @@ class SearchBlock {
 			SearchBlock.openInstance = null;
 		}
 		if ( this.trigger ) {
+			// focus() fires synchronously; the flag is cleared before any user-triggered focus event can arrive.
 			this._returningFocus = true;
 			this.trigger.focus();
 			this._returningFocus = false;
@@ -138,6 +140,7 @@ class SearchBlock {
 		root.className = 'aucteeno-search-modal';
 		root.setAttribute( 'role', 'dialog' );
 		root.setAttribute( 'aria-modal', 'true' );
+		root.setAttribute( 'aria-label', 'Search' );
 		// DOM order matches the spec's focus-trap boundary:
 		// input → type-toggle → result rows → view-all → close.
 		// CSS positions the close button visually top-right while keeping it last in the DOM tab sequence.
@@ -153,7 +156,7 @@ class SearchBlock {
 						</div>
 					</div>
 					<ul class="aucteeno-search-modal__results" role="listbox"></ul>
-					<a class="aucteeno-search-modal__view-all" hidden>View all results</a>
+					<a class="aucteeno-search-modal__view-all" href="#" hidden>View all results</a>
 					<button type="button" class="aucteeno-search-modal__close" aria-label="Close" data-action="close">✕</button>
 				</div>
 				<aside class="aucteeno-search-modal__recent" aria-label="Recent searches">
