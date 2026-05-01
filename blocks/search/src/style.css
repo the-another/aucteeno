@@ -1,0 +1,206 @@
+/**
+ * Aucteeno Search Block - Frontend Modal Styles
+ */
+
+/* Modal overlay */
+.aucteeno-search-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+}
+
+.aucteeno-search-modal__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+/* Panel */
+.aucteeno-search-modal__panel {
+	position: relative;
+	margin-top: 8vh;
+	width: min(720px, 95vw);
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	display: grid;
+	grid-template-columns: 3fr 1fr;
+}
+
+@media (max-width: 768px) {
+
+	.aucteeno-search-modal__backdrop {
+		display: none;
+	}
+
+	.aucteeno-search-modal__panel {
+		margin: 0;
+		width: 100vw;
+		height: 100dvh;
+		border-radius: 0;
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Main column */
+.aucteeno-search-modal__main {
+	position: relative;
+}
+
+/* Close button — visually top-right, last in DOM tab order */
+.aucteeno-search-modal__close {
+	position: absolute;
+	top: 0.5em;
+	right: 0.5em;
+	background: transparent;
+	border: 0;
+	font-size: 1.25rem;
+	cursor: pointer;
+}
+
+/* Header: input + type toggle */
+.aucteeno-search-modal__header {
+	display: flex;
+	gap: 0.5em;
+	padding: 0.75em 3em 0.75em 0.75em;
+	border-bottom: 1px solid #eee;
+}
+
+.aucteeno-search-modal__input {
+	flex: 1;
+	padding: 0.5em;
+	font-size: 1rem;
+}
+
+.aucteeno-search-modal__type-toggle {
+	display: flex;
+	gap: 0.25em;
+}
+
+.aucteeno-search-modal__type-toggle button {
+	padding: 0.4em 0.75em;
+	border: 1px solid #ccd0d4;
+	background: #fff;
+	cursor: pointer;
+}
+
+.aucteeno-search-modal__type-toggle button[aria-checked="true"] {
+	background: #2271b1;
+	color: #fff;
+	border-color: #2271b1;
+}
+
+/* Result list */
+.aucteeno-search-modal__results {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-height: 60vh;
+	overflow: auto;
+}
+
+.aucteeno-search-modal__result {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+	padding: 0.5em 0.75em;
+	cursor: pointer;
+}
+
+.aucteeno-search-modal__result:hover,
+.aucteeno-search-modal__result:focus {
+	background: #f0f0f1;
+	outline: none;
+}
+
+.aucteeno-search-modal__result img {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 4px;
+}
+
+/* Empty / no-results state */
+.aucteeno-search-modal__empty,
+.aucteeno-search-modal__no-results {
+	padding: 1em;
+	color: #777;
+	text-align: center;
+}
+
+/* View-all link */
+.aucteeno-search-modal__view-all {
+	display: block;
+	padding: 0.75em;
+	text-align: center;
+}
+
+/* Recent searches sidebar */
+.aucteeno-search-modal__recent {
+	padding: 0.75em;
+	border-left: 1px solid #eee;
+}
+
+@media (max-width: 768px) {
+
+	.aucteeno-search-modal__recent {
+		border-left: 0;
+		border-top: 1px solid #eee;
+	}
+}
+
+.aucteeno-search-modal__recent h3 {
+	margin: 0 0 0.5em;
+	font-size: 0.95rem;
+}
+
+.aucteeno-search-modal__recent-list {
+	list-style: none;
+	margin: 0 0 0.5em;
+	padding: 0;
+}
+
+.aucteeno-search-modal__recent-list li {
+	display: flex;
+	align-items: center;
+	gap: 0.25em;
+	padding: 0.25em 0;
+}
+
+.aucteeno-search-modal__recent-list .recent-q {
+	flex: 1;
+	text-align: left;
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+}
+
+/* Front-end trigger button */
+.wp-block-aucteeno-search__trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.6em 1em;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+	background: #fff;
+	cursor: text;
+	color: #555;
+	font: inherit;
+}
+
+/* Search chip */
+.aucteeno-search-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+}
+
+.aucteeno-search-chip__x {
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+}
