@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "aucteeno/search",
+    "title": "Aucteeno Search",
+    "category": "aucteeno",
+    "icon": "search",
+    "description": "Search auctions and items via a focused modal with debounced live results.",
+    "keywords": [ "aucteeno", "auction", "item", "search" ],
+    "textdomain": "aucteeno",
+    "supports": {
+        "html": false,
+        "align": [ "wide", "full" ],
+        "spacing": { "margin": true, "padding": true }
+    },
+    "attributes": {
+        "defaultType":            { "type": "string",  "default": "items",   "enum": ["items","auctions"] },
+        "debouncePreset":         { "type": "string",  "default": "normal",  "enum": ["instant","fast","normal","relaxed"] },
+        "countCacheMinutes":      { "type": "number",  "default": 5 },
+        "recentSearchTimeoutSec": { "type": "number",  "default": 10 },
+        "viewAllItemsPageId":     { "type": "number",  "default": 0 },
+        "viewAllAuctionsPageId":  { "type": "number",  "default": 0 },
+        "placeholderTemplate":    { "type": "string",  "default": "%d items to search from" }
+    },
+    "example": {
+        "attributes": { "defaultType": "items", "debouncePreset": "normal" }
+    },
+    "editorScript": "file:../../dist/blocks/search/editor.js",
+    "viewScriptModule": "file:../../dist/blocks/search/view.js",
+    "style":         "file:../../dist/blocks/search/style-editor.css",
+    "editorStyle":   "file:../../dist/blocks/search/editor.css",
+    "render":        "file:./render.php"
+}

@@ -20,6 +20,7 @@ use WP_Block;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 use The_Another\Plugin\Aucteeno\Product_Types\Product_Item;
 use The_Another\Plugin\Aucteeno\Helpers\DateTime_Helper;
+use The_Another\Plugin\Aucteeno\Helpers\Location_Helper;
 use The_Another\Plugin\Aucteeno\Database\Status_Mapper;
 use The_Another\Plugin\Aucteeno\Container;
 use The_Another\Plugin\Aucteeno\Database\Database_Auctions;
@@ -111,10 +112,10 @@ class REST_Controller extends WP_REST_Controller {
 							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'          => array(
-							'description' => 'Response format: html (fragments) or json (data).',
+							'description' => 'Response format: html (fragments), json (full data), or search_row (compact projection for search modal).',
 							'type'        => 'string',
 							'default'     => 'html',
-							'enum'        => array( 'html', 'json' ),
+							'enum'        => array( 'html', 'json', 'search_row' ),
 						),
 						'block_template'  => array(
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
@@ -251,10 +252,10 @@ class REST_Controller extends WP_REST_Controller {
 							'enum'        => array( 'ending_soon', 'status_ending_soon', 'newest', 'lot_number' ),
 						),
 						'format'          => array(
-							'description' => 'Response format: html (fragments) or json (data).',
+							'description' => 'Response format: html (fragments), json (full data), or search_row (compact projection for search modal).',
 							'type'        => 'string',
 							'default'     => 'html',
-							'enum'        => array( 'html', 'json' ),
+							'enum'        => array( 'html', 'json', 'search_row' ),
 						),
 						'block_template'  => array(
 							'description'       => 'Block template JSON for rendering cards with same structure as initial load.',
@@ -456,13 +457,30 @@ class REST_Controller extends WP_REST_Controller {
 	/**
 	 * Get auctions.
 	 *
-	 * Returns HTML fragments by default, or JSON data if format=json.
+	 * Returns HTML fragments by default, full JSON if format=json, or compact rows if format=search_row.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_auctions( $request ) {
 		$format = $request->get_param( 'format' ) ?? 'html';
+
+		// search_row uses the HPS query path so we get title-only LIKE matching
+		// and pre-resolved image_url for free.
+		if ( 'search_row' === $format ) {
+			$args   = array(
+				'page'            => $request->get_param( 'page' ) ?? 1,
+				'per_page'        => $request->get_param( 'per_page' ) ?? 25,
+				'sort'            => $request->get_param( 'sort' ) ?? 'ending_soon',
+				'search'          => $request->get_param( 'search' ) ?? '',
+				'include_expired' => false,
+			);
+			$result = Container::get_instance()->get( 'database_auctions' )->query_for_listing( $args );
+			return new WP_REST_Response(
+				array_map( array( $this, 'project_search_row' ), $result['items'] ),
+				200
+			);
+		}
 
 		// For JSON format, query products directly.
 		if ( 'json' === $format ) {
@@ -676,13 +694,30 @@ class REST_Controller extends WP_REST_Controller {
 	/**
 	 * Get items.
 	 *
-	 * Returns HTML fragments by default, or JSON data if format=json.
+	 * Returns HTML fragments by default, full JSON if format=json, or compact rows if format=search_row.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_items( $request ) {
 		$format = $request->get_param( 'format' ) ?? 'html';
+
+		// search_row uses the HPS query path so we get title-only LIKE matching
+		// and pre-resolved image_url for free.
+		if ( 'search_row' === $format ) {
+			$args   = array(
+				'page'            => $request->get_param( 'page' ) ?? 1,
+				'per_page'        => $request->get_param( 'per_page' ) ?? 25,
+				'sort'            => $request->get_param( 'sort' ) ?? 'ending_soon',
+				'search'          => $request->get_param( 'search' ) ?? '',
+				'include_expired' => false,
+			);
+			$result = Container::get_instance()->get( 'database_items' )->query_for_listing( $args );
+			return new WP_REST_Response(
+				array_map( array( $this, 'project_search_row' ), $result['items'] ),
+				200
+			);
+		}
 
 		// For JSON format, query products directly.
 		if ( 'json' === $format ) {
@@ -1079,6 +1114,71 @@ class REST_Controller extends WP_REST_Controller {
 		);
 
 		return $data;
+	}
+
+	/**
+	 * Project an HPS row (Database_Auctions/Items::query_for_listing) to the compact
+	 * shape used by the Aucteeno Search modal.
+	 *
+	 * @param array $row HPS-shaped row with id, title, image_url, bidding_ends_at, permalink.
+	 * @return array{id:int,title:string,image_url:string,ends_at:int,permalink:string}
+	 */
+	private function project_search_row( array $row ): array {
+		$id = (int) ( $row['id'] ?? 0 );
+
+		// HPS resolves image_url at "medium" size; resolve "thumbnail" instead since
+		// the modal renders 48–56px previews and a smaller asset is plenty.
+		$image    = '';
+		$image_id = (int) ( $row['image_id'] ?? 0 );
+		if ( $image_id > 0 ) {
+			$src   = wp_get_attachment_image_src( $image_id, 'thumbnail' );
+			$image = is_array( $src ) ? (string) $src[0] : '';
+		}
+		if ( '' === $image ) {
+			$image = (string) ( $row['image_url'] ?? '' );
+		}
+		if ( '' === $image ) {
+			$image = (string) wc_placeholder_img_src( 'thumbnail' );
+		}
+
+		return array(
+			'id'        => $id,
+			'title'     => (string) ( $row['title'] ?? '' ),
+			'image_url' => $image,
+			'ends_at'   => (int) ( $row['bidding_ends_at'] ?? 0 ),
+			'permalink' => (string) ( $row['permalink'] ?? '' ),
+			'location'  => $this->format_location( $row ),
+		);
+	}
+
+	/**
+	 * Format an HPS row's location triplet as "City, State, CT".
+	 *
+	 * @param array $row HPS-shaped row.
+	 * @return string Comma-joined location, empty if no parts present.
+	 */
+	private function format_location( array $row ): string {
+		$city        = trim( (string) ( $row['location_city'] ?? '' ) );
+		$subdivision = (string) ( $row['location_subdivision'] ?? '' );
+		$country     = (string) ( $row['location_country'] ?? '' );
+
+		// Subdivisions are stored as "COUNTRY:SUBDIVISION" — use the trailing code.
+		$subdivision_code = $subdivision;
+		if ( '' !== $subdivision && false !== strpos( $subdivision, ':' ) ) {
+			$parts            = explode( ':', $subdivision, 2 );
+			$subdivision_code = $parts[1] ?? '';
+		}
+
+		$subdivision_name = '' !== $subdivision_code
+			? Location_Helper::get_subdivision_name( $country, $subdivision_code )
+			: '';
+
+		$parts = array_filter(
+			array( $city, $subdivision_name, strtoupper( $country ) ),
+			static fn( $v ) => '' !== $v
+		);
+
+		return implode( ', ', $parts );
 	}
 
 	/**

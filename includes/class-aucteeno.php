@@ -102,6 +102,9 @@ class Aucteeno {
 
 		// Register query loop empty message service.
 		$this->register_query_loop_empty_message();
+
+		// Register Aucteeno Search services.
+		$this->register_search_services();
 	}
 
 	/**
@@ -424,6 +427,32 @@ class Aucteeno {
 			},
 			true // Singleton.
 		);
+	}
+
+	/**
+	 * Register Aucteeno Search block services.
+	 *
+	 * @since TBD
+	 */
+	private function register_search_services(): void {
+		$this->container->register(
+			'search_count_provider',
+			function ( Container $c ) {
+				return new Services\Search_Count_Provider( $c->get_hook_manager() );
+			},
+			true // Singleton.
+		);
+
+		$this->container->register(
+			'search_block_service',
+			function ( Container $c ) {
+				return new Services\Search_Block_Service( $c->get_hook_manager() );
+			},
+			true // Singleton.
+		);
+
+		$this->container->get( 'search_count_provider' )->init();
+		$this->container->get( 'search_block_service' )->init();
 	}
 
 	/**

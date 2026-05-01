@@ -127,8 +127,11 @@ if ( $page < 1 ) {
 // Extract search parameter from URL (overrides block attributes).
 $search_query = '';
 
-// 1. Check direct query argument.
-if ( isset( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+// 1. Check direct query argument. Accept either `keyword` (Aucteeno Search block "view all" link)
+// or `s` (WordPress core search). `keyword` wins if both are present.
+if ( isset( $_GET['keyword'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$search_query = sanitize_text_field( wp_unslash( $_GET['keyword'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+} elseif ( isset( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$search_query = sanitize_text_field( wp_unslash( $_GET['s'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 }
 

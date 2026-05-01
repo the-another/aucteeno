@@ -39,6 +39,9 @@ const editorEntries = {
 
 	// Pagination block
 	'pagination/editor': path.resolve( __dirname, 'blocks/pagination/src/editor.js' ),
+
+	// Search block
+	'search/editor': path.resolve( __dirname, 'blocks/search/src/editor.js' ),
 };
 
 const viewEntries = {
@@ -46,6 +49,7 @@ const viewEntries = {
 	'field-countdown/view': path.resolve( __dirname, 'blocks/field-countdown/src/view.js' ),
 	'field-starts-at/view': path.resolve( __dirname, 'blocks/field-starts-at/src/view.js' ),
 	'field-ends-at/view': path.resolve( __dirname, 'blocks/field-ends-at/src/view.js' ),
+	'search/view': path.resolve( __dirname, 'blocks/search/src/view.js' ),
 };
 
 // Editor config - standard @wordpress/scripts config.
