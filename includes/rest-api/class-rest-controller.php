@@ -456,7 +456,7 @@ class REST_Controller extends WP_REST_Controller {
 	/**
 	 * Get auctions.
 	 *
-	 * Returns HTML fragments by default, or JSON data if format=json.
+	 * Returns HTML fragments by default, full JSON if format=json, or compact rows if format=search_row.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error
@@ -680,7 +680,7 @@ class REST_Controller extends WP_REST_Controller {
 	/**
 	 * Get items.
 	 *
-	 * Returns HTML fragments by default, or JSON data if format=json.
+	 * Returns HTML fragments by default, full JSON if format=json, or compact rows if format=search_row.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error
