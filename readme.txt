@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -172,6 +172,10 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.7.1 - 2026-05-01 =
+* Fix: Search-block placeholder count now matches what the live search returns. `Search_Count_Provider` previously filtered by `bidding_status IN (10, 20)`, which drifted from the timestamp-based filter the search itself uses (`Database_Items::status_clauses`, `Query_Orderer`) and inflated the count by ~100k on production. Now joins `wp_aucteeno_items` to published posts and counts items whose `bidding_ends_at` is in the future.
 
 = 1.7.0 - 2026-05-01 =
 * Add: Aucteeno Search block — WP-style trigger that opens a Jetpack-inspired modal with debounced REST autosearch (Auctions / Items toggle), result rows (thumbnail + title + "City, State, CT" location + bold countdown), recent-searches sidebar, and "View all" link to the configured query-loop page.
