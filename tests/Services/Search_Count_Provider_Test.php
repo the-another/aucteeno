@@ -37,16 +37,23 @@ class Search_Count_Provider_Test extends TestCase {
 
 		global $wpdb;
 		$wpdb = $this->getMockBuilder(\stdClass::class)
-			->addMethods(['get_var', 'prepare'])
+			->addMethods(['get_var'])
 			->getMock();
 		$wpdb->prefix = 'wp_';
-		$wpdb->method('prepare')->willReturnArgument(0);
-		$wpdb->method('get_var')->willReturn('123');
+		$wpdb->posts  = 'wp_posts';
+		$captured_sql = null;
+		$wpdb->method('get_var')->willReturnCallback(function ($sql) use (&$captured_sql) {
+			$captured_sql = $sql;
+			return '123';
+		});
 
 		$hook_manager = $this->createMock(Hook_Manager::class);
 		$provider = new Search_Count_Provider($hook_manager);
 		$this->assertSame(123, $provider->get_running_upcoming_items_count(5));
 		$this->assertTrue($set_called);
+		$this->assertStringContainsString('wp_aucteeno_items', $captured_sql);
+		$this->assertStringContainsString("post_status = 'publish'", $captured_sql);
+		$this->assertStringContainsString('bidding_ends_at > UNIX_TIMESTAMP()', $captured_sql);
 	}
 
 	public function test_zero_cache_minutes_skips_transient(): void {
@@ -63,10 +70,10 @@ class Search_Count_Provider_Test extends TestCase {
 
 		global $wpdb;
 		$wpdb = $this->getMockBuilder(\stdClass::class)
-			->addMethods(['get_var', 'prepare'])
+			->addMethods(['get_var'])
 			->getMock();
 		$wpdb->prefix = 'wp_';
-		$wpdb->method('prepare')->willReturnArgument(0);
+		$wpdb->posts  = 'wp_posts';
 		$wpdb->method('get_var')->willReturn('99');
 
 		$hook_manager = $this->createMock(Hook_Manager::class);

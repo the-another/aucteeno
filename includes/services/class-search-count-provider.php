@@ -54,10 +54,15 @@ class Search_Count_Provider {
 	}
 
 	/**
-	 * Get count of items with bidding_status IN (10, 20).
+	 * Get count of items the live search would return (running + upcoming).
+	 *
+	 * Counts items whose parent post is published and whose `bidding_ends_at`
+	 * is in the future. Uses timestamps rather than `bidding_status` because
+	 * status can lag behind real-time transitions; the search itself filters
+	 * the same way (see Database_Items::status_clauses, Query_Orderer).
 	 *
 	 * @param int $cache_minutes Cache duration in minutes. 0 = bypass cache.
-	 * @return int Count of running and upcoming items.
+	 * @return int Count of items the search will return.
 	 */
 	public function get_running_upcoming_items_count( int $cache_minutes = 5 ): int {
 		if ( $cache_minutes > 0 ) {
@@ -68,15 +73,16 @@ class Search_Count_Provider {
 		}
 
 		global $wpdb;
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$items_table = $wpdb->prefix . 'aucteeno_items';
+		$posts_table = $wpdb->posts;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$count = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}aucteeno_items WHERE bidding_status IN (%d, %d)",
-				10,
-				20
-			)
+			"SELECT COUNT(*) FROM {$items_table} i
+			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
+			WHERE i.bidding_ends_at > UNIX_TIMESTAMP()"
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		if ( $cache_minutes > 0 ) {
 			set_transient( self::TRANSIENT_KEY, $count, $cache_minutes * MINUTE_IN_SECONDS );
