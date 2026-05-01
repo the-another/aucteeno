@@ -92,7 +92,18 @@ class SearchBlock {
 		this.debounceTimer = null;
 		this.countdownInterval = null;
 		this._returningFocus = false;
+		this.lastChip = null;
+		this.onStorageEvent = ( e ) => {
+			if ( e.key === STORAGE_KEY_LAST ) {
+				this.renderChip();
+			}
+			if ( e.key === STORAGE_KEY_RECENT && this.modal ) {
+				this.renderRecent();
+			}
+		};
+		window.addEventListener( 'storage', this.onStorageEvent );
 		this.bind();
+		this.renderChip();
 	}
 
 	readConfig( el ) {
@@ -136,6 +147,45 @@ class SearchBlock {
 		this.trigger.addEventListener( 'click', () => this.open() );
 	}
 
+	renderChip() {
+		if ( ! this.trigger ) {
+			return;
+		}
+		const placeholderEl = this.trigger.querySelector(
+			'.wp-block-aucteeno-search__placeholder'
+		);
+		if ( ! placeholderEl ) {
+			return;
+		}
+
+		const last = readLast();
+		if ( ! last ) {
+			// Restore original placeholder if a chip was previously rendered (e.g. cross-tab clear).
+			placeholderEl.textContent =
+				this.trigger.dataset.originalPlaceholder || '';
+			this.lastChip = null;
+			return;
+		}
+
+		placeholderEl.innerHTML = `
+			<span class="aucteeno-search-chip">
+				${ this.escape( last.q ) }
+				<button type="button" class="aucteeno-search-chip__x" aria-label="Clear">✕</button>
+			</span>
+		`;
+		const xBtn = placeholderEl.querySelector( '.aucteeno-search-chip__x' );
+		xBtn.addEventListener( 'click', ( e ) => {
+			e.stopPropagation();
+			clearLast();
+			placeholderEl.textContent =
+				this.trigger.dataset.originalPlaceholder || '';
+			this.lastChip = null;
+		} );
+
+		this.activeType = last.type;
+		this.lastChip = last; // consumed by open() to pre-fill input
+	}
+
 	open() {
 		if ( SearchBlock.openInstance && SearchBlock.openInstance !== this ) {
 			SearchBlock.openInstance.close();
@@ -149,6 +199,11 @@ class SearchBlock {
 		setTimeout( () => this.modal && this.modal.input.focus(), 0 );
 		this.renderResults( [], '', this.activeType );
 		this.renderRecent();
+		if ( this.lastChip ) {
+			this.modal.input.value = this.lastChip.q;
+			this.fetchNow( this.lastChip.q );
+			this.lastChip = null;
+		}
 		document.addEventListener( 'keydown', this.onKeydown );
 	}
 

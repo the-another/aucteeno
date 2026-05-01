@@ -474,3 +474,74 @@ describe( 'Aucteeno Search recent searches', () => {
 		expect( readRecent().length ).toBe( 0 );
 	} );
 } );
+
+describe( 'Aucteeno Search last-term chip', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	it( 'renders chip when last_v1 is present and < 30min old', () => {
+		localStorage.setItem(
+			STORAGE_KEY_LAST,
+			JSON.stringify( { q: 'widgets', type: 'items', ts: Date.now() } )
+		);
+		const root = makeRoot();
+		// trigger needs a placeholder span and an original-placeholder data attr (mirroring render.php).
+		root.querySelector( '.wp-block-aucteeno-search__trigger' ).dataset.originalPlaceholder = '12,345 items';
+		root.querySelector( '.wp-block-aucteeno-search__trigger' ).innerHTML =
+			'<span class="wp-block-aucteeno-search__placeholder">12,345 items</span>';
+		new SearchBlock( root );
+		expect( root.querySelector( '.aucteeno-search-chip' ) ).not.toBeNull();
+	} );
+
+	it( 'suppresses chip when last_v1 is older than 30min', () => {
+		localStorage.setItem(
+			STORAGE_KEY_LAST,
+			JSON.stringify( { q: 'old', type: 'items', ts: Date.now() - 31 * 60 * 1000 } )
+		);
+		const root = makeRoot();
+		root.querySelector( '.wp-block-aucteeno-search__trigger' ).dataset.originalPlaceholder = '12,345 items';
+		root.querySelector( '.wp-block-aucteeno-search__trigger' ).innerHTML =
+			'<span class="wp-block-aucteeno-search__placeholder">12,345 items</span>';
+		new SearchBlock( root );
+		expect( root.querySelector( '.aucteeno-search-chip' ) ).toBeNull();
+	} );
+
+	it( 'chip ✕ clears last_v1 and restores original placeholder', () => {
+		localStorage.setItem(
+			STORAGE_KEY_LAST,
+			JSON.stringify( { q: 'widgets', type: 'items', ts: Date.now() } )
+		);
+		const root = makeRoot();
+		const trigger = root.querySelector( '.wp-block-aucteeno-search__trigger' );
+		trigger.dataset.originalPlaceholder = '12,345 items';
+		trigger.innerHTML = '<span class="wp-block-aucteeno-search__placeholder">x</span>';
+		new SearchBlock( root );
+		root.querySelector( '.aucteeno-search-chip__x' ).click();
+		expect( localStorage.getItem( STORAGE_KEY_LAST ) ).toBeNull();
+		expect( root.querySelector( '.wp-block-aucteeno-search__placeholder' ).textContent ).toBe(
+			'12,345 items'
+		);
+	} );
+
+	it( 'open() consumes lastChip by pre-filling the input', async () => {
+		localStorage.setItem(
+			STORAGE_KEY_LAST,
+			JSON.stringify( { q: 'widgets', type: 'items', ts: Date.now() } )
+		);
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		const trigger = root.querySelector( '.wp-block-aucteeno-search__trigger' );
+		trigger.dataset.originalPlaceholder = '12,345 items';
+		trigger.innerHTML = '<span class="wp-block-aucteeno-search__placeholder">x</span>';
+		const block = new SearchBlock( root );
+		global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => [] } );
+		block.open();
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+		expect( block.modal.input.value ).toBe( 'widgets' );
+		expect( block.lastChip ).toBeNull();
+		delete global.fetch;
+	} );
+} );
