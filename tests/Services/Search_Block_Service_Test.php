@@ -175,7 +175,8 @@ class Search_Block_Service_Test extends TestCase {
 		$this->assertContains( 'save_post_page', $registered );
 		$this->assertContains( 'save_post_aucteeno-ext-item', $registered );
 		$this->assertContains( 'save_post_aucteeno-ext-auction', $registered );
-		$this->assertContains( 'trashed_post', $registered );
+		$this->assertContains( 'trashed_aucteeno-ext-item', $registered );
+		$this->assertContains( 'trashed_aucteeno-ext-auction', $registered );
 	}
 
 	public function test_on_page_save_deletes_transient(): void {
