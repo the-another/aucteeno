@@ -24,6 +24,9 @@ const Spinner = () =>
 const Notice = ( { children } ) =>
 	React.createElement( 'div', { 'data-testid': 'notice' }, children );
 
+const RadioControl = ( { label } ) =>
+	React.createElement( 'div', { 'data-testid': 'radio-control' }, label );
+
 const __experimentalUnitControl = ( { label } ) =>
 	React.createElement( 'div', { 'data-testid': 'unit-control' }, label );
 
@@ -33,6 +36,7 @@ const __experimentalNumberControl = ( { label } ) =>
 module.exports = {
 	PanelBody,
 	ToggleControl,
+	RadioControl,
 	SelectControl,
 	TextControl,
 	RangeControl,
