@@ -256,6 +256,36 @@ class SearchBlock {
 			this.close();
 			return;
 		}
+		if ( e.key === 'ArrowDown' || e.key === 'ArrowUp' ) {
+			const rows = [
+				...this.modal.results.querySelectorAll(
+					'.aucteeno-search-modal__result'
+				),
+			];
+			if ( rows.length === 0 ) {
+				return;
+			}
+			const active = this.modal.root.ownerDocument.activeElement;
+			const idx = rows.indexOf( active );
+			if ( e.key === 'ArrowDown' ) {
+				if ( active === this.modal.input ) {
+					e.preventDefault();
+					rows[ 0 ].focus();
+				} else if ( idx > -1 && idx < rows.length - 1 ) {
+					e.preventDefault();
+					rows[ idx + 1 ].focus();
+				} else if ( idx === rows.length - 1 ) {
+					e.preventDefault();
+				}
+			} else if ( idx === 0 ) {
+				e.preventDefault();
+				this.modal.input.focus();
+			} else if ( idx > 0 ) {
+				e.preventDefault();
+				rows[ idx - 1 ].focus();
+			}
+			return;
+		}
 		if ( e.key === 'Tab' ) {
 			const focusables = this.modal.root.querySelectorAll(
 				'input, button, a[href], [tabindex]:not([tabindex="-1"])'
@@ -286,7 +316,7 @@ class SearchBlock {
 		root.setAttribute( 'aria-modal', 'true' );
 		root.setAttribute( 'aria-label', 'Search' );
 		// DOM order matches the spec's focus-trap boundary:
-		// input → type-toggle → result rows → view-all → close.
+		// input → submit button → type-toggle → result rows → view-all → close.
 		// CSS positions the close button visually top-right while keeping it last in the DOM tab sequence.
 		root.innerHTML = `
 			<div class="aucteeno-search-modal__backdrop" data-action="close"></div>
@@ -294,6 +324,9 @@ class SearchBlock {
 				<div class="aucteeno-search-modal__main">
 					<div class="aucteeno-search-modal__header">
 						<input type="search" class="aucteeno-search-modal__input" placeholder="Search…" autocomplete="off" />
+						<button type="button" class="aucteeno-search-modal__submit" aria-label="Submit search">
+							<svg class="aucteeno-search-modal__submit-icon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+						</button>
 						<div class="aucteeno-search-modal__type-toggle" role="radiogroup">
 							<button type="button" data-type="auctions" role="radio">Auctions</button>
 							<button type="button" data-type="items" role="radio">Items</button>
@@ -319,6 +352,7 @@ class SearchBlock {
 		const toggleBtns = root.querySelectorAll(
 			'.aucteeno-search-modal__type-toggle button'
 		);
+		const submit = root.querySelector( '.aucteeno-search-modal__submit' );
 
 		root.querySelectorAll( '[data-action="close"]' ).forEach( ( el ) =>
 			el.addEventListener( 'click', () => this.close() )
@@ -337,8 +371,15 @@ class SearchBlock {
 		input.addEventListener( 'input', () =>
 			this.onInputChange( input.value )
 		);
+		submit.addEventListener( 'click', () => this.submitSearch() );
+		input.addEventListener( 'keydown', ( e ) => {
+			if ( e.key === 'Enter' ) {
+				e.preventDefault();
+				this.submitSearch();
+			}
+		} );
 
-		return { root, input, results, viewAll, toggleBtns };
+		return { root, input, results, viewAll, toggleBtns, submit };
 	}
 
 	setActiveType( t ) {
@@ -475,6 +516,16 @@ class SearchBlock {
 		};
 	}
 
+	viewAllUrl( q, type ) {
+		const pageUrl = this.cfg.pageUrl[ type ];
+		if ( ! pageUrl ) {
+			return '';
+		}
+		const u = new URL( pageUrl, window.location.origin );
+		u.searchParams.set( 'keyword', q );
+		return u.toString();
+	}
+
 	renderResults( rows, q, type ) {
 		const ul = this.modal.results;
 		ul.innerHTML = '';
@@ -524,11 +575,10 @@ class SearchBlock {
 		}
 
 		// View all link.
-		const pageUrl = this.cfg.pageUrl[ type ];
-		if ( rows && rows.length > 0 && pageUrl ) {
-			const u = new URL( pageUrl, window.location.origin );
-			u.searchParams.set( 'keyword', q );
-			this.modal.viewAll.href = u.toString();
+		const viewAllUrl =
+			rows && rows.length > 0 ? this.viewAllUrl( q, type ) : '';
+		if ( viewAllUrl ) {
+			this.modal.viewAll.href = viewAllUrl;
 			this.modal.viewAll.textContent =
 				type === 'auctions' ? 'View all auctions' : 'View all items';
 			this.modal.viewAll.hidden = false;
@@ -608,6 +658,28 @@ class SearchBlock {
 			return `${ m }m ${ seconds % 60 }s`;
 		}
 		return `${ seconds }s`;
+	}
+
+	submitSearch() {
+		if ( ! this.modal ) {
+			return;
+		}
+		const q = ( this.modal.input.value || '' ).trim();
+		const type = this.activeType;
+		if ( q === '' ) {
+			return;
+		}
+		const url = this.viewAllUrl( q, type );
+		if ( url ) {
+			pushRecent( q, type );
+			writeLast( q, type );
+			window.location.href = url;
+			return;
+		}
+		// No results page configured for this type: force an immediate (non-debounced)
+		// in-modal fetch. Term is intentionally NOT persisted here (persist happens on
+		// navigate or result click), mirroring live-typing behavior.
+		this.fetchNow( q );
 	}
 
 	onResultClick( row, q, type ) {

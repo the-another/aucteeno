@@ -158,24 +158,73 @@ body.admin-bar .aucteeno-search-modal__panel {
 	display: none;
 }
 
+.aucteeno-search-modal__submit {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	background: var(--ats-accent);
+	border: 1px solid var(--ats-accent);
+	border-radius: 4px;
+	color: var(--ats-accent-fg);
+	cursor: pointer;
+	transition: background-color 0.15s ease-in-out;
+}
+
+.aucteeno-search-modal__submit:hover,
+.aucteeno-search-modal__submit:focus {
+	background: var(--ats-accent-hover);
+	border-color: var(--ats-accent-hover);
+	outline: none;
+}
+
+.aucteeno-search-modal__submit:focus-visible {
+	outline: 2px solid var(--ats-accent-fg);
+	outline-offset: -4px;
+}
+
+.aucteeno-search-modal__submit-icon {
+	flex-shrink: 0;
+}
+
+/* Segmented control: a single bordered track holding two connected
+ * segments. The active segment fills with the accent; the divider sits
+ * between them. End corners are rounded per-button (rather than clipping
+ * the track with overflow:hidden) so keyboard focus rings aren't cut off. */
 .aucteeno-search-modal__type-toggle {
 	display: flex;
 	flex: 1 1 100%;
-	gap: 0.4em;
+	border: 1px solid var(--ats-border);
+	border-radius: 4px;
 }
 
 .aucteeno-search-modal__type-toggle button {
 	flex: 1;
 	padding: 0.55em 0.5em;
 	background: transparent;
-	border: 1px solid var(--ats-border);
-	border-radius: 4px;
+	border: 0;
 	color: var(--ats-text-muted);
 	font-size: var(--wp--preset--font-size--small) !important;
 	font-weight: 500;
 	line-height: 1.2;
 	cursor: pointer;
 	transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+/* Divider between the two segments. */
+.aucteeno-search-modal__type-toggle button + button {
+	border-left: 1px solid var(--ats-border);
+}
+
+.aucteeno-search-modal__type-toggle button:first-child {
+	border-radius: 3px 0 0 3px;
+}
+
+.aucteeno-search-modal__type-toggle button:last-child {
+	border-radius: 0 3px 3px 0;
 }
 
 .aucteeno-search-modal__type-toggle button:hover,
@@ -185,7 +234,6 @@ body.admin-bar .aucteeno-search-modal__panel {
 
 .aucteeno-search-modal__type-toggle button[aria-checked="true"] {
 	background: var(--ats-accent);
-	border-color: var(--ats-accent);
 	color: var(--ats-accent-fg);
 }
 
@@ -347,9 +395,14 @@ body.admin-bar .aucteeno-search-modal__panel {
 		padding: 0 10px;
 	}
 
+	.aucteeno-search-modal__submit {
+		width: 52px;
+		height: 60px;
+		border-radius: 0;
+	}
+
 	.aucteeno-search-modal__type-toggle {
 		flex: 0 0 auto;
-		gap: 0.25em;
 	}
 
 	.aucteeno-search-modal__type-toggle button {
