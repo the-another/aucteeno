@@ -158,6 +158,33 @@ body.admin-bar .aucteeno-search-modal__panel {
 	display: none;
 }
 
+.aucteeno-search-modal__submit {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	background: var(--ats-accent);
+	border: 1px solid var(--ats-accent);
+	border-radius: 4px;
+	color: var(--ats-accent-fg);
+	cursor: pointer;
+	transition: background-color 0.15s ease-in-out;
+}
+
+.aucteeno-search-modal__submit:hover,
+.aucteeno-search-modal__submit:focus {
+	background: var(--ats-accent-hover);
+	border-color: var(--ats-accent-hover);
+	outline: none;
+}
+
+.aucteeno-search-modal__submit-icon {
+	flex-shrink: 0;
+}
+
 .aucteeno-search-modal__type-toggle {
 	display: flex;
 	flex: 1 1 100%;
@@ -345,6 +372,12 @@ body.admin-bar .aucteeno-search-modal__panel {
 		flex: 1;
 		height: 60px;
 		padding: 0 10px;
+	}
+
+	.aucteeno-search-modal__submit {
+		width: 52px;
+		height: 60px;
+		border-radius: 0;
 	}
 
 	.aucteeno-search-modal__type-toggle {

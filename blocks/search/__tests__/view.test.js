@@ -545,3 +545,92 @@ describe( 'Aucteeno Search last-term chip', () => {
 		delete global.fetch;
 	} );
 } );
+
+describe( 'Aucteeno Search submit button', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		delete global.fetch;
+	} );
+
+	it( 'submit button navigates to the results page and persists recent + last', () => {
+		const realLocation = window.location;
+		delete window.location;
+		window.location = { href: '', origin: 'https://example.com' };
+
+		const root = makeRoot();
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+
+		expect( window.location.href ).toContain( '/search-items/' );
+		expect( window.location.href ).toContain( 'keyword=widget' );
+		const recent = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
+		);
+		const last = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_LAST ) || 'null'
+		);
+		expect( recent[ 0 ] ).toEqual(
+			expect.objectContaining( { q: 'widget', type: 'items' } )
+		);
+		expect( last ).toEqual(
+			expect.objectContaining( { q: 'widget', type: 'items' } )
+		);
+
+		window.location = realLocation;
+	} );
+
+	it( 'Enter in the input submits the search', () => {
+		const realLocation = window.location;
+		delete window.location;
+		window.location = { href: '', origin: 'https://example.com' };
+
+		const root = makeRoot();
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'gizmo';
+		block.modal.input.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } )
+		);
+		expect( window.location.href ).toContain( 'keyword=gizmo' );
+
+		window.location = realLocation;
+	} );
+
+	it( 'submit with no results page configured triggers an in-modal fetch instead of navigating', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.itemsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+		block.modal.input.value = 'nopage';
+		block.modal.submit.click();
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+		expect( global.fetch ).toHaveBeenCalled();
+		expect( global.fetch.mock.calls[ 0 ][ 0 ].toString() ).toMatch(
+			/search=nopage/
+		);
+	} );
+
+	it( 'submit with an empty/whitespace query does nothing', () => {
+		const root = makeRoot();
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest.fn();
+		block.modal.input.value = '   ';
+		block.modal.submit.click();
+		expect( global.fetch ).not.toHaveBeenCalled();
+	} );
+} );
