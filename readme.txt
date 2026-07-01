@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.7.1
+Stable tag: 1.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -173,6 +173,13 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.7.2 - 2026-07-02 =
+* New: Search modal has a search (magnifier) button — clicking it or pressing Enter opens the configured "View all" results page for the active type.
+* New: Arrow keys (up/down) move focus through search results; Enter opens the focused result.
+* Improve: Auctions/Items selector restyled as a single segmented control.
+* Improve: Accessible focus ring on the search submit button.
 
 = 1.7.1 - 2026-05-01 =
 * Fix: Search-block placeholder count now matches what the live search returns. `Search_Count_Provider` previously filtered by `bidding_status IN (10, 20)`, which drifted from the timestamp-based filter the search itself uses (`Database_Items::status_clauses`, `Query_Orderer`) and inflated the count by ~100k on production. Now joins `wp_aucteeno_items` to published posts and counts items whose `bidding_ends_at` is in the future.
