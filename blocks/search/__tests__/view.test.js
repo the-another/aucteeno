@@ -661,7 +661,7 @@ describe( 'Aucteeno Search arrow-key navigation', () => {
 		const rows = openWithRows( block, 3 );
 		block.modal.input.focus();
 		document.dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowDown' } )
+			new KeyboardEvent( 'keydown', { key: 'ArrowDown', cancelable: true } )
 		);
 		expect( document.activeElement ).toBe( rows[ 0 ] );
 	} );
@@ -671,7 +671,7 @@ describe( 'Aucteeno Search arrow-key navigation', () => {
 		const rows = openWithRows( block, 3 );
 		rows[ 0 ].focus();
 		document.dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowDown' } )
+			new KeyboardEvent( 'keydown', { key: 'ArrowDown', cancelable: true } )
 		);
 		expect( document.activeElement ).toBe( rows[ 1 ] );
 	} );
@@ -680,10 +680,13 @@ describe( 'Aucteeno Search arrow-key navigation', () => {
 		const block = new SearchBlock( makeRoot() );
 		const rows = openWithRows( block, 2 );
 		rows[ 1 ].focus();
-		document.dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowDown' } )
-		);
+		const event = new KeyboardEvent( 'keydown', {
+			key: 'ArrowDown',
+			cancelable: true,
+		} );
+		document.dispatchEvent( event );
 		expect( document.activeElement ).toBe( rows[ 1 ] );
+		expect( event.defaultPrevented ).toBe( true );
 	} );
 
 	it( 'ArrowUp from the first result returns focus to the input', () => {
@@ -691,7 +694,7 @@ describe( 'Aucteeno Search arrow-key navigation', () => {
 		const rows = openWithRows( block, 3 );
 		rows[ 0 ].focus();
 		document.dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowUp' } )
+			new KeyboardEvent( 'keydown', { key: 'ArrowUp', cancelable: true } )
 		);
 		expect( document.activeElement ).toBe( block.modal.input );
 	} );
@@ -701,7 +704,7 @@ describe( 'Aucteeno Search arrow-key navigation', () => {
 		const rows = openWithRows( block, 3 );
 		rows[ 2 ].focus();
 		document.dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowUp' } )
+			new KeyboardEvent( 'keydown', { key: 'ArrowUp', cancelable: true } )
 		);
 		expect( document.activeElement ).toBe( rows[ 1 ] );
 	} );
