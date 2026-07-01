@@ -634,3 +634,75 @@ describe( 'Aucteeno Search submit button', () => {
 		expect( global.fetch ).not.toHaveBeenCalled();
 	} );
 } );
+
+describe( 'Aucteeno Search arrow-key navigation', () => {
+	afterEach( () => {
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	// Opens the modal and injects `n` focusable result rows, returning them.
+	function openWithRows( block, n ) {
+		block.open();
+		block.modal.results.innerHTML = Array.from(
+			{ length: n },
+			( _, i ) =>
+				`<li class="aucteeno-search-modal__result" tabindex="0">row${ i }</li>`
+		).join( '' );
+		return [
+			...block.modal.results.querySelectorAll(
+				'.aucteeno-search-modal__result'
+			),
+		];
+	}
+
+	it( 'ArrowDown from the input focuses the first result', () => {
+		const block = new SearchBlock( makeRoot() );
+		const rows = openWithRows( block, 3 );
+		block.modal.input.focus();
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'ArrowDown' } )
+		);
+		expect( document.activeElement ).toBe( rows[ 0 ] );
+	} );
+
+	it( 'ArrowDown moves focus to the next result', () => {
+		const block = new SearchBlock( makeRoot() );
+		const rows = openWithRows( block, 3 );
+		rows[ 0 ].focus();
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'ArrowDown' } )
+		);
+		expect( document.activeElement ).toBe( rows[ 1 ] );
+	} );
+
+	it( 'ArrowDown on the last result clamps (focus stays put)', () => {
+		const block = new SearchBlock( makeRoot() );
+		const rows = openWithRows( block, 2 );
+		rows[ 1 ].focus();
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'ArrowDown' } )
+		);
+		expect( document.activeElement ).toBe( rows[ 1 ] );
+	} );
+
+	it( 'ArrowUp from the first result returns focus to the input', () => {
+		const block = new SearchBlock( makeRoot() );
+		const rows = openWithRows( block, 3 );
+		rows[ 0 ].focus();
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'ArrowUp' } )
+		);
+		expect( document.activeElement ).toBe( block.modal.input );
+	} );
+
+	it( 'ArrowUp moves focus to the previous result', () => {
+		const block = new SearchBlock( makeRoot() );
+		const rows = openWithRows( block, 3 );
+		rows[ 2 ].focus();
+		document.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'ArrowUp' } )
+		);
+		expect( document.activeElement ).toBe( rows[ 1 ] );
+	} );
+} );

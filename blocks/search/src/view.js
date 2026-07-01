@@ -256,6 +256,36 @@ class SearchBlock {
 			this.close();
 			return;
 		}
+		if ( e.key === 'ArrowDown' || e.key === 'ArrowUp' ) {
+			const rows = [
+				...this.modal.results.querySelectorAll(
+					'.aucteeno-search-modal__result'
+				),
+			];
+			if ( rows.length === 0 ) {
+				return;
+			}
+			const active = this.modal.root.ownerDocument.activeElement;
+			const idx = rows.indexOf( active );
+			if ( e.key === 'ArrowDown' ) {
+				if ( active === this.modal.input ) {
+					e.preventDefault();
+					rows[ 0 ].focus();
+				} else if ( idx > -1 && idx < rows.length - 1 ) {
+					e.preventDefault();
+					rows[ idx + 1 ].focus();
+				} else if ( idx === rows.length - 1 ) {
+					e.preventDefault();
+				}
+			} else if ( idx === 0 ) {
+				e.preventDefault();
+				this.modal.input.focus();
+			} else if ( idx > 0 ) {
+				e.preventDefault();
+				rows[ idx - 1 ].focus();
+			}
+			return;
+		}
 		if ( e.key === 'Tab' ) {
 			const focusables = this.modal.root.querySelectorAll(
 				'input, button, a[href], [tabindex]:not([tabindex="-1"])'
