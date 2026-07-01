@@ -316,7 +316,7 @@ class SearchBlock {
 		root.setAttribute( 'aria-modal', 'true' );
 		root.setAttribute( 'aria-label', 'Search' );
 		// DOM order matches the spec's focus-trap boundary:
-		// input → type-toggle → result rows → view-all → close.
+		// input → submit button → type-toggle → result rows → view-all → close.
 		// CSS positions the close button visually top-right while keeping it last in the DOM tab sequence.
 		root.innerHTML = `
 			<div class="aucteeno-search-modal__backdrop" data-action="close"></div>
@@ -324,7 +324,7 @@ class SearchBlock {
 				<div class="aucteeno-search-modal__main">
 					<div class="aucteeno-search-modal__header">
 						<input type="search" class="aucteeno-search-modal__input" placeholder="Search…" autocomplete="off" />
-						<button type="button" class="aucteeno-search-modal__submit" aria-label="Search">
+						<button type="button" class="aucteeno-search-modal__submit" aria-label="Submit search">
 							<svg class="aucteeno-search-modal__submit-icon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
 						</button>
 						<div class="aucteeno-search-modal__type-toggle" role="radiogroup">
@@ -676,8 +676,9 @@ class SearchBlock {
 			window.location.href = url;
 			return;
 		}
-		// No results page configured for this type: force an immediate
-		// (non-debounced) in-modal fetch so the button still does something.
+		// No results page configured for this type: force an immediate (non-debounced)
+		// in-modal fetch. Term is intentionally NOT persisted here (persist happens on
+		// navigate or result click), mirroring live-typing behavior.
 		this.fetchNow( q );
 	}
 

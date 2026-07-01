@@ -181,6 +181,11 @@ body.admin-bar .aucteeno-search-modal__panel {
 	outline: none;
 }
 
+.aucteeno-search-modal__submit:focus-visible {
+	outline: 2px solid var(--ats-accent-fg);
+	outline-offset: -4px;
+}
+
 .aucteeno-search-modal__submit-icon {
 	flex-shrink: 0;
 }
