@@ -52,8 +52,13 @@ class Search_Count_Provider_Test extends TestCase {
 		$this->assertSame(123, $provider->get_running_upcoming_items_count(5));
 		$this->assertTrue($set_called);
 		$this->assertStringContainsString('wp_aucteeno_items', $captured_sql);
-		$this->assertStringContainsString("post_status = 'publish'", $captured_sql);
 		$this->assertStringContainsString('bidding_ends_at > UNIX_TIMESTAMP()', $captured_sql);
+		// No wp_posts JOIN: with ~1.7M posts the JOIN forces a full posts index
+		// scan (tens of seconds). Trashed/deleted items are already removed from
+		// the HPS table, so the JOIN only excluded drafts — acceptable for a
+		// placeholder count (same trade-off as Database_Items::get_expired_count).
+		$this->assertStringNotContainsString('JOIN', $captured_sql);
+		$this->assertStringNotContainsString('wp_posts', $captured_sql);
 	}
 
 	public function test_zero_cache_minutes_skips_transient(): void {

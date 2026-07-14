@@ -49,17 +49,23 @@ class Search_Count_Provider {
 	 * @return void
 	 */
 	public function init(): void {
-		// No hooks needed; invalidation lives in Search_Block_Service so the
-		// service stays a pure read-side cache.
+		// No hooks needed; the count is a TTL-cached approximation, so it
+		// needs no save-time invalidation.
 	}
 
 	/**
 	 * Get count of items the live search would return (running + upcoming).
 	 *
-	 * Counts items whose parent post is published and whose `bidding_ends_at`
-	 * is in the future. Uses timestamps rather than `bidding_status` because
-	 * status can lag behind real-time transitions; the search itself filters
-	 * the same way (see Database_Items::status_clauses, Query_Orderer).
+	 * Counts items whose `bidding_ends_at` is in the future. Uses timestamps
+	 * rather than `bidding_status` because status can lag behind real-time
+	 * transitions; the search itself filters the same way (see
+	 * Database_Items::status_clauses, Query_Orderer).
+	 *
+	 * Deliberately skips the wp_posts publish JOIN: trashed/deleted items are
+	 * already removed from the HPS table by HPS_Sync_Handler, so the JOIN only
+	 * excluded drafts while forcing a full wp_posts index scan on large sites.
+	 * A slight overcount is acceptable for a placeholder (same trade-off as
+	 * Database_Items::get_expired_count).
 	 *
 	 * @param int $cache_minutes Cache duration in minutes. 0 = bypass cache.
 	 * @return int Count of items the search will return.
@@ -74,12 +80,10 @@ class Search_Count_Provider {
 
 		global $wpdb;
 		$items_table = $wpdb->prefix . 'aucteeno_items';
-		$posts_table = $wpdb->posts;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$count = (int) $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$items_table} i
-			INNER JOIN {$posts_table} p ON i.item_id = p.ID AND p.post_status = 'publish'
 			WHERE i.bidding_ends_at > UNIX_TIMESTAMP()"
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -89,14 +93,5 @@ class Search_Count_Provider {
 		}
 
 		return $count;
-	}
-
-	/**
-	 * Clear cached count.
-	 *
-	 * @return void
-	 */
-	public static function clear_cache(): void {
-		delete_transient( self::TRANSIENT_KEY );
 	}
 }
