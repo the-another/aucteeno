@@ -192,6 +192,8 @@ function Edit( { attributes, setAttributes, context } ) {
 								value: 'dmy',
 							},
 							{
+								// Hyphens here are date separators, not a numeric range.
+								// eslint-disable-next-line @wordpress/i18n-hyphenated-range
 								label: __(
 									'YYYY-MM-DD (2026-01-27)',
 									'aucteeno'

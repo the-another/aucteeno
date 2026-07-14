@@ -80,7 +80,7 @@ const PLACEHOLDER_ITEM = {
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update attributes.
  * @param {Object}   props.context       Block context.
- * @return {JSX.Element} Block editor interface.
+ * @return {Element} Block editor interface.
  */
 function Edit( { attributes, setAttributes, context } ) {
 	const [ items, setItems ] = useState( [] );
@@ -209,7 +209,7 @@ function Edit( { attributes, setAttributes, context } ) {
 	/**
 	 * Render the main content area based on loading/error state.
 	 *
-	 * @return {JSX.Element} Content for the current state.
+	 * @return {Element} Content for the current state.
 	 */
 	function renderContent() {
 		if ( isLoading ) {
