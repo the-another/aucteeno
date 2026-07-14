@@ -69,11 +69,10 @@ class Search_Block_Service {
 	 */
 	public function init(): void {
 		$this->hook_manager->register_action( 'save_post_page', array( $this, 'on_page_save' ), 10, 1 );
-		// Count-only flush; post ID not needed, so accepted_args = 0.
-		$this->hook_manager->register_action( 'save_post_aucteeno-ext-item', array( $this, 'on_item_save' ), 10, 0 );
-		$this->hook_manager->register_action( 'save_post_aucteeno-ext-auction', array( $this, 'on_item_save' ), 10, 0 );
-		$this->hook_manager->register_action( 'trashed_aucteeno-ext-item', array( $this, 'on_item_save' ), 10, 0 );
-		$this->hook_manager->register_action( 'trashed_aucteeno-ext-auction', array( $this, 'on_item_save' ), 10, 0 );
+		// The search count transient is deliberately NOT flushed on item/auction
+		// saves: mass imports save items in bulk, which kept the cache
+		// permanently cold and made visitors pay the count query on render.
+		// Its TTL (Search_Count_Provider) handles freshness instead.
 	}
 
 	/**
@@ -84,15 +83,6 @@ class Search_Block_Service {
 	 */
 	public function on_page_save( int $post_id ): void {
 		delete_transient( $this->page_transient_key( $post_id ) );
-	}
-
-	/**
-	 * Clear items count cache when an item or auction is saved/trashed.
-	 *
-	 * @return void
-	 */
-	public function on_item_save(): void {
-		Search_Count_Provider::clear_cache();
 	}
 
 	/**

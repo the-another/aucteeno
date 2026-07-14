@@ -173,10 +173,13 @@ class Search_Block_Service_Test extends TestCase {
 		$svc->init();
 
 		$this->assertContains( 'save_post_page', $registered );
-		$this->assertContains( 'save_post_aucteeno-ext-item', $registered );
-		$this->assertContains( 'save_post_aucteeno-ext-auction', $registered );
-		$this->assertContains( 'trashed_aucteeno-ext-item', $registered );
-		$this->assertContains( 'trashed_aucteeno-ext-auction', $registered );
+		// No per-save count invalidation: mass Action Scheduler imports save
+		// items in bulk, which kept the count transient permanently cold and
+		// exposed visitors to the expensive count query. TTL handles freshness.
+		$this->assertNotContains( 'save_post_aucteeno-ext-item', $registered );
+		$this->assertNotContains( 'save_post_aucteeno-ext-auction', $registered );
+		$this->assertNotContains( 'trashed_aucteeno-ext-item', $registered );
+		$this->assertNotContains( 'trashed_aucteeno-ext-auction', $registered );
 	}
 
 	public function test_on_page_save_deletes_transient(): void {
@@ -189,18 +192,6 @@ class Search_Block_Service_Test extends TestCase {
 		$svc = $this->make_service();
 		$svc->on_page_save( 42 );
 		$this->assertSame( 'aucteeno_search_pageopts_42', $deleted_key );
-	}
-
-	public function test_on_item_save_clears_count_cache(): void {
-		$deleted_key = null;
-		Functions\when( 'delete_transient' )->alias( function ( $key ) use ( &$deleted_key ) {
-			$deleted_key = $key;
-			return true;
-		} );
-
-		$svc = $this->make_service();
-		$svc->on_item_save();
-		$this->assertSame( 'aucteeno_search_count_items_running_upcoming', $deleted_key );
 	}
 
 	private function make_service(): Search_Block_Service {
