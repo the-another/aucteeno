@@ -1,4 +1,3 @@
-/* global localStorage */
 const DEBOUNCE_MS_MAP = { instant: 0, fast: 150, normal: 250, relaxed: 500 };
 
 const STORAGE_KEY_RECENT = 'aucteeno_search_recent_v1';
@@ -12,7 +11,7 @@ function readRecent() {
 			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
 		);
 		return Array.isArray( raw ) ? raw : [];
-	} catch ( _ ) {
+	} catch {
 		return [];
 	}
 }
@@ -23,7 +22,7 @@ function writeRecent( list ) {
 			STORAGE_KEY_RECENT,
 			JSON.stringify( list.slice( 0, RECENT_CAP ) )
 		);
-	} catch ( _ ) {
+	} catch {
 		/* localStorage unavailable; degrade silently */
 	}
 }
@@ -51,7 +50,7 @@ function readLast() {
 			return null;
 		}
 		return raw;
-	} catch ( _ ) {
+	} catch {
 		return null;
 	}
 }
@@ -65,7 +64,7 @@ function writeLast( q, type ) {
 			STORAGE_KEY_LAST,
 			JSON.stringify( { q, type, ts: Date.now() } )
 		);
-	} catch ( _ ) {
+	} catch {
 		/* noop */
 	}
 }
@@ -73,7 +72,7 @@ function writeLast( q, type ) {
 function clearLast() {
 	try {
 		localStorage.removeItem( STORAGE_KEY_LAST );
-	} catch ( _ ) {
+	} catch {
 		/* noop */
 	}
 }
@@ -660,6 +659,12 @@ class SearchBlock {
 		return `${ seconds }s`;
 	}
 
+	// Navigation wrapper: jsdom forbids replacing window.location, so tests
+	// stub this method instead.
+	navigate( url ) {
+		window.location.href = url;
+	}
+
 	submitSearch() {
 		if ( ! this.modal ) {
 			return;
@@ -673,7 +678,7 @@ class SearchBlock {
 		if ( url ) {
 			pushRecent( q, type );
 			writeLast( q, type );
-			window.location.href = url;
+			this.navigate( url );
 			return;
 		}
 		// No results page configured for this type: force an immediate (non-debounced)
@@ -688,7 +693,7 @@ class SearchBlock {
 			writeLast( q, type );
 		}
 		if ( row && row.permalink ) {
-			window.location.href = row.permalink;
+			this.navigate( row.permalink );
 		}
 	}
 
