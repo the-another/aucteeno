@@ -389,10 +389,10 @@ describe( 'Aucteeno Search recent searches', () => {
 	} );
 
 	it( 'onResultClick persists recent + last and navigates', () => {
-		// Mock window.location to avoid jsdom navigation error
-		const realLocation = window.location;
-		delete window.location;
-		window.location = { href: '' };
+		// Stub navigation: jsdom forbids replacing window.location.
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
 
 		const block = new SearchBlock( makeRoot() );
 		block.open();
@@ -416,10 +416,9 @@ describe( 'Aucteeno Search recent searches', () => {
 		expect( last ).toEqual(
 			expect.objectContaining( { q: 'foo', type: 'items' } )
 		);
-		expect( window.location.href ).toBe( 'https://x/result' );
+		expect( navigateSpy ).toHaveBeenCalledWith( 'https://x/result' );
 
-		// Restore so subsequent tests get a valid origin.
-		window.location = realLocation;
+		navigateSpy.mockRestore();
 	} );
 
 	it( 'renderRecent shows entries; clicking one runs that search', async () => {
@@ -558,9 +557,9 @@ describe( 'Aucteeno Search submit button', () => {
 	} );
 
 	it( 'submit button navigates to the results page and persists recent + last', () => {
-		const realLocation = window.location;
-		delete window.location;
-		window.location = { href: '', origin: 'https://example.com' };
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
 
 		const root = makeRoot();
 		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
@@ -569,8 +568,10 @@ describe( 'Aucteeno Search submit button', () => {
 		block.modal.input.value = 'widget';
 		block.modal.submit.click();
 
-		expect( window.location.href ).toContain( '/search-items/' );
-		expect( window.location.href ).toContain( 'keyword=widget' );
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		const navigatedUrl = navigateSpy.mock.calls[ 0 ][ 0 ];
+		expect( navigatedUrl ).toContain( '/search-items/' );
+		expect( navigatedUrl ).toContain( 'keyword=widget' );
 		const recent = JSON.parse(
 			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
 		);
@@ -584,13 +585,13 @@ describe( 'Aucteeno Search submit button', () => {
 			expect.objectContaining( { q: 'widget', type: 'items' } )
 		);
 
-		window.location = realLocation;
+		navigateSpy.mockRestore();
 	} );
 
 	it( 'Enter in the input submits the search', () => {
-		const realLocation = window.location;
-		delete window.location;
-		window.location = { href: '', origin: 'https://example.com' };
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
 
 		const root = makeRoot();
 		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
@@ -600,9 +601,12 @@ describe( 'Aucteeno Search submit button', () => {
 		block.modal.input.dispatchEvent(
 			new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } )
 		);
-		expect( window.location.href ).toContain( 'keyword=gizmo' );
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		expect( navigateSpy.mock.calls[ 0 ][ 0 ] ).toContain(
+			'keyword=gizmo'
+		);
 
-		window.location = realLocation;
+		navigateSpy.mockRestore();
 	} );
 
 	it( 'submit with no results page configured triggers an in-modal fetch instead of navigating', async () => {

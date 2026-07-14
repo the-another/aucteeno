@@ -60,7 +60,7 @@ const ALLOWED_BLOCKS = [
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update attributes.
  * @param {Object}   props.context       Block context.
- * @return {JSX.Element} Block editor interface.
+ * @return {Element} Block editor interface.
  */
 function Edit( { attributes, setAttributes, context } ) {
 	const {
@@ -209,7 +209,7 @@ function Edit( { attributes, setAttributes, context } ) {
 /**
  * Save component - returns inner blocks content.
  *
- * @return {JSX.Element} Inner blocks content.
+ * @return {Element} Inner blocks content.
  */
 function Save() {
 	return <InnerBlocks.Content />;

@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.7.2
+Stable tag: 1.7.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -174,6 +174,12 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.7.3 - 2026-07-15 =
+* Fix: Search count query no longer takes tens of seconds on large sites — the count now reads the auction items table directly instead of joining posts.
+* Fix: Search count cache stays warm during mass imports; freshness is governed by its 5-minute TTL instead of flushing on every item save.
+* Chore: Update npm build toolchain (@wordpress/scripts 28 → 33) and pin transitive dependencies, resolving all GitHub Dependabot security alerts.
 
 = 1.7.2 - 2026-07-02 =
 * New: Search modal has a search (magnifier) button — clicking it or pressing Enter opens the configured "View all" results page for the active type.
