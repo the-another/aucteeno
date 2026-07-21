@@ -105,6 +105,9 @@ class Aucteeno {
 
 		// Register Aucteeno Search services.
 		$this->register_search_services();
+
+		// Register salebill accordion services.
+		$this->register_salebill_services();
 	}
 
 	/**
@@ -453,6 +456,22 @@ class Aucteeno {
 
 		$this->container->get( 'search_count_provider' )->init();
 		$this->container->get( 'search_block_service' )->init();
+	}
+
+	/**
+	 * Register salebill accordion services.
+	 */
+	private function register_salebill_services(): void {
+		$this->container->register(
+			'salebill_accordion_open_state',
+			function ( Container $c ) {
+				return new Blocks\Salebill_Accordion_Open_State( $c->get_hook_manager() );
+			},
+			true // Singleton.
+		);
+
+		// Initialize service (triggers lazy instantiation).
+		$this->container->get( 'salebill_accordion_open_state' )->init();
 	}
 
 	/**
