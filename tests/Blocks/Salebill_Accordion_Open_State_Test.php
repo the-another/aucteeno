@@ -219,25 +219,40 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 	}
 
 	/**
-	 * Forces the compatibility layer off on auction pages.
+	 * Empties the product tabs list on auction pages, even when tabs exist.
 	 *
 	 * @return void
 	 */
-	public function test_compatibility_layer_disabled_on_auction_pages(): void {
+	public function test_removes_all_product_tabs_on_auction_pages(): void {
 		$this->on_auction_page();
 
-		$this->assertTrue( $this->service->disable_compatibility_layer_for_auctions( false ) );
+		$tabs = array(
+			'description' => array(
+				'title'    => 'Description',
+				'priority' => 10,
+				'callback' => 'woocommerce_product_description_tab',
+			),
+		);
+
+		$this->assertSame( array(), $this->service->remove_tabs_for_auctions( $tabs ) );
 	}
 
 	/**
-	 * Passes the incoming value through elsewhere.
+	 * Passes the tabs array through unchanged off auction pages.
 	 *
 	 * @return void
 	 */
-	public function test_compatibility_layer_passthrough_elsewhere(): void {
+	public function test_tabs_passthrough_off_auction_pages(): void {
 		$this->on_auction_page( false );
 
-		$this->assertFalse( $this->service->disable_compatibility_layer_for_auctions( false ) );
-		$this->assertTrue( $this->service->disable_compatibility_layer_for_auctions( true ) );
+		$tabs = array(
+			'description' => array(
+				'title'    => 'Description',
+				'priority' => 10,
+				'callback' => 'woocommerce_product_description_tab',
+			),
+		);
+
+		$this->assertSame( $tabs, $this->service->remove_tabs_for_auctions( $tabs ) );
 	}
 }

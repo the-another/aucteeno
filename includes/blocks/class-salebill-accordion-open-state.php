@@ -64,8 +64,10 @@ final class Salebill_Accordion_Open_State {
 			2
 		);
 		$this->hook_manager->register_filter(
-			'woocommerce_disable_compatibility_layer',
-			array( $this, 'disable_compatibility_layer_for_auctions' )
+			'woocommerce_product_tabs',
+			array( $this, 'remove_tabs_for_auctions' ),
+			999,
+			1
 		);
 	}
 
@@ -131,21 +133,28 @@ final class Salebill_Accordion_Open_State {
 	}
 
 	/**
-	 * Disable WC's product-tabs compatibility layer on auction pages.
+	 * Empty the product tabs list on auction pages.
 	 *
-	 * Without this, any third-party woocommerce_product_tabs entry (Dokan
-	 * et al. — invisible on the previous layout) would be injected into the
-	 * salebill accordion as an extra item.
+	 * Keeps third-party woocommerce_product_tabs entries (Dokan et al. —
+	 * invisible on the previous layout) out of the Product Details accordion
+	 * on auction pages WITHOUT disabling WC's whole template-compatibility
+	 * layer, which would also kill Product JSON-LD structured data. With no
+	 * tabs left, ProductDetails' inject_compatible_tabs() has nothing to
+	 * inject into the salebill accordion.
 	 *
-	 * @param bool $disabled Current value.
-	 * @return bool
+	 * Runs at priority 999 — after aucteeno's own Disable_Reviews_Comments
+	 * (priority 98) and any third-party registrations — so it sees, and
+	 * discards, the final tab list.
+	 *
+	 * @param array $tabs Registered product tabs.
+	 * @return array
 	 */
-	public function disable_compatibility_layer_for_auctions( $disabled ) {
+	public function remove_tabs_for_auctions( $tabs ) {
 		if ( $this->is_auction_page() ) {
-			return true;
+			return array();
 		}
 
-		return (bool) $disabled;
+		return $tabs;
 	}
 
 	/**
