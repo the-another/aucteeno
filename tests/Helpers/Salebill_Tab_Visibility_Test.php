@@ -133,6 +133,36 @@ class Salebill_Tab_Visibility_Test extends TestCase {
 		);
 	}
 
+	public function test_not_covered_with_texturized_excerpt_and_longer_content(): void {
+		// Texturized excerpt: curly apostrophe, en-dash, ellipsis, plus a
+		// "[&hellip;]" more-suffix — the raw content continues much further
+		// and uses plain ASCII punctuation ("'", "--", "...").
+		Functions\when( 'get_the_excerpt' )->justReturn( "Owner\u{2019}s dispersal \u{2013} tools\u{2026} [&hellip;]" );
+		$this->assertFalse(
+			Salebill_Tab_Visibility::excerpt_covers_content(
+				$this->post( "<p>Owner's dispersal -- tools... and much more that keeps going.</p>" )
+			)
+		);
+	}
+
+	public function test_covers_texturized_excerpt_equal_to_raw_short_content(): void {
+		// Curly apostrophe on the excerpt side, straight apostrophe on the
+		// raw content side — normalize_text() must fold them equal.
+		Functions\when( 'get_the_excerpt' )->justReturn( "Owner\u{2019}s sale" );
+		$this->assertTrue(
+			Salebill_Tab_Visibility::excerpt_covers_content( $this->post( "<p>Owner's sale</p>" ) )
+		);
+	}
+
+	public function test_covers_when_content_genuinely_ends_in_ellipsis(): void {
+		// Content legitimately ends in "..." and the excerpt matches exactly
+		// (no truncation) — must compare equal before any suffix stripping.
+		Functions\when( 'get_the_excerpt' )->justReturn( 'The end...' );
+		$this->assertTrue(
+			Salebill_Tab_Visibility::excerpt_covers_content( $this->post( '<p>The end...</p>' ) )
+		);
+	}
+
 	// ---- is_description_visible ----
 
 	public function test_description_hidden_when_content_empty(): void {

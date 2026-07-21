@@ -460,6 +460,8 @@ class Aucteeno {
 
 	/**
 	 * Register salebill accordion services.
+	 *
+	 * @since TBD
 	 */
 	private function register_salebill_services(): void {
 		$this->container->register(

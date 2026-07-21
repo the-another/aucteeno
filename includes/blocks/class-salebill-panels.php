@@ -7,7 +7,7 @@
  * WooCommerce's Product Details block remove the whole accordion item.
  *
  * @package Aucteeno
- * @since 1.6.0
+ * @since TBD
  */
 
 declare(strict_types=1);
@@ -25,6 +25,15 @@ use The_Another\Plugin\Aucteeno\Product_Types\Product_Auction;
 final class Salebill_Panels {
 
 	/**
+	 * Request-level cache keyed by post ID. Stores the resolved context
+	 * array, or null for posts that are not auction products. Avoids
+	 * re-resolving the product for every panel render (up to 6x per view).
+	 *
+	 * @var array<int, array|null>
+	 */
+	private static array $context_cache = array();
+
+	/**
 	 * Resolve the current auction product and post, or null when not on one.
 	 *
 	 * @return array|null Array with 'product' and 'post' keys, or null.
@@ -35,15 +44,24 @@ final class Salebill_Panels {
 			return null;
 		}
 
-		$product = wc_get_product( $post->ID );
+		$post_id = $post->ID;
+		if ( array_key_exists( $post_id, self::$context_cache ) ) {
+			return self::$context_cache[ $post_id ];
+		}
+
+		$product = wc_get_product( $post_id );
 		if ( ! $product || Product_Auction::PRODUCT_TYPE !== $product->get_type() ) {
+			self::$context_cache[ $post_id ] = null;
 			return null;
 		}
 
-		return array(
+		$context = array(
 			'product' => $product,
 			'post'    => $post,
 		);
+
+		self::$context_cache[ $post_id ] = $context;
+		return $context;
 	}
 
 	/**

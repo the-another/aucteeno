@@ -6,7 +6,7 @@
  * (Description / Directions / Notes).
  *
  * @package Aucteeno
- * @since 1.6.0
+ * @since TBD
  */
 
 namespace The_Another\Plugin\Aucteeno\Helpers;
@@ -82,10 +82,29 @@ class Salebill_Tab_Visibility {
 		$excerpt_norm = self::normalize_text( (string) get_the_excerpt( $post ) );
 		$content_norm = self::normalize_text( $content );
 
+		// Compare before stripping any "more" suffix: content that genuinely
+		// ends in an ellipsis (e.g. "...") must compare equal to an excerpt
+		// ending the same way, without the suffix stripping below eating a
+		// character that belongs to the real content.
+		if ( $excerpt_norm === $content_norm ) {
+			return true;
+		}
+
 		/** This filter is documented in wp-includes/formatting.php */
 		$more_norm = self::normalize_text( (string) apply_filters( 'excerpt_more', ' [&hellip;]' ) );
 
-		$suffixes = array( '[...]', '&hellip;', '…' );
+		// normalize_text() folds the typographic ellipsis (…) to "...", so a
+		// "[…]" more-string now normalizes identically to the defensive
+		// '[...]' entry below — a separate '…' entry would never match. A
+		// literal '&hellip;' entry is likewise dead: entities are decoded
+		// (and then folded) well before this point, so that substring can
+		// never survive into $excerpt_norm. The bare '...' entry is a
+		// defensive fallback for an auto-trimmed excerpt using a bare
+		// ellipsis more-string; since we only reach this branch when the
+		// excerpt and content already differ, stripping it can only turn a
+		// "not covered" result into "covered" (fail open — show the panel),
+		// never hide content the excerpt actually omits.
+		$suffixes = array( '[...]', '...' );
 		if ( '' !== $more_norm ) {
 			array_unshift( $suffixes, $more_norm );
 		}
@@ -107,6 +126,25 @@ class Salebill_Tab_Visibility {
 	private static function normalize_text( string $text ): string {
 		$text = wp_strip_all_tags( $text, true );
 		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+
+		// WordPress texturizes get_the_excerpt() output (curly quotes,
+		// en/em dashes, ellipsis, non-breaking spaces) but post_content is
+		// compared raw — fold both sides to the same plain-ASCII-ish form
+		// so texturization alone never causes a mismatch.
+		$text = strtr(
+			$text,
+			array(
+				'’'        => "'",
+				'‘'        => "'",
+				'“'        => '"',
+				'”'        => '"',
+				'–'        => '-',
+				'—'        => '-',
+				'…'        => '...',
+				"\u{00A0}" => ' ',
+			)
+		);
+
 		$text = (string) preg_replace( '/\s+/u', ' ', $text );
 
 		return trim( $text );

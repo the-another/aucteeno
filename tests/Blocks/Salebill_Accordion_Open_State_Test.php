@@ -88,6 +88,27 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 	}
 
 	/**
+	 * Build a parsed_block fixture matching the Product Details accordion.
+	 *
+	 * @param bool $is_descendant Whether the block metadata should carry the
+	 *                            isDescendantOfProductDetails flag.
+	 * @return array
+	 */
+	private function parsed_block( bool $is_descendant = true ): array {
+		if ( ! $is_descendant ) {
+			return array();
+		}
+
+		return array(
+			'attrs' => array(
+				'metadata' => array(
+					'isDescendantOfProductDetails' => true,
+				),
+			),
+		);
+	}
+
+	/**
 	 * Build accordion-group HTML with items whose contexts carry openByDefault flags.
 	 *
 	 * @param bool[] $open_flags One entry per item.
@@ -118,7 +139,7 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 	public function test_opens_first_item_when_none_open(): void {
 		$this->on_auction_page();
 		$input  = $this->group_html( array( false, false ) );
-		$result = $this->service->maybe_open_first_item( $input );
+		$result = $this->service->maybe_open_first_item( $input, $this->parsed_block() );
 
 		$this->assertNotSame( $input, $result );
 
@@ -144,7 +165,7 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 		$this->on_auction_page();
 		$input = $this->group_html( array( true, false ) );
 
-		$this->assertSame( $input, $this->service->maybe_open_first_item( $input ) );
+		$this->assertSame( $input, $this->service->maybe_open_first_item( $input, $this->parsed_block() ) );
 	}
 
 	/**
@@ -156,7 +177,7 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 		$this->on_auction_page();
 		$input = '<div class="wp-block-woocommerce-accordion-group"></div>';
 
-		$this->assertSame( $input, $this->service->maybe_open_first_item( $input ) );
+		$this->assertSame( $input, $this->service->maybe_open_first_item( $input, $this->parsed_block() ) );
 	}
 
 	/**
@@ -168,7 +189,7 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 		$this->on_auction_page( false );
 		$input = $this->group_html( array( false ) );
 
-		$this->assertSame( $input, $this->service->maybe_open_first_item( $input ) );
+		$this->assertSame( $input, $this->service->maybe_open_first_item( $input, $this->parsed_block() ) );
 	}
 
 	/**
@@ -180,7 +201,21 @@ class Salebill_Accordion_Open_State_Test extends TestCase {
 		$this->on_auction_page( true, 'simple' );
 		$input = $this->group_html( array( false ) );
 
-		$this->assertSame( $input, $this->service->maybe_open_first_item( $input ) );
+		$this->assertSame( $input, $this->service->maybe_open_first_item( $input, $this->parsed_block() ) );
+	}
+
+	/**
+	 * Leaves the markup untouched for an accordion-group that is not a
+	 * descendant of the Product Details block (e.g. one a seller embeds
+	 * directly in their post_content).
+	 *
+	 * @return void
+	 */
+	public function test_no_change_when_not_descendant_of_product_details(): void {
+		$this->on_auction_page();
+		$input = $this->group_html( array( false, false ) );
+
+		$this->assertSame( $input, $this->service->maybe_open_first_item( $input, $this->parsed_block( false ) ) );
 	}
 
 	/**

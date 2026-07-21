@@ -29,6 +29,12 @@ class Salebill_Panels_Test extends TestCase {
 		parent::setUp();
 		Monkey\setUp();
 
+		// Reset static cache between tests to avoid cross-test state contamination.
+		$ref  = new \ReflectionClass( Salebill_Panels::class );
+		$prop = $ref->getProperty( 'context_cache' );
+		$prop->setAccessible( true );
+		$prop->setValue( null, array() );
+
 		Functions\when( 'wpautop' )->alias(
 			function ( $text ) {
 				return '<p>' . trim( (string) $text ) . '</p>';
