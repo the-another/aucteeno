@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.7.3
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,15 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.8.0 - 2026-07-22 =
+* Add: Salebill accordion panels — three server-rendered blocks (`aucteeno/salebill-description`, `aucteeno/salebill-directions`, `aucteeno/salebill-notes`, inserter-hidden) for the WooCommerce Product Details accordion on single auction pages; each returns empty when its panel has nothing to show so WooCommerce removes the whole accordion item natively
+* Add: Panel visibility rules (`Salebill_Tab_Visibility`) — Directions/Notes show when their plain-text fields are non-empty; Description shows only when its content is non-empty and either another panel is visible or the page-top excerpt does not already cover the full content (typographic-character folding survives `wptexturize`; media guard included)
+* Add: Notes panel renders Auction Notice and Bidding Notice with `h4` sub-headings only when both are present
+* Add: `Salebill_Accordion_Open_State` service — opens the first accordion item when none is open (via `WP_HTML_Tag_Processor` on the item's `data-wp-context`) and empties `woocommerce_product_tabs` at priority 999 on auction pages so third-party tabs (Dokan etc.) are not injected, preserving Product JSON-LD structured data
+* Chore: Per-request memoization of the auction-page lookup and panel context resolution; all logic is auction-gated so item and other product pages are unaffected
+* Chore: Refresh dev tooling locks (WordPress core stub 6.9.5, WooCommerce/WordPress stubs, WPCS) — no runtime dependency changes
 
 = 1.7.3 - 2026-07-15 =
 * Fix: Search count query no longer takes tens of seconds on large sites — the count now reads the auction items table directly instead of joining posts.
