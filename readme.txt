@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -176,6 +176,12 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 
 
+
+
+= 1.8.1 - 2026-07-28 =
+* Add: `aucteeno_get_running_upcoming_items_count()`, `aucteeno_get_active_auctions_count()` and `aucteeno_get_item_counts_by_location()` global functions, so themes and other components call one shared implementation of the HPS count queries instead of carrying their own copies of the SQL that then drift from the plugin
+* Add: `Location_Count_Provider` service (container singleton) backing the two location-scoped counts — no `wp_posts` JOIN, TTL cache with no save-time invalidation so bulk imports cannot keep the counts cold, and per-location cache keys so `US` and `US:NY` do not evict each other
+* Chore: Refresh dev tooling locks (WPCS 3.4.1, VIPCS 3.1.0, PHPCSUtils 1.2.3, PHPCSExtra 1.5.1) — no runtime dependency changes
 
 = 1.8.0 - 2026-07-22 =
 * Add: Salebill accordion panels — three server-rendered blocks (`aucteeno/salebill-description`, `aucteeno/salebill-directions`, `aucteeno/salebill-notes`, inserter-hidden) for the WooCommerce Product Details accordion on single auction pages; each returns empty when its panel has nothing to show so WooCommerce removes the whole accordion item natively
