@@ -76,3 +76,28 @@ function aucteeno_query_items( array $args = array() ): array {
 function aucteeno_get_running_upcoming_items_count( int $cache_minutes = 5 ): int {
 	return Container::get_instance()->get( 'search_count_provider' )->get_running_upcoming_items_count( $cache_minutes );
 }
+
+/**
+ * Count auctions in a location whose bidding has not ended.
+ *
+ * Cached; safe to call on every render of a location archive.
+ *
+ * @param string $country     Two-letter location country code.
+ * @param string $subdivision Subdivision code in `COUNTRY:SUBDIVISION` form. Empty for country-wide.
+ * @return int Count of auctions still open in that location.
+ */
+function aucteeno_get_active_auctions_count( string $country, string $subdivision = '' ): int {
+	return Container::get_instance()->get( 'location_count_provider' )->get_active_auctions_count( $country, $subdivision );
+}
+
+/**
+ * Count running and upcoming items grouped by location.
+ *
+ * Returns raw grouped rows — each with location_country, location_subdivision
+ * and item_count — leaving term lookups and hierarchy to the caller. Cached.
+ *
+ * @return array<int, array{location_country: string, location_subdivision: string, item_count: int}> Grouped counts.
+ */
+function aucteeno_get_item_counts_by_location(): array {
+	return Container::get_instance()->get( 'location_count_provider' )->get_item_counts_by_location();
+}

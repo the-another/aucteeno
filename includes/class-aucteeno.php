@@ -454,8 +454,17 @@ class Aucteeno {
 			true // Singleton.
 		);
 
+		$this->container->register(
+			'location_count_provider',
+			function ( Container $c ) {
+				return new Services\Location_Count_Provider( $c->get_hook_manager() );
+			},
+			true // Singleton.
+		);
+
 		$this->container->get( 'search_count_provider' )->init();
 		$this->container->get( 'search_block_service' )->init();
+		$this->container->get( 'location_count_provider' )->init();
 	}
 
 	/**
