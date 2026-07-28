@@ -164,20 +164,6 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 
 == Changelog ==
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 = 1.8.1 - 2026-07-28 =
 * Add: `aucteeno_get_running_upcoming_items_count()`, `aucteeno_get_active_auctions_count()` and `aucteeno_get_item_counts_by_location()` global functions, so themes and other components call one shared implementation of the HPS count queries instead of carrying their own copies of the SQL that then drift from the plugin
 * Add: `Location_Count_Provider` service (container singleton) backing the two location-scoped counts — no `wp_posts` JOIN, TTL cache with no save-time invalidation so bulk imports cannot keep the counts cold, and per-location cache keys so `US` and `US:NY` do not evict each other
