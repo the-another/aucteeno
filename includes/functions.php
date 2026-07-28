@@ -61,3 +61,18 @@ function aucteeno_query_auctions( array $args = array() ): array {
 function aucteeno_query_items( array $args = array() ): array {
 	return Container::get_instance()->get( 'database_items' )->query_for_listing( $args );
 }
+
+/**
+ * Get the number of items the live search would return (running + upcoming).
+ *
+ * Exposed so themes and sibling plugins reuse the one cached, index-only count
+ * instead of each carrying its own copy of the SQL. Copies drift: a theme-side
+ * duplicate kept the wp_posts publish JOIN long after the plugin dropped it,
+ * costing tens of seconds per cold render on large sites.
+ *
+ * @param int $cache_minutes Cache duration in minutes. 0 = bypass cache.
+ * @return int Count of items the search will return.
+ */
+function aucteeno_get_running_upcoming_items_count( int $cache_minutes = 5 ): int {
+	return Container::get_instance()->get( 'search_count_provider' )->get_running_upcoming_items_count( $cache_minutes );
+}
