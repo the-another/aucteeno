@@ -87,7 +87,7 @@ const changelogEntry = `= ${newVersion} - ${today} =\n* Version bump\n\n`;
 
 // Find the changelog section and add the new entry
 readmeContent = readmeContent.replace(
-  /(== Changelog ==\s*\n)/,
+  /(== Changelog ==\n)\s*/,
   `$1\n${changelogEntry}`
 );
 
