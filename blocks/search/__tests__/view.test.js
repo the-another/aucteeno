@@ -728,14 +728,14 @@ describe( 'Aucteeno Search: live results disabled', () => {
 	it( 'does not fetch while typing', async () => {
 		const root = makeRoot();
 		root.dataset.disableLiveResults = '1';
-		root.dataset.debounceMs = '0';
+		root.dataset.debounceMs = '10';
 		const block = new SearchBlock( root );
 		block.open();
 		global.fetch = jest
 			.fn()
 			.mockResolvedValue( { ok: true, json: async () => [] } );
 		block.onInputChange( 'widget' );
-		await new Promise( ( r ) => setTimeout( r, 30 ) );
+		await new Promise( ( r ) => setTimeout( r, 50 ) );
 		expect( global.fetch ).not.toHaveBeenCalled();
 	} );
 
