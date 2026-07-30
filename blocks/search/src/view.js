@@ -77,6 +77,15 @@ function clearLast() {
 	}
 }
 
+// `parseInt( value, 10 ) || fallback` treats an explicit "0" as falsy and
+// silently substitutes the fallback — wrong for debounceMs, where 0 is a
+// legitimate "instant" setting (see DEBOUNCE_MS_MAP.instant). Only fall back
+// when parsing actually failed.
+function parseIntOrDefault( value, fallback ) {
+	const parsed = parseInt( value, 10 );
+	return Number.isNaN( parsed ) ? fallback : parsed;
+}
+
 class SearchBlock {
 	constructor( root ) {
 		this.root = root;
@@ -108,7 +117,7 @@ class SearchBlock {
 	readConfig( el ) {
 		return {
 			defaultType: el.dataset.defaultType || 'items',
-			debounceMs: parseInt( el.dataset.debounceMs, 10 ) || 250,
+			debounceMs: parseIntOrDefault( el.dataset.debounceMs, 250 ),
 			recentTimeoutSec: Math.max(
 				1,
 				Math.min(
