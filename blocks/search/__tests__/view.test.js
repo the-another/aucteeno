@@ -990,3 +990,42 @@ describe( 'Aucteeno Search: submit aborts in-flight fetch', () => {
 		navigateSpy.mockRestore();
 	} );
 } );
+
+describe( 'Aucteeno Search debounce presets', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		delete global.fetch;
+	} );
+
+	// render.php maps the "Instant (0 ms)" preset to data-debounce-ms="0". readConfig must
+	// keep that as 0 rather than treating it as missing — a `|| 250` read silently demoted
+	// Instant to Normal, which is the bug this pins. The 5ms wait is the whole point: it is
+	// far below the 250ms fallback, so a regression cannot hide behind a generous timeout.
+	it( 'honors an explicit 0 ms debounce so the "Instant" preset fetches immediately', async () => {
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+
+		block.onInputChange( 'widget' );
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+
+		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'falls back to 250 ms when the debounce attribute is absent', async () => {
+		const root = makeRoot();
+		delete root.dataset.debounceMs;
+		const block = new SearchBlock( root );
+
+		expect( block.cfg.debounceMs ).toBe( 250 );
+	} );
+} );
