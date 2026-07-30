@@ -751,7 +751,7 @@ describe( 'Aucteeno Search: live results disabled', () => {
 		).toBe( true );
 	} );
 
-	it( 'Enter navigates to the results page without fetching', () => {
+	it( 'Enter navigates to the results page without fetching', async () => {
 		const navigateSpy = jest
 			.spyOn( SearchBlock.prototype, 'navigate' )
 			.mockImplementation( () => {} );
@@ -760,9 +760,12 @@ describe( 'Aucteeno Search: live results disabled', () => {
 		const root = makeRoot();
 		root.dataset.disableLiveResults = '1';
 		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		root.dataset.debounceMs = '10';
 		const block = new SearchBlock( root );
 		block.open();
 		block.modal.input.value = 'widget';
+		block.onInputChange( 'widget' );
+		await new Promise( ( r ) => setTimeout( r, 50 ) );
 		block.modal.input.dispatchEvent(
 			new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } )
 		);
