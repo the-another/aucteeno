@@ -130,6 +130,7 @@ class SearchBlock {
 			},
 			restRoot: el.dataset.restRoot,
 			restNonce: el.dataset.restNonce,
+			disableLive: el.dataset.disableLiveResults === '1',
 		};
 	}
 
@@ -196,7 +197,9 @@ class SearchBlock {
 		document.body.appendChild( this.modal.root );
 		SearchBlock.openInstance = this;
 		setTimeout( () => this.modal && this.modal.input.focus(), 0 );
-		this.renderResults( [], '', this.activeType );
+		if ( ! this.cfg.disableLive ) {
+			this.renderResults( [], '', this.activeType );
+		}
 		this.renderRecent();
 		// Re-read the stored chip on every open so reopening the modal still
 		// pre-fills the term (don't rely on this.lastChip which is consumed once).
@@ -210,7 +213,9 @@ class SearchBlock {
 				)
 			);
 			this.modal.input.value = last.q;
-			this.fetchNow( last.q );
+			if ( ! this.cfg.disableLive ) {
+				this.fetchNow( last.q );
+			}
 		}
 		this.lastChip = null;
 		document.addEventListener( 'keydown', this.onKeydown );
@@ -353,6 +358,12 @@ class SearchBlock {
 		);
 		const submit = root.querySelector( '.aucteeno-search-modal__submit' );
 
+		if ( this.cfg.disableLive ) {
+			root.classList.add( 'is-live-disabled' );
+			results.hidden = true;
+			viewAll.hidden = true;
+		}
+
 		root.querySelectorAll( '[data-action="close"]' ).forEach( ( el ) =>
 			el.addEventListener( 'click', () => this.close() )
 		);
@@ -389,10 +400,15 @@ class SearchBlock {
 		this.modal.toggleBtns.forEach( ( b ) =>
 			b.setAttribute( 'aria-checked', String( b.dataset.type === t ) )
 		);
-		this.fetchNow( this.modal.input.value );
+		if ( ! this.cfg.disableLive ) {
+			this.fetchNow( this.modal.input.value );
+		}
 	}
 
 	onInputChange( value ) {
+		if ( this.cfg.disableLive ) {
+			return;
+		}
 		if ( this.debounceTimer ) {
 			clearTimeout( this.debounceTimer );
 		}
@@ -407,6 +423,9 @@ class SearchBlock {
 	}
 
 	async fetchNow( value ) {
+		if ( this.cfg.disableLive ) {
+			return;
+		}
 		// Toggle/refetch must cancel any pending pause-timer (spec: type-toggle clears the timer).
 		if ( this.pendingPauseTimer ) {
 			clearTimeout( this.pendingPauseTimer );
@@ -498,7 +517,11 @@ class SearchBlock {
 					)
 				);
 				this.modal.input.value = entry.q;
-				this.fetchNow( entry.q );
+				if ( this.cfg.disableLive ) {
+					this.submitSearch();
+				} else {
+					this.fetchNow( entry.q );
+				}
 			} );
 			li.querySelector( '.recent-x' ).addEventListener( 'click', () => {
 				const remaining = readRecent().filter(
@@ -684,6 +707,9 @@ class SearchBlock {
 		// No results page configured for this type: force an immediate (non-debounced)
 		// in-modal fetch. Term is intentionally NOT persisted here (persist happens on
 		// navigate or result click), mirroring live-typing behavior.
+		// When live results are disabled, fetchNow() is a guarded no-op, so this
+		// fallback silently does nothing — there is no results page and no in-modal
+		// results to show. This is intentional, not a bug.
 		this.fetchNow( q );
 	}
 

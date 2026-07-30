@@ -713,3 +713,114 @@ describe( 'Aucteeno Search arrow-key navigation', () => {
 		expect( document.activeElement ).toBe( rows[ 1 ] );
 	} );
 } );
+
+describe( 'Aucteeno Search: live results disabled', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		delete global.fetch;
+	} );
+
+	it( 'does not fetch while typing', async () => {
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.debounceMs = '0';
+		const block = new SearchBlock( root );
+		block.open();
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+		block.onInputChange( 'widget' );
+		await new Promise( ( r ) => setTimeout( r, 30 ) );
+		expect( global.fetch ).not.toHaveBeenCalled();
+	} );
+
+	it( 'hides the results list and view-all link', () => {
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		const block = new SearchBlock( root );
+		block.open();
+		expect( block.modal.results.hidden ).toBe( true );
+		expect( block.modal.viewAll.hidden ).toBe( true );
+		expect(
+			block.modal.root.classList.contains( 'is-live-disabled' )
+		).toBe( true );
+	} );
+
+	it( 'Enter navigates to the results page without fetching', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		global.fetch = jest.fn();
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.input.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } )
+		);
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		expect( navigateSpy.mock.calls[ 0 ][ 0 ] ).toContain(
+			'keyword=widget'
+		);
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'switching type does not fetch', async () => {
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'foo';
+		global.fetch = jest.fn();
+		block.setActiveType( 'auctions' );
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+		expect( global.fetch ).not.toHaveBeenCalled();
+		expect( block.activeType ).toBe( 'auctions' );
+	} );
+
+	it( 'clicking a recent search navigates instead of fetching', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		global.fetch = jest.fn();
+		pushRecent( 'rolex', 'items' );
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.root.querySelector( '.recent-q' ).click();
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		expect( navigateSpy.mock.calls[ 0 ][ 0 ] ).toContain( 'keyword=rolex' );
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'pre-fills a stored last term without fetching', () => {
+		global.fetch = jest.fn();
+		localStorage.setItem(
+			STORAGE_KEY_LAST,
+			JSON.stringify( { q: 'gizmo', type: 'items', ts: Date.now() } )
+		);
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		const block = new SearchBlock( root );
+		block.open();
+
+		expect( block.modal.input.value ).toBe( 'gizmo' );
+		expect( global.fetch ).not.toHaveBeenCalled();
+	} );
+} );

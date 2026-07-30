@@ -96,6 +96,12 @@ body.admin-bar .aucteeno-search-modal__panel {
 	flex-direction: column;
 }
 
+/* Live results disabled: the results list is hidden, so the panel would
+   otherwise collapse to roughly header height on desktop. */
+.aucteeno-search-modal.is-live-disabled .aucteeno-search-modal__main {
+	min-height: 12em;
+}
+
 /* Main column */
 .aucteeno-search-modal__main {
 	position: relative;
