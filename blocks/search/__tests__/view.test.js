@@ -827,3 +827,110 @@ describe( 'Aucteeno Search: live results disabled', () => {
 		expect( global.fetch ).not.toHaveBeenCalled();
 	} );
 } );
+
+describe( 'Aucteeno Search: submit aborts in-flight fetch', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		delete global.fetch;
+	} );
+
+	it( 'aborts the pending request when submitting', async () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+
+		let capturedSignal;
+		global.fetch = jest.fn( ( url, opts ) => {
+			capturedSignal = opts.signal;
+			return new Promise( ( resolve, reject ) => {
+				opts.signal.addEventListener( 'abort', () => {
+					const err = new Error( 'aborted' );
+					err.name = 'AbortError';
+					reject( err );
+				} );
+			} );
+		} );
+
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.onInputChange( 'widget' );
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
+
+		block.modal.submit.click();
+		expect( capturedSignal.aborted ).toBe( true );
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'does not render a no-results flash after an abort', async () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+
+		global.fetch = jest.fn(
+			( url, opts ) =>
+				new Promise( ( resolve, reject ) => {
+					opts.signal.addEventListener( 'abort', () => {
+						const err = new Error( 'aborted' );
+						err.name = 'AbortError';
+						reject( err );
+					} );
+				} )
+		);
+
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.onInputChange( 'widget' );
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+
+		block.modal.submit.click();
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+
+		expect( block.modal.results.innerHTML ).not.toContain( 'No results' );
+		expect( warnSpy ).not.toHaveBeenCalled();
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'cancels a pending debounce timer on submit', async () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+
+		const root = makeRoot();
+		root.dataset.debounceMs = '50';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.onInputChange( 'widget' );
+		block.modal.submit.click();
+		await new Promise( ( r ) => setTimeout( r, 80 ) );
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		navigateSpy.mockRestore();
+	} );
+} );

@@ -98,6 +98,7 @@ class SearchBlock {
 		this.lastFetchKey = null;
 		this.pendingPauseTimer = null;
 		this.debounceTimer = null;
+		this.abortController = null;
 		this.countdownInterval = null;
 		this._returningFocus = false;
 		this.lastChip = null;
@@ -239,14 +240,7 @@ class SearchBlock {
 			clearInterval( this.countdownInterval );
 			this.countdownInterval = null;
 		}
-		if ( this.pendingPauseTimer ) {
-			clearTimeout( this.pendingPauseTimer );
-			this.pendingPauseTimer = null;
-		}
-		if ( this.debounceTimer ) {
-			clearTimeout( this.debounceTimer );
-			this.debounceTimer = null;
-		}
+		this.abortInFlight();
 		this.modal.root.remove();
 		this.modal = null;
 		if ( SearchBlock.openInstance === this ) {
@@ -435,6 +429,11 @@ class SearchBlock {
 		if ( this.cfg.disableLive ) {
 			return;
 		}
+		if ( this.abortController ) {
+			this.abortController.abort();
+		}
+		const controller = new AbortController();
+		this.abortController = controller;
 		// Toggle/refetch must cancel any pending pause-timer (spec: type-toggle clears the timer).
 		if ( this.pendingPauseTimer ) {
 			clearTimeout( this.pendingPauseTimer );
@@ -461,12 +460,16 @@ class SearchBlock {
 		try {
 			const res = await fetch( url, {
 				headers: { 'X-WP-Nonce': this.cfg.restNonce },
+				signal: controller.signal,
 			} );
 			if ( ! res.ok ) {
 				throw new Error( 'fetch failed: ' + res.status );
 			}
 			data = await res.json();
 		} catch ( err ) {
+			if ( err && err.name === 'AbortError' ) {
+				return; // Intentional cancel (new keystroke or submit); not a failure.
+			}
 			// eslint-disable-next-line no-console
 			console.warn( 'Aucteeno search fetch failed', err );
 			data = [];
@@ -697,10 +700,29 @@ class SearchBlock {
 		window.location.href = url;
 	}
 
+	// Cancels everything a pending search has in flight. Called before navigating
+	// so the block stops doing work whose result is about to be discarded.
+	abortInFlight() {
+		if ( this.abortController ) {
+			this.abortController.abort();
+			this.abortController = null;
+		}
+		if ( this.debounceTimer ) {
+			clearTimeout( this.debounceTimer );
+			this.debounceTimer = null;
+		}
+		if ( this.pendingPauseTimer ) {
+			clearTimeout( this.pendingPauseTimer );
+			this.pendingPauseTimer = null;
+		}
+		this.lastFetchKey = null;
+	}
+
 	submitSearch() {
 		if ( ! this.modal ) {
 			return;
 		}
+		this.abortInFlight();
 		const q = ( this.modal.input.value || '' ).trim();
 		const type = this.activeType;
 		if ( q === '' ) {
