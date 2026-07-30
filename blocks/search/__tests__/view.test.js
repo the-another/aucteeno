@@ -933,4 +933,60 @@ describe( 'Aucteeno Search: submit aborts in-flight fetch', () => {
 		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
 		navigateSpy.mockRestore();
 	} );
+
+	it( 'empty submit within the debounce window does not leave stale results on screen', async () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		global.fetch = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => [
+				{
+					id: 1,
+					title: 'X',
+					image_url: '',
+					ends_at: 0,
+					permalink: '#x',
+				},
+			],
+		} );
+
+		const root = makeRoot();
+		root.dataset.debounceMs = '50';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+
+		// Type a term, let the debounce fire, let the fetch resolve with a result row.
+		block.modal.input.value = 'widget';
+		block.onInputChange( 'widget' );
+		await new Promise( ( r ) => setTimeout( r, 80 ) );
+
+		expect(
+			block.modal.results.querySelectorAll(
+				'.aucteeno-search-modal__result'
+			).length
+		).toBeGreaterThan( 0 );
+		expect( block.modal.viewAll.hidden ).toBe( false );
+
+		// Backspace to empty and press Enter within the debounce window.
+		block.modal.input.value = '';
+		block.onInputChange( '' );
+		block.modal.input.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } )
+		);
+
+		// Wait past the debounce interval.
+		await new Promise( ( r ) => setTimeout( r, 80 ) );
+
+		expect(
+			block.modal.results.querySelector(
+				'.aucteeno-search-modal__empty'
+			)
+		).not.toBeNull();
+		expect( block.modal.viewAll.hidden ).toBe( true );
+		expect( navigateSpy ).not.toHaveBeenCalled();
+
+		navigateSpy.mockRestore();
+	} );
 } );

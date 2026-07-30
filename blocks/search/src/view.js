@@ -426,6 +426,9 @@ class SearchBlock {
 	}
 
 	async fetchNow( value ) {
+		// Load-bearing, not redundant: the only guard stopping submitSearch()'s
+		// deliberately-ungated fallback from reaching restRoot below, which
+		// render.php omits entirely (undefined) when live results are off.
 		if ( this.cfg.disableLive ) {
 			return;
 		}
@@ -722,12 +725,17 @@ class SearchBlock {
 		if ( ! this.modal ) {
 			return;
 		}
-		this.abortInFlight();
 		const q = ( this.modal.input.value || '' ).trim();
 		const type = this.activeType;
 		if ( q === '' ) {
+			// True no-op: leave any pending debounced fetchNow('') to run on its
+			// own schedule and clear the list. Aborting it here (as an earlier
+			// version of this method did) kills that pending reset without
+			// putting anything in its place, leaving stale rows and a stale
+			// "View all results" href on screen after an empty Enter.
 			return;
 		}
+		this.abortInFlight();
 		const url = this.viewAllUrl( q, type );
 		if ( url ) {
 			pushRecent( q, type );
