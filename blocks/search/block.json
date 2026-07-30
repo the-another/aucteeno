@@ -16,6 +16,7 @@
     "attributes": {
         "defaultType":            { "type": "string",  "default": "items",   "enum": ["items","auctions"] },
         "debouncePreset":         { "type": "string",  "default": "normal",  "enum": ["instant","fast","normal","relaxed"] },
+        "disableLiveResults":     { "type": "boolean", "default": false },
         "countCacheMinutes":      { "type": "number",  "default": 5 },
         "recentSearchTimeoutSec": { "type": "number",  "default": 10 },
         "viewAllItemsPageId":     { "type": "number",  "default": 0 },
