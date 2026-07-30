@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,14 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.8.2 - 2026-07-30 =
+* Breaking: Search blocks no longer fetch results while the visitor types. Blocks saved before this release carry no setting for the new option, so WordPress supplies its default and they stop live-searching on update — re-enable live results per block from the block's Search panel in the editor; no code change or migration is required
+* Add: "Disable live results" option for the Aucteeno Search block — with it on the modal shows the search input, the Auctions/Items toggle and recent searches only, and Enter or the magnifier goes straight to the configured results page with `?keyword=` instead of issuing a REST request per keystroke
+* Add: With live results off the block stops emitting the per-user REST nonce, so its markup is identical for every visitor and can be served from a full-page cache
+* Fix: Submitting a search now cancels any in-flight results request before navigating instead of leaving it to run, and an aborted request no longer flashes "No results" immediately before the redirect
+* Fix: The "Instant (0 ms)" debounce preset now applies 0 ms as documented — an explicit zero was being treated as unset and silently fell back to the 250 ms Normal preset
+* Chore: Refresh dev tooling locks (symfony/filesystem 7.4.15, symfony/string 6.4.43) — no runtime dependency changes
 
 = 1.8.1 - 2026-07-28 =
 * Add: `aucteeno_get_running_upcoming_items_count()`, `aucteeno_get_active_auctions_count()` and `aucteeno_get_item_counts_by_location()` global functions, so themes and other components call one shared implementation of the HPS count queries instead of carrying their own copies of the SQL that then drift from the plugin
