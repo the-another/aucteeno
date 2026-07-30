@@ -95,8 +95,24 @@ class Search_Render_Test extends TestCase {
 		return $html ?? '';
 	}
 
-	public function test_emits_rest_root_and_nonce_when_live_results_enabled(): void {
+	public function test_defaults_to_disabled_when_the_attribute_is_absent(): void {
+		// A block saved before this option existed carries no `disableLiveResults` in its
+		// markup, so WordPress fills in block.json's default. render.php must reach the same
+		// conclusion on its own — it is also invoked in contexts that bypass that injection
+		// (REST preview, WP-CLI warmups).
 		$html = $this->run_render( array( 'defaultType' => 'items' ) );
+
+		$this->assertStringContainsString( 'data-disable-live-results="1"', $html );
+		$this->assertStringNotContainsString( 'data-rest-nonce', $html );
+	}
+
+	public function test_emits_rest_root_and_nonce_when_live_results_explicitly_enabled(): void {
+		$html = $this->run_render(
+			array(
+				'defaultType'        => 'items',
+				'disableLiveResults' => false,
+			)
+		);
 
 		$this->assertStringContainsString( 'data-rest-root=', $html );
 		$this->assertStringContainsString( 'data-rest-nonce="test-nonce"', $html );

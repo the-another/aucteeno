@@ -43,7 +43,11 @@ $recent_timeout_sec   = max( 1, min( 60, (int) ( $attributes['recentSearchTimeou
 $placeholder_template = (string) ( $attributes['placeholderTemplate'] ?? '%d items to search from' );
 $items_page_id        = (int) ( $attributes['viewAllItemsPageId'] ?? 0 );
 $auctions_page_id     = (int) ( $attributes['viewAllAuctionsPageId'] ?? 0 );
-$disable_live         = ! empty( $attributes['disableLiveResults'] );
+// Mirrors block.json's `default: true`. Written as a null-coalesce rather than empty() so a
+// block whose markup predates this option — or a render path that bypasses WordPress's
+// default injection, e.g. REST preview or a WP-CLI cache warmup — still lands on "disabled"
+// instead of silently falling back to live search.
+$disable_live         = (bool) ( $attributes['disableLiveResults'] ?? true );
 
 $debounce_ms_map = array(
 	'instant' => 0,
