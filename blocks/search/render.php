@@ -43,6 +43,7 @@ $recent_timeout_sec   = max( 1, min( 60, (int) ( $attributes['recentSearchTimeou
 $placeholder_template = (string) ( $attributes['placeholderTemplate'] ?? '%d items to search from' );
 $items_page_id        = (int) ( $attributes['viewAllItemsPageId'] ?? 0 );
 $auctions_page_id     = (int) ( $attributes['viewAllAuctionsPageId'] ?? 0 );
+$disable_live         = ! empty( $attributes['disableLiveResults'] );
 
 $debounce_ms_map = array(
 	'instant' => 0,
@@ -60,22 +61,30 @@ $placeholder = str_replace( '%d', number_format_i18n( $count ), $placeholder_tem
 $items_opts    = $block_service->get_page_options( $items_page_id );
 $auctions_opts = $block_service->get_page_options( $auctions_page_id );
 
-$wrapper_attrs = get_block_wrapper_attributes(
-	array(
-		'class'                  => 'wp-block-aucteeno-search',
-		'data-default-type'      => $default_type,
-		'data-debounce-ms'       => (string) $debounce_ms,
-		'data-recent-timeout-sec' => (string) $recent_timeout_sec,
-		'data-items-per-page'    => (string) $items_opts['perPage'],
-		'data-items-order-by'    => $items_opts['orderBy'],
-		'data-items-page-url'    => $items_opts['pageUrl'],
-		'data-auctions-per-page' => (string) $auctions_opts['perPage'],
-		'data-auctions-order-by' => $auctions_opts['orderBy'],
-		'data-auctions-page-url' => $auctions_opts['pageUrl'],
-		'data-rest-root'         => esc_url_raw( rest_url( 'aucteeno/v1/' ) ),
-		'data-rest-nonce'        => wp_create_nonce( 'wp_rest' ),
-	)
+$wrapper_args = array(
+	'class'                   => 'wp-block-aucteeno-search',
+	'data-default-type'       => $default_type,
+	'data-debounce-ms'        => (string) $debounce_ms,
+	'data-recent-timeout-sec' => (string) $recent_timeout_sec,
+	'data-items-per-page'     => (string) $items_opts['perPage'],
+	'data-items-order-by'     => $items_opts['orderBy'],
+	'data-items-page-url'     => $items_opts['pageUrl'],
+	'data-auctions-per-page'  => (string) $auctions_opts['perPage'],
+	'data-auctions-order-by'  => $auctions_opts['orderBy'],
+	'data-auctions-page-url'  => $auctions_opts['pageUrl'],
 );
+
+if ( $disable_live ) {
+	// Nothing on the page will fetch, so the per-user nonce is dead weight —
+	// omitting it keeps the block's markup identical for every visitor and
+	// therefore safe to serve from a full-page cache.
+	$wrapper_args['data-disable-live-results'] = '1';
+} else {
+	$wrapper_args['data-rest-root']  = esc_url_raw( rest_url( 'aucteeno/v1/' ) );
+	$wrapper_args['data-rest-nonce'] = wp_create_nonce( 'wp_rest' );
+}
+
+$wrapper_attrs = get_block_wrapper_attributes( $wrapper_args );
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes returns escaped output ?>>
 	<button type="button"
