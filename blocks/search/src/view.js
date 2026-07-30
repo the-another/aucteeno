@@ -77,6 +77,15 @@ function clearLast() {
 	}
 }
 
+// `parseInt( value, 10 ) || fallback` treats an explicit "0" as falsy and
+// silently substitutes the fallback — wrong for debounceMs, where 0 is a
+// legitimate "instant" setting (see DEBOUNCE_MS_MAP.instant). Only fall back
+// when parsing actually failed.
+function parseIntOrDefault( value, fallback ) {
+	const parsed = parseInt( value, 10 );
+	return Number.isNaN( parsed ) ? fallback : parsed;
+}
+
 class SearchBlock {
 	constructor( root ) {
 		this.root = root;
@@ -89,6 +98,7 @@ class SearchBlock {
 		this.lastFetchKey = null;
 		this.pendingPauseTimer = null;
 		this.debounceTimer = null;
+		this.abortController = null;
 		this.countdownInterval = null;
 		this._returningFocus = false;
 		this.lastChip = null;
@@ -108,7 +118,7 @@ class SearchBlock {
 	readConfig( el ) {
 		return {
 			defaultType: el.dataset.defaultType || 'items',
-			debounceMs: parseInt( el.dataset.debounceMs, 10 ) || 250,
+			debounceMs: parseIntOrDefault( el.dataset.debounceMs, 250 ),
 			recentTimeoutSec: Math.max(
 				1,
 				Math.min(
@@ -130,6 +140,7 @@ class SearchBlock {
 			},
 			restRoot: el.dataset.restRoot,
 			restNonce: el.dataset.restNonce,
+			disableLive: el.dataset.disableLiveResults === '1',
 		};
 	}
 
@@ -196,7 +207,9 @@ class SearchBlock {
 		document.body.appendChild( this.modal.root );
 		SearchBlock.openInstance = this;
 		setTimeout( () => this.modal && this.modal.input.focus(), 0 );
-		this.renderResults( [], '', this.activeType );
+		if ( ! this.cfg.disableLive ) {
+			this.renderResults( [], '', this.activeType );
+		}
 		this.renderRecent();
 		// Re-read the stored chip on every open so reopening the modal still
 		// pre-fills the term (don't rely on this.lastChip which is consumed once).
@@ -210,7 +223,9 @@ class SearchBlock {
 				)
 			);
 			this.modal.input.value = last.q;
-			this.fetchNow( last.q );
+			if ( ! this.cfg.disableLive ) {
+				this.fetchNow( last.q );
+			}
 		}
 		this.lastChip = null;
 		document.addEventListener( 'keydown', this.onKeydown );
@@ -225,14 +240,7 @@ class SearchBlock {
 			clearInterval( this.countdownInterval );
 			this.countdownInterval = null;
 		}
-		if ( this.pendingPauseTimer ) {
-			clearTimeout( this.pendingPauseTimer );
-			this.pendingPauseTimer = null;
-		}
-		if ( this.debounceTimer ) {
-			clearTimeout( this.debounceTimer );
-			this.debounceTimer = null;
-		}
+		this.abortInFlight();
 		this.modal.root.remove();
 		this.modal = null;
 		if ( SearchBlock.openInstance === this ) {
@@ -353,6 +361,12 @@ class SearchBlock {
 		);
 		const submit = root.querySelector( '.aucteeno-search-modal__submit' );
 
+		if ( this.cfg.disableLive ) {
+			root.classList.add( 'is-live-disabled' );
+			results.hidden = true;
+			viewAll.hidden = true;
+		}
+
 		root.querySelectorAll( '[data-action="close"]' ).forEach( ( el ) =>
 			el.addEventListener( 'click', () => this.close() )
 		);
@@ -389,10 +403,15 @@ class SearchBlock {
 		this.modal.toggleBtns.forEach( ( b ) =>
 			b.setAttribute( 'aria-checked', String( b.dataset.type === t ) )
 		);
-		this.fetchNow( this.modal.input.value );
+		if ( ! this.cfg.disableLive ) {
+			this.fetchNow( this.modal.input.value );
+		}
 	}
 
 	onInputChange( value ) {
+		if ( this.cfg.disableLive ) {
+			return;
+		}
 		if ( this.debounceTimer ) {
 			clearTimeout( this.debounceTimer );
 		}
@@ -407,6 +426,17 @@ class SearchBlock {
 	}
 
 	async fetchNow( value ) {
+		// Load-bearing, not redundant: the only guard stopping submitSearch()'s
+		// deliberately-ungated fallback from reaching restRoot below, which
+		// render.php omits entirely (undefined) when live results are off.
+		if ( this.cfg.disableLive ) {
+			return;
+		}
+		if ( this.abortController ) {
+			this.abortController.abort();
+		}
+		const controller = new AbortController();
+		this.abortController = controller;
 		// Toggle/refetch must cancel any pending pause-timer (spec: type-toggle clears the timer).
 		if ( this.pendingPauseTimer ) {
 			clearTimeout( this.pendingPauseTimer );
@@ -433,12 +463,16 @@ class SearchBlock {
 		try {
 			const res = await fetch( url, {
 				headers: { 'X-WP-Nonce': this.cfg.restNonce },
+				signal: controller.signal,
 			} );
 			if ( ! res.ok ) {
 				throw new Error( 'fetch failed: ' + res.status );
 			}
 			data = await res.json();
 		} catch ( err ) {
+			if ( err && err.name === 'AbortError' ) {
+				return; // Intentional cancel (new keystroke or submit); not a failure.
+			}
 			// eslint-disable-next-line no-console
 			console.warn( 'Aucteeno search fetch failed', err );
 			data = [];
@@ -498,7 +532,11 @@ class SearchBlock {
 					)
 				);
 				this.modal.input.value = entry.q;
-				this.fetchNow( entry.q );
+				if ( this.cfg.disableLive ) {
+					this.submitSearch();
+				} else {
+					this.fetchNow( entry.q );
+				}
 			} );
 			li.querySelector( '.recent-x' ).addEventListener( 'click', () => {
 				const remaining = readRecent().filter(
@@ -665,6 +703,24 @@ class SearchBlock {
 		window.location.href = url;
 	}
 
+	// Cancels everything a pending search has in flight. Called before navigating
+	// so the block stops doing work whose result is about to be discarded.
+	abortInFlight() {
+		if ( this.abortController ) {
+			this.abortController.abort();
+			this.abortController = null;
+		}
+		if ( this.debounceTimer ) {
+			clearTimeout( this.debounceTimer );
+			this.debounceTimer = null;
+		}
+		if ( this.pendingPauseTimer ) {
+			clearTimeout( this.pendingPauseTimer );
+			this.pendingPauseTimer = null;
+		}
+		this.lastFetchKey = null;
+	}
+
 	submitSearch() {
 		if ( ! this.modal ) {
 			return;
@@ -672,8 +728,14 @@ class SearchBlock {
 		const q = ( this.modal.input.value || '' ).trim();
 		const type = this.activeType;
 		if ( q === '' ) {
+			// True no-op: leave any pending debounced fetchNow('') to run on its
+			// own schedule and clear the list. Aborting it here (as an earlier
+			// version of this method did) kills that pending reset without
+			// putting anything in its place, leaving stale rows and a stale
+			// "View all results" href on screen after an empty Enter.
 			return;
 		}
+		this.abortInFlight();
 		const url = this.viewAllUrl( q, type );
 		if ( url ) {
 			pushRecent( q, type );
@@ -684,6 +746,9 @@ class SearchBlock {
 		// No results page configured for this type: force an immediate (non-debounced)
 		// in-modal fetch. Term is intentionally NOT persisted here (persist happens on
 		// navigate or result click), mirroring live-typing behavior.
+		// When live results are disabled, fetchNow() is a guarded no-op, so this
+		// fallback silently does nothing — there is no results page and no in-modal
+		// results to show. This is intentional, not a bug.
 		this.fetchNow( q );
 	}
 

@@ -6,6 +6,7 @@ import {
 	RangeControl,
 	SelectControl,
 	TextControl,
+	ToggleControl,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
@@ -76,14 +77,27 @@ function Edit( { attributes, setAttributes } ) {
 							setAttributes( { defaultType: v } )
 						}
 					/>
-					<SelectControl
-						label={ __( 'Debounce', 'aucteeno' ) }
-						value={ attributes.debouncePreset }
-						options={ DEBOUNCE_OPTIONS }
+					<ToggleControl
+						label={ __( 'Disable live results', 'aucteeno' ) }
+						help={ __(
+							"Don't fetch results while typing. Enter or the search button goes straight to the results page.",
+							'aucteeno'
+						) }
+						checked={ !! attributes.disableLiveResults }
 						onChange={ ( v ) =>
-							setAttributes( { debouncePreset: v } )
+							setAttributes( { disableLiveResults: v } )
 						}
 					/>
+					{ ! attributes.disableLiveResults && (
+						<SelectControl
+							label={ __( 'Debounce', 'aucteeno' ) }
+							value={ attributes.debouncePreset }
+							options={ DEBOUNCE_OPTIONS }
+							onChange={ ( v ) =>
+								setAttributes( { debouncePreset: v } )
+							}
+						/>
+					) }
 				</PanelBody>
 				<PanelBody title={ __( 'Recent searches', 'aucteeno' ) }>
 					<RangeControl

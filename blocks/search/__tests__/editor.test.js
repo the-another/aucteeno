@@ -36,6 +36,7 @@ describe( 'Aucteeno Search Block Editor', () => {
 			viewAllItemsPageId: 0,
 			viewAllAuctionsPageId: 0,
 			placeholderTemplate: '%d items to search from',
+			disableLiveResults: false,
 		},
 		setAttributes: jest.fn(),
 	};
@@ -56,5 +57,33 @@ describe( 'Aucteeno Search Block Editor', () => {
 	it( 'registers the block with the correct name', () => {
 		expect( registerBlockType ).toHaveBeenCalled();
 		expect( registerBlockType.mock.calls[ 0 ][ 0 ] ).toBe( 'aucteeno/search' );
+	} );
+
+	it( 'renders the "Disable live results" toggle', async () => {
+		await act( async () => {
+			render( <Edit { ...defaultProps } /> );
+		} );
+		expect( screen.getByText( 'Disable live results' ) ).toBeTruthy();
+	} );
+
+	it( 'shows the Debounce control when live results are enabled', async () => {
+		await act( async () => {
+			render( <Edit { ...defaultProps } /> );
+		} );
+		expect( screen.getByText( 'Debounce' ) ).toBeTruthy();
+	} );
+
+	it( 'hides the Debounce control when live results are disabled', async () => {
+		const props = {
+			...defaultProps,
+			attributes: {
+				...defaultProps.attributes,
+				disableLiveResults: true,
+			},
+		};
+		await act( async () => {
+			render( <Edit { ...props } /> );
+		} );
+		expect( screen.queryByText( 'Debounce' ) ).toBeNull();
 	} );
 } );
