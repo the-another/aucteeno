@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.8.3
+Stable tag: 1.8.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,10 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.8.4 - 2026-08-21 =
+* Fix: The search modal's busy spinner rendered next to a still-visible magnifier icon — the stylesheet's unconditional `display: flex` on the icon overrode its `hidden` attribute; the icon now actually hides while the spinner runs, and the disabled submit button drops its pointer cursor and hover accent so it doesn't advertise clickability
+* Fix: The search modal's busy status line sat flush against the panel edge; it now carries horizontal padding matching the input text's offset from the panel edge (16px on mobile, 24px on ≥600px viewports) and reads "Redirection to search page…" instead of "Searching…", since the modal is navigating to the results page rather than fetching
 
 = 1.8.3 - 2026-08-21 =
 * Fix: Submitting a search when no results page resolves (unpublished or misconfigured `viewAllItemsPageId`/`viewAllAuctionsPageId`) with live results disabled — the default configuration — was a silent no-op; submit now falls back to core WordPress search (`/?s=`) so the visitor always lands on results, and a console warning names the unresolved block attribute so operators can spot the misconfiguration
