@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.8.2
+Stable tag: 1.8.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,11 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.8.3 - 2026-08-21 =
+* Fix: Submitting a search when no results page resolves (unpublished or misconfigured `viewAllItemsPageId`/`viewAllAuctionsPageId`) with live results disabled — the default configuration — was a silent no-op; submit now falls back to core WordPress search (`/?s=`) so the visitor always lands on results, and a console warning names the unresolved block attribute so operators can spot the misconfiguration
+* Add: Submission feedback in the search modal — on submit (click, Enter, or a recent-search click) the magnifier swaps to a spinner, the modal sets `aria-busy`, the input, submit button and type toggles disable, and a "Searching…" status line shows until the results page loads; repeat submits and result or recent clicks are ignored while busy, and the state resets on back-forward cache restores and on reopen so the modal never comes back frozen
+* Chore: Refresh dev tooling locks (hamcrest 3.0.0, mockery 1.6.15, php_codesniffer 3.13.6, johnpbloch/wordpress-core 6.9.7, deep-copy 1.14.0, json-schema 6.11.0, phar-utils 1.2.2) — no runtime dependency changes
 
 = 1.8.2 - 2026-07-30 =
 * Breaking: Search blocks no longer fetch results while the visitor types. Blocks saved before this release carry no setting for the new option, so WordPress supplies its default and they stop live-searching on update — re-enable live results per block from the block's Search panel in the editor; no code change or migration is required
