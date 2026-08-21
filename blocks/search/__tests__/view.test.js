@@ -991,6 +991,379 @@ describe( 'Aucteeno Search: submit aborts in-flight fetch', () => {
 	} );
 } );
 
+describe( 'Aucteeno Search: core-search fallback when no results page resolves', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		delete global.fetch;
+		// A failing expect skips the inline mockRestore calls; restore here so a
+		// leaked prototype spy can't pollute the next test's call counts.
+		jest.restoreAllMocks();
+	} );
+
+	it( 'live disabled + no page URL: submit navigates to core /?s= search instead of doing nothing', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+		global.fetch = jest.fn();
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.itemsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		expect( navigateSpy.mock.calls[ 0 ][ 0 ] ).toContain( '/?s=widget' );
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'warns naming the unresolved items page attribute', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.itemsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+
+		expect( warnSpy ).toHaveBeenCalledTimes( 1 );
+		expect( warnSpy.mock.calls[ 0 ].join( ' ' ) ).toContain(
+			'viewAllItemsPageId'
+		);
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'warns naming the unresolved auctions page attribute for the auctions type', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.auctionsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		block.setActiveType( 'auctions' );
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+
+		expect( warnSpy.mock.calls[ 0 ].join( ' ' ) ).toContain(
+			'viewAllAuctionsPageId'
+		);
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'live enabled + no page URL still runs the in-modal fetch, no warn, no navigation', async () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+
+		const root = makeRoot();
+		root.dataset.itemsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+
+		expect( global.fetch ).toHaveBeenCalled();
+		expect( navigateSpy ).not.toHaveBeenCalled();
+		expect( warnSpy ).not.toHaveBeenCalled();
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'core-search fallback persists recent + last (it is a navigation)', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+
+		const recent = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_RECENT ) || '[]'
+		);
+		const last = JSON.parse(
+			localStorage.getItem( STORAGE_KEY_LAST ) || 'null'
+		);
+		expect( recent[ 0 ] ).toEqual(
+			expect.objectContaining( { q: 'widget', type: 'items' } )
+		);
+		expect( last ).toEqual(
+			expect.objectContaining( { q: 'widget', type: 'items' } )
+		);
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+} );
+
+describe( 'Aucteeno Search submission busy state', () => {
+	beforeEach( () => {
+		localStorage.clear();
+		document.body.innerHTML = '';
+		SearchBlock.openInstance = null;
+	} );
+
+	afterEach( () => {
+		delete global.fetch;
+		// A failing expect skips the inline mockRestore calls; restore here so a
+		// leaked prototype spy can't pollute the next test's call counts.
+		jest.restoreAllMocks();
+	} );
+
+	// Opens a block configured to navigate on submit and submits "widget".
+	function openAndSubmit( rootTweaks = {} ) {
+		const root = makeRoot();
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		Object.assign( root.dataset, rootTweaks );
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+		return block;
+	}
+
+	it( 'submit shows busy feedback: aria-busy, disabled controls, spinner, status line', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+
+		const block = openAndSubmit();
+
+		expect( block.modal.root.getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		expect( block.modal.input.disabled ).toBe( true );
+		expect( block.modal.submit.disabled ).toBe( true );
+		block.modal.toggleBtns.forEach( ( b ) =>
+			expect( b.disabled ).toBe( true )
+		);
+		const spinner = block.modal.root.querySelector(
+			'.aucteeno-search-modal__spinner'
+		);
+		const icon = block.modal.root.querySelector(
+			'.aucteeno-search-modal__submit-icon'
+		);
+		const status = block.modal.root.querySelector(
+			'.aucteeno-search-modal__status'
+		);
+		expect( spinner.hidden ).toBe( false );
+		expect( icon.hidden ).toBe( true );
+		expect( status.hidden ).toBe( false );
+		expect( status.textContent ).toMatch( /Searching/ );
+		// The modal stays open — busy state persists until the page unloads.
+		expect(
+			document.querySelector( '.aucteeno-search-modal' )
+		).not.toBeNull();
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'ignores further submits while busy (click and Enter)', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+
+		const block = openAndSubmit();
+		block.modal.submit.click();
+		block.modal.input.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } )
+		);
+
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'pageshow resets the busy state to a usable modal', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+
+		const block = openAndSubmit();
+		window.dispatchEvent( new Event( 'pageshow' ) );
+
+		expect( block.modal.root.hasAttribute( 'aria-busy' ) ).toBe( false );
+		expect( block.modal.input.disabled ).toBe( false );
+		expect( block.modal.submit.disabled ).toBe( false );
+		block.modal.toggleBtns.forEach( ( b ) =>
+			expect( b.disabled ).toBe( false )
+		);
+		expect(
+			block.modal.root.querySelector( '.aucteeno-search-modal__spinner' )
+				.hidden
+		).toBe( true );
+		expect(
+			block.modal.root.querySelector(
+				'.aucteeno-search-modal__submit-icon'
+			).hidden
+		).toBe( false );
+		expect(
+			block.modal.root.querySelector( '.aucteeno-search-modal__status' )
+				.hidden
+		).toBe( true );
+
+		// And the modal accepts a new submit again.
+		block.modal.input.value = 'gizmo';
+		block.modal.submit.click();
+		expect( navigateSpy ).toHaveBeenCalledTimes( 2 );
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'busy state applies on the core-search fallback path too', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		const warnSpy = jest
+			.spyOn( console, 'warn' )
+			.mockImplementation( () => {} );
+
+		const block = openAndSubmit( {
+			disableLiveResults: '1',
+			itemsPageUrl: '',
+		} );
+
+		expect( block.modal.root.getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		expect( block.modal.submit.disabled ).toBe( true );
+
+		warnSpy.mockRestore();
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'clicking a recent search (live disabled) also shows the busy state', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		pushRecent( 'rolex', 'items' );
+
+		const root = makeRoot();
+		root.dataset.disableLiveResults = '1';
+		root.dataset.itemsPageUrl = 'https://example.com/search-items/';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.root.querySelector( '.recent-q' ).click();
+
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+		expect( block.modal.root.getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		expect( block.modal.input.disabled ).toBe( true );
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'a live-enabled submit with no page URL does not set busy (results render in-modal)', async () => {
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+
+		const root = makeRoot();
+		root.dataset.debounceMs = '0';
+		root.dataset.itemsPageUrl = '';
+		const block = new SearchBlock( root );
+		block.open();
+		block.modal.input.value = 'widget';
+		block.modal.submit.click();
+		await new Promise( ( r ) => setTimeout( r, 5 ) );
+
+		expect( block.modal.root.hasAttribute( 'aria-busy' ) ).toBe( false );
+		expect( block.modal.input.disabled ).toBe( false );
+	} );
+
+	it( 'ignores recent-search clicks while busy (live-enabled path)', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+		global.fetch = jest
+			.fn()
+			.mockResolvedValue( { ok: true, json: async () => [] } );
+		pushRecent( 'rolex', 'items' );
+
+		const block = openAndSubmit();
+		block.modal.root.querySelector( '.recent-q' ).click();
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'ignores result clicks while busy', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+
+		const block = openAndSubmit();
+		block.onResultClick(
+			{ id: 1, permalink: 'https://x/result' },
+			'widget',
+			'items'
+		);
+
+		expect( navigateSpy ).toHaveBeenCalledTimes( 1 );
+
+		navigateSpy.mockRestore();
+	} );
+
+	it( 'reopening after closing a busy modal yields a functional modal', () => {
+		const navigateSpy = jest
+			.spyOn( SearchBlock.prototype, 'navigate' )
+			.mockImplementation( () => {} );
+
+		// Live disabled so reopening (which pre-fills the persisted last term)
+		// does not attempt a fetch in this fetch-less test.
+		const block = openAndSubmit( { disableLiveResults: '1' } );
+		block.close();
+		block.open();
+		block.modal.input.value = 'gizmo';
+		block.modal.submit.click();
+
+		expect( navigateSpy ).toHaveBeenCalledTimes( 2 );
+
+		navigateSpy.mockRestore();
+	} );
+} );
+
 describe( 'Aucteeno Search debounce presets', () => {
 	beforeEach( () => {
 		localStorage.clear();

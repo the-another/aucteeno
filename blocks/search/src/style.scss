@@ -193,7 +193,47 @@ body.admin-bar .aucteeno-search-modal__panel {
 }
 
 .aucteeno-search-modal__submit-icon {
+	display: flex;
 	flex-shrink: 0;
+}
+
+/* Submit-in-flight spinner, swapped in for the submit icon by view.js. */
+.aucteeno-search-modal__spinner {
+	flex-shrink: 0;
+	box-sizing: border-box;
+	width: 18px;
+	height: 18px;
+	border: 2px solid var(--ats-accent-fg);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: aucteeno-search-modal-spin 0.7s linear infinite;
+}
+
+@keyframes aucteeno-search-modal-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	/* Keep the indicator (a frozen spinner reads as broken) but slow it down. */
+	.aucteeno-search-modal__spinner {
+		animation-duration: 1.5s;
+	}
+}
+
+/* "Searching…" line shown while a submit-triggered navigation is in flight. */
+.aucteeno-search-modal__status {
+	margin: 8px 0 0;
+	font-size: 14px;
+	color: var(--ats-text-muted);
+}
+
+/* Busy modal: controls are disabled until the results page unloads this one. */
+.aucteeno-search-modal.is-busy .aucteeno-search-modal__input,
+.aucteeno-search-modal.is-busy .aucteeno-search-modal__type-toggle button {
+	opacity: 0.6;
+	cursor: default;
 }
 
 /* Segmented control: a single bordered track holding two connected
