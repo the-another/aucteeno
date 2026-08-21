@@ -1191,7 +1191,7 @@ describe( 'Aucteeno Search submission busy state', () => {
 		expect( spinner.hidden ).toBe( false );
 		expect( icon.hidden ).toBe( true );
 		expect( status.hidden ).toBe( false );
-		expect( status.textContent ).toMatch( /Searching/ );
+		expect( status.textContent ).toMatch( /Redirection to search page/ );
 		// The modal stays open — busy state persists until the page unloads.
 		expect(
 			document.querySelector( '.aucteeno-search-modal' )

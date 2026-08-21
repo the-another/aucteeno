@@ -349,7 +349,7 @@ class SearchBlock {
 							<button type="button" data-type="items" role="radio">Items</button>
 						</div>
 					</div>
-					<p class="aucteeno-search-modal__status" role="status" hidden>Searching…</p>
+					<p class="aucteeno-search-modal__status" role="status" hidden>Redirection to search page…</p>
 					<ul class="aucteeno-search-modal__results" role="listbox"></ul>
 					<a class="aucteeno-search-modal__view-all" href="#" hidden>View all results</a>
 					<button type="button" class="aucteeno-search-modal__close" aria-label="Close" data-action="close">✕</button>

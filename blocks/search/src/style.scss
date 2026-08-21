@@ -192,7 +192,10 @@ body.admin-bar .aucteeno-search-modal__panel {
 	outline-offset: -4px;
 }
 
-.aucteeno-search-modal__submit-icon {
+/* Scope display to :not([hidden]) — an unconditional author `display` would
+ * override the UA's [hidden] { display: none }, leaving the icon visible next
+ * to the spinner while busy. Same pattern as __view-all below. */
+.aucteeno-search-modal__submit-icon:not([hidden]) {
 	display: flex;
 	flex-shrink: 0;
 }
@@ -222,9 +225,13 @@ body.admin-bar .aucteeno-search-modal__panel {
 	}
 }
 
-/* "Searching…" line shown while a submit-triggered navigation is in flight. */
+/* Redirect status line shown while a submit-triggered navigation is in
+ * flight. Horizontal padding matches the input text's offset from the panel
+ * edge (header padding + input padding): 12px + 4px on mobile, 14px + 10px
+ * on ≥$break-small — see __header / __input above. */
 .aucteeno-search-modal__status {
 	margin: 8px 0 0;
+	padding: 0 16px;
 	font-size: 14px;
 	color: var(--ats-text-muted);
 }
@@ -233,6 +240,14 @@ body.admin-bar .aucteeno-search-modal__panel {
 .aucteeno-search-modal.is-busy .aucteeno-search-modal__input,
 .aucteeno-search-modal.is-busy .aucteeno-search-modal__type-toggle button {
 	opacity: 0.6;
+	cursor: default;
+}
+
+/* The submit button is disabled while busy too; drop the pointer cursor and
+ * hover accent so it doesn't advertise clickability. */
+.aucteeno-search-modal__submit:disabled {
+	background: var(--ats-accent);
+	border-color: var(--ats-accent);
 	cursor: default;
 }
 
@@ -445,6 +460,10 @@ body.admin-bar .aucteeno-search-modal__panel {
 		width: 52px;
 		height: 60px;
 		border-radius: 0;
+	}
+
+	.aucteeno-search-modal__status {
+		padding: 0 24px;
 	}
 
 	.aucteeno-search-modal__type-toggle {
