@@ -102,6 +102,7 @@ class SearchBlock {
 		this.countdownInterval = null;
 		this._returningFocus = false;
 		this.lastChip = null;
+		this.busy = false;
 		this.onStorageEvent = ( e ) => {
 			if ( e.key === STORAGE_KEY_LAST ) {
 				this.renderChip();
@@ -111,6 +112,11 @@ class SearchBlock {
 			}
 		};
 		window.addEventListener( 'storage', this.onStorageEvent );
+		// A bfcache restore (back button after submit) revives the page with the
+		// pre-navigation busy state frozen in place; reset it so the modal is
+		// usable again.
+		this.onPageShow = () => this.clearBusy();
+		window.addEventListener( 'pageshow', this.onPageShow );
 		this.bind();
 		this.renderChip();
 	}
@@ -243,6 +249,9 @@ class SearchBlock {
 		this.abortInFlight();
 		this.modal.root.remove();
 		this.modal = null;
+		// The busy DOM just left with the modal; a reopen builds a fresh,
+		// enabled one, so the flag must not survive to block its submits.
+		this.busy = false;
 		if ( SearchBlock.openInstance === this ) {
 			SearchBlock.openInstance = null;
 		}
@@ -332,13 +341,15 @@ class SearchBlock {
 					<div class="aucteeno-search-modal__header">
 						<input type="search" class="aucteeno-search-modal__input" placeholder="Search…" autocomplete="off" />
 						<button type="button" class="aucteeno-search-modal__submit" aria-label="Submit search">
-							<svg class="aucteeno-search-modal__submit-icon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+							<span class="aucteeno-search-modal__submit-icon" aria-hidden="true"><svg focusable="false" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg></span>
+							<span class="aucteeno-search-modal__spinner" aria-hidden="true" hidden></span>
 						</button>
 						<div class="aucteeno-search-modal__type-toggle" role="radiogroup">
 							<button type="button" data-type="auctions" role="radio">Auctions</button>
 							<button type="button" data-type="items" role="radio">Items</button>
 						</div>
 					</div>
+					<p class="aucteeno-search-modal__status" role="status" hidden>Searching…</p>
 					<ul class="aucteeno-search-modal__results" role="listbox"></ul>
 					<a class="aucteeno-search-modal__view-all" href="#" hidden>View all results</a>
 					<button type="button" class="aucteeno-search-modal__close" aria-label="Close" data-action="close">✕</button>
@@ -360,6 +371,11 @@ class SearchBlock {
 			'.aucteeno-search-modal__type-toggle button'
 		);
 		const submit = root.querySelector( '.aucteeno-search-modal__submit' );
+		const submitIcon = root.querySelector(
+			'.aucteeno-search-modal__submit-icon'
+		);
+		const spinner = root.querySelector( '.aucteeno-search-modal__spinner' );
+		const status = root.querySelector( '.aucteeno-search-modal__status' );
 
 		if ( this.cfg.disableLive ) {
 			root.classList.add( 'is-live-disabled' );
@@ -392,7 +408,17 @@ class SearchBlock {
 			}
 		} );
 
-		return { root, input, results, viewAll, toggleBtns, submit };
+		return {
+			root,
+			input,
+			results,
+			viewAll,
+			toggleBtns,
+			submit,
+			submitIcon,
+			spinner,
+			status,
+		};
 	}
 
 	setActiveType( t ) {
@@ -524,6 +550,9 @@ class SearchBlock {
 				<button type="button" class="recent-x" aria-label="Remove">✕</button>
 			`;
 			li.querySelector( '.recent-q' ).addEventListener( 'click', () => {
+				if ( this.busy ) {
+					return;
+				}
 				this.activeType = entry.type;
 				this.modal.toggleBtns.forEach( ( b ) =>
 					b.setAttribute(
@@ -721,8 +750,48 @@ class SearchBlock {
 		this.lastFetchKey = null;
 	}
 
-	submitSearch() {
+	// Freezes the modal while a submit-triggered navigation is in flight:
+	// spinner in place of the submit icon, controls disabled, status line
+	// visible. Deliberately sticky — it holds until the browser unloads;
+	// only a bfcache restore (pageshow) or close() undoes it.
+	setBusy() {
+		if ( ! this.modal || this.busy ) {
+			return;
+		}
+		this.busy = true;
+		const m = this.modal;
+		m.root.setAttribute( 'aria-busy', 'true' );
+		m.root.classList.add( 'is-busy' );
+		m.input.disabled = true;
+		m.submit.disabled = true;
+		m.toggleBtns.forEach( ( b ) => {
+			b.disabled = true;
+		} );
+		m.submitIcon.hidden = true;
+		m.spinner.hidden = false;
+		m.status.hidden = false;
+	}
+
+	clearBusy() {
+		this.busy = false;
 		if ( ! this.modal ) {
+			return;
+		}
+		const m = this.modal;
+		m.root.removeAttribute( 'aria-busy' );
+		m.root.classList.remove( 'is-busy' );
+		m.input.disabled = false;
+		m.submit.disabled = false;
+		m.toggleBtns.forEach( ( b ) => {
+			b.disabled = false;
+		} );
+		m.submitIcon.hidden = false;
+		m.spinner.hidden = true;
+		m.status.hidden = true;
+	}
+
+	submitSearch() {
+		if ( ! this.modal || this.busy ) {
 			return;
 		}
 		const q = ( this.modal.input.value || '' ).trim();
@@ -736,23 +805,44 @@ class SearchBlock {
 			return;
 		}
 		this.abortInFlight();
-		const url = this.viewAllUrl( q, type );
+		let url = this.viewAllUrl( q, type );
+		if ( ! url && this.cfg.disableLive ) {
+			// No results page resolved and no in-modal results to fall back to.
+			// Never dead-end the submit: hand off to core WP search, and name
+			// the unresolved attribute so operators can spot the misconfigured
+			// page ID in the console.
+			const attr =
+				type === 'auctions'
+					? 'viewAllAuctionsPageId'
+					: 'viewAllItemsPageId';
+			// eslint-disable-next-line no-console
+			console.warn(
+				`Aucteeno search: no published results page for type "${ type }" ` +
+					`(block attribute ${ attr }); falling back to core WP search.`
+			);
+			const fallback = new URL( '/', window.location.origin );
+			fallback.searchParams.set( 's', q );
+			url = fallback.toString();
+		}
 		if ( url ) {
 			pushRecent( q, type );
 			writeLast( q, type );
+			this.setBusy();
 			this.navigate( url );
 			return;
 		}
-		// No results page configured for this type: force an immediate (non-debounced)
-		// in-modal fetch. Term is intentionally NOT persisted here (persist happens on
-		// navigate or result click), mirroring live-typing behavior.
-		// When live results are disabled, fetchNow() is a guarded no-op, so this
-		// fallback silently does nothing — there is no results page and no in-modal
-		// results to show. This is intentional, not a bug.
+		// No results page configured but live results are on: force an immediate
+		// (non-debounced) in-modal fetch. Term is intentionally NOT persisted here
+		// (persist happens on navigate or result click), mirroring live-typing
+		// behavior. No busy state either — results render in this modal, so
+		// freezing the controls would fight the interaction it feeds.
 		this.fetchNow( q );
 	}
 
 	onResultClick( row, q, type ) {
+		if ( this.busy ) {
+			return;
+		}
 		if ( q ) {
 			pushRecent( q, type );
 			writeLast( q, type );
