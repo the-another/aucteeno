@@ -176,6 +176,56 @@ if ( 'expired' === $effective_state ) {
 	$is_showing_date = true;
 }
 
+/**
+ * Filters the countdown's displayed value with a consumer-supplied override.
+ *
+ * A consumer returns a value plus the window it applies to. The window — rather
+ * than a bare replacement string — is what lets view.js re-evaluate the override
+ * on every tick without calling back into PHP, so the override survives the
+ * per-second re-render instead of being clobbered by it.
+ *
+ * Validation here mirrors applyOverride() in src/countdown-utils.js. Keep them
+ * in step.
+ *
+ * @since 1.9.0
+ *
+ * @param array  $override        Empty array, or array{ value: string, from: int, until: int, state?: string }.
+ * @param array  $item_data       Item context data.
+ * @param array  $attributes      Block attributes.
+ * @param string $effective_state Computed effective state (upcoming|running|expired).
+ */
+$override = apply_filters( 'aucteeno_field_countdown_override', array(), $item_data, $attributes, $effective_state );
+
+$override_value = '';
+$override_from  = 0;
+$override_until = 0;
+$override_state = '';
+
+if ( is_array( $override ) && isset( $override['value'] ) && is_string( $override['value'] ) && '' !== $override['value'] ) {
+	$candidate_from  = absint( $override['from'] ?? 0 );
+	$candidate_until = absint( $override['until'] ?? 0 );
+
+	if ( $candidate_from > 0 && $candidate_until > 0 && $candidate_from < $candidate_until ) {
+		$override_value = $override['value'];
+		$override_from  = $candidate_from;
+		$override_until = $candidate_until;
+		// Interpolated into a class name below, so it must be sanitised here.
+		$override_state = sanitize_html_class( (string) ( $override['state'] ?? '' ) );
+	}
+}
+
+// A pinned targetDate is an explicit request for that countdown, so it wins.
+// Inclusive-exclusive, so a window can end exactly where 'expired' begins.
+$override_active = '' !== $override_value
+	&& 'auto' === $target_date
+	&& $now >= $override_from
+	&& $now < $override_until;
+
+if ( $override_active ) {
+	$display_value   = $override_value;
+	$is_showing_date = false;
+}
+
 // Determine label based on state and whether showing date.
 if ( ! $respect_bidding_status ) {
 	$label = $single_label;
@@ -187,13 +237,30 @@ if ( ! $respect_bidding_status ) {
 	$label = ( 'upcoming' === $effective_state ) ? $label_upcoming_time : $label_running_time;
 }
 
+$state_class = ( $override_active && '' !== $override_state ) ? $override_state : $current_state;
+
 $wrapper_classes = 'aucteeno-field-countdown';
-$wrapper_classes .= ' aucteeno-field-countdown--' . $current_state;
+$wrapper_classes .= ' aucteeno-field-countdown--' . $state_class;
 $wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
+
+// Emitted only when a well-formed override exists — a block with no consumer
+// registered must render byte-identically to before this filter existed.
+// Emitted even when the window has not opened yet, so the client can apply it
+// on the right tick without a reload.
+$override_attributes = '';
+if ( '' !== $override_value ) {
+	$override_attributes = sprintf(
+		' data-override-value="%s" data-override-from="%d" data-override-until="%d" data-override-state="%s"',
+		esc_attr( $override_value ),
+		$override_from,
+		$override_until,
+		esc_attr( $override_state )
+	);
+}
 
 ob_start();
 ?>
-<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> data-aucteeno-countdown data-starts-at="<?php echo esc_attr( $bidding_starts ); ?>" data-ends-at="<?php echo esc_attr( $bidding_ends ); ?>" data-current-state="<?php echo esc_attr( $current_state ); ?>" data-date-format="<?php echo esc_attr( $date_format ); ?>" data-target-date="<?php echo esc_attr( $target_date ); ?>" data-respect-bidding-status="<?php echo $respect_bidding_status ? '1' : '0'; ?>" data-label="<?php echo esc_attr( $single_label ); ?>" data-label-upcoming-time="<?php echo esc_attr( $label_upcoming_time ); ?>" data-label-upcoming-date="<?php echo esc_attr( $label_upcoming_date ); ?>" data-label-running-time="<?php echo esc_attr( $label_running_time ); ?>" data-label-running-date="<?php echo esc_attr( $label_running_date ); ?>" data-label-expired="<?php echo esc_attr( $label_expired ); ?>">
+<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> data-aucteeno-countdown data-starts-at="<?php echo esc_attr( $bidding_starts ); ?>" data-ends-at="<?php echo esc_attr( $bidding_ends ); ?>" data-current-state="<?php echo esc_attr( $current_state ); ?>" data-date-format="<?php echo esc_attr( $date_format ); ?>" data-target-date="<?php echo esc_attr( $target_date ); ?>" data-respect-bidding-status="<?php echo $respect_bidding_status ? '1' : '0'; ?>" data-label="<?php echo esc_attr( $single_label ); ?>" data-label-upcoming-time="<?php echo esc_attr( $label_upcoming_time ); ?>" data-label-upcoming-date="<?php echo esc_attr( $label_upcoming_date ); ?>" data-label-running-time="<?php echo esc_attr( $label_running_time ); ?>" data-label-running-date="<?php echo esc_attr( $label_running_date ); ?>" data-label-expired="<?php echo esc_attr( $label_expired ); ?>"<?php echo $override_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr()'d parts above. ?>>
 	<?php if ( $show_label ) : ?>
 		<span class="aucteeno-field-countdown__label"><?php echo esc_html( $label ); ?></span>
 	<?php endif; ?>
