@@ -222,6 +222,10 @@ class Field_Countdown_Render_Test extends TestCase {
 
 		$this->assertStringNotContainsString( '>Closing<', $html );
 		$this->assertStringContainsString( '>2 hours<', $html );
+		// Both sides already ignore the override under this pin (view.js
+		// never even builds an override object for it); the wire shouldn't
+		// carry data neither side will look at.
+		$this->assertStringNotContainsString( 'data-override', $html );
 	}
 
 	public function test_ends_at_pin_honours_an_active_override(): void {

@@ -102,39 +102,33 @@ function aucteeno_get_item_counts_by_location(): array {
 	return Container::get_instance()->get( 'location_count_provider' )->get_item_counts_by_location();
 }
 
-if ( ! function_exists( 'aucteeno_format_date' ) ) {
-	/**
-	 * Format a timestamp based on the selected date format.
-	 *
-	 * The timestamp is a Unix timestamp (UTC-based). wp_date() automatically converts
-	 * it to the WordPress timezone setting for display.
-	 *
-	 * Guarded against a double-load of this file (e.g. this file being
-	 * required more than once within the same process, such as in tests).
-	 * This is the single definition; nothing else in the plugin declares it.
-	 *
-	 * @param int    $timestamp   Unix timestamp (UTC-based).
-	 * @param string $date_format Date format setting.
-	 * @return string Formatted date string in WordPress timezone.
-	 */
-	function aucteeno_format_date( $timestamp, $date_format ) {
-		switch ( $date_format ) {
-			case 'mdy':
-				return wp_date( 'm/d/Y', $timestamp );
-			case 'dmy':
-				return wp_date( 'd/m/Y', $timestamp );
-			case 'ymd':
-				return wp_date( 'Y-m-d', $timestamp );
-			case 'long':
-				return wp_date( 'F j, Y', $timestamp );
-			case 'long_eu':
-				return wp_date( 'j F Y', $timestamp );
-			case 'full':
-				return wp_date( 'l, F jS Y', $timestamp );
-			case 'default':
-			default:
-				return wp_date( get_option( 'date_format' ), $timestamp );
-		}
+/**
+ * Format a timestamp based on the selected date format.
+ *
+ * The timestamp is a Unix timestamp (UTC-based). wp_date() automatically converts
+ * it to the WordPress timezone setting for display.
+ *
+ * @param int    $timestamp   Unix timestamp (UTC-based).
+ * @param string $date_format Date format setting.
+ * @return string Formatted date string in WordPress timezone.
+ */
+function aucteeno_format_date( $timestamp, $date_format ) {
+	switch ( $date_format ) {
+		case 'mdy':
+			return wp_date( 'm/d/Y', $timestamp );
+		case 'dmy':
+			return wp_date( 'd/m/Y', $timestamp );
+		case 'ymd':
+			return wp_date( 'Y-m-d', $timestamp );
+		case 'long':
+			return wp_date( 'F j, Y', $timestamp );
+		case 'long_eu':
+			return wp_date( 'j F Y', $timestamp );
+		case 'full':
+			return wp_date( 'l, F jS Y', $timestamp );
+		case 'default':
+		default:
+			return wp_date( get_option( 'date_format' ), $timestamp );
 	}
 }
 

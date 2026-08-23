@@ -77,7 +77,7 @@ $is_showing_date = false;
 
 // For expired items, calculate elapsed time.
 if ( 'expired' === $effective_state ) {
-	$elapsed_result  = aucteeno_format_elapsed( abs( $diff ), $timestamp, $date_format );
+	$elapsed_result  = aucteeno_format_elapsed( (int) abs( $diff ), $timestamp, $date_format );
 	$display_value   = $elapsed_result['display_value'];
 	$is_showing_date = $elapsed_result['is_showing_date'];
 } elseif ( $diff <= 0 && 'upcoming' !== $effective_state ) {
@@ -186,7 +186,7 @@ if ( $override_active ) {
 	// only once it has actually started - a `since` still in the future would
 	// otherwise render a negative elapsed time.
 	if ( $override_since > 0 && $now >= $override_since ) {
-		$elapsed_result  = aucteeno_format_elapsed( $now - $override_since, $override_since, $date_format );
+		$elapsed_result  = aucteeno_format_elapsed( (int) ( $now - $override_since ), $override_since, $date_format );
 		$display_value   = $elapsed_result['display_value'];
 		$is_showing_date = $elapsed_result['is_showing_date'];
 	}
@@ -212,12 +212,15 @@ $wrapper_classes    = 'aucteeno-field-countdown';
 $wrapper_classes   .= ' aucteeno-field-countdown--' . $state_class;
 $wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
 
-// Emitted only when a well-formed override exists — a block with no consumer
-// registered must render byte-identically to before this filter existed.
-// Emitted even when the window has not opened yet, so the client can apply it
-// on the right tick without a reload.
+// Emitted only when a well-formed override exists and targetDate isn't
+// pinned to starts_at — a block with no consumer registered must render
+// byte-identically to before this filter existed, and both sides already
+// ignore the override entirely under a starts_at pin (see $override_active
+// above / view.js's own targetDate check), so the wire shouldn't carry data
+// neither side will ever look at. Emitted even when the window has not
+// opened yet, so the client can apply it on the right tick without a reload.
 $override_attributes = '';
-if ( '' !== $override_value ) {
+if ( '' !== $override_value && 'starts_at' !== $target_date ) {
 	$override_attributes = sprintf(
 		' data-override-value="%s" data-override-from="%d" data-override-until="%d" data-override-state="%s"',
 		esc_attr( $override_value ),
