@@ -202,8 +202,8 @@ $override_until = 0;
 $override_state = '';
 
 if ( is_array( $override ) && isset( $override['value'] ) && is_string( $override['value'] ) && '' !== $override['value'] ) {
-	$candidate_from  = absint( $override['from'] ?? 0 );
-	$candidate_until = absint( $override['until'] ?? 0 );
+	$candidate_from  = (int) ( $override['from'] ?? 0 );
+	$candidate_until = (int) ( $override['until'] ?? 0 );
 
 	if ( $candidate_from > 0 && $candidate_until > 0 && $candidate_from < $candidate_until ) {
 		$override_value = $override['value'];

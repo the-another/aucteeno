@@ -233,4 +233,22 @@ class Field_Countdown_Render_Test extends TestCase {
 
 		$this->assertStringNotContainsString( '<script>', $html );
 	}
+
+	public function test_negative_window_bounds_are_rejected_not_made_positive(): void {
+		// absint() would fold -5000 to 5000 and accept this window; the JS half
+		// rejects it outright. The two must agree or the block flashes on the
+		// first tick.
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Closing',
+				'from'  => 100,
+				'until' => -5000,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'data-override', $html );
+		$this->assertStringNotContainsString( '>Closing<', $html );
+	}
 }
