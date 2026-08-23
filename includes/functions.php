@@ -109,10 +109,9 @@ if ( ! function_exists( 'aucteeno_format_date' ) ) {
 	 * The timestamp is a Unix timestamp (UTC-based). wp_date() automatically converts
 	 * it to the WordPress timezone setting for display.
 	 *
-	 * Guarded: the field-countdown block keeps its own copy of this function so
-	 * its render.php still works when exercised in isolation (e.g. in tests,
-	 * without this file loaded first). Whichever copy loads first wins; the
-	 * other becomes a no-op. Keep both in step.
+	 * Guarded against a double-load of this file (e.g. this file being
+	 * required more than once within the same process, such as in tests).
+	 * This is the single definition; nothing else in the plugin declares it.
 	 *
 	 * @param int    $timestamp   Unix timestamp (UTC-based).
 	 * @param string $date_format Date format setting.

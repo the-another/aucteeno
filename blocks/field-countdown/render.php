@@ -35,37 +35,8 @@ $label_expired          = $attributes['labelExpired'] ?? __( 'Bidding ended', 'a
 $bidding_starts         = $item_data['bidding_starts_at'] ?? 0;
 $bidding_ends           = $item_data['bidding_ends_at'] ?? 0;
 
-if ( ! function_exists( 'aucteeno_format_date' ) ) {
-	/**
-	 * Format a timestamp based on the selected date format.
-	 *
-	 * The timestamp is a Unix timestamp (UTC-based). wp_date() automatically converts
-	 * it to the WordPress timezone setting for display.
-	 *
-	 * @param int    $timestamp   Unix timestamp (UTC-based).
-	 * @param string $date_format Date format setting.
-	 * @return string Formatted date string in WordPress timezone.
-	 */
-	function aucteeno_format_date( $timestamp, $date_format ) {
-		switch ( $date_format ) {
-			case 'mdy':
-				return wp_date( 'm/d/Y', $timestamp );
-			case 'dmy':
-				return wp_date( 'd/m/Y', $timestamp );
-			case 'ymd':
-				return wp_date( 'Y-m-d', $timestamp );
-			case 'long':
-				return wp_date( 'F j, Y', $timestamp );
-			case 'long_eu':
-				return wp_date( 'j F Y', $timestamp );
-			case 'full':
-				return wp_date( 'l, F jS Y', $timestamp );
-			case 'default':
-			default:
-				return wp_date( get_option( 'date_format' ), $timestamp );
-		}
-	}
-}
+// aucteeno_format_date() is defined once, in includes/functions.php, which
+// the plugin bootstrap loads (aucteeno.php) before any block can render.
 
 // Calculate current state based on UTC timestamps.
 // time() returns current Unix timestamp (UTC-based), ensuring timezone-agnostic comparisons.
