@@ -74,6 +74,27 @@ if ( $respect_bidding_status ) {
 	$label_text = $attributes['label'] ?? __( 'Bidding closes at', 'aucteeno' );
 }
 
+/**
+ * Filters the label shown beside the bidding end time.
+ *
+ * Lets a consuming plugin state something the block cannot know on its own —
+ * for example that an auction closing its lots on a stagger has already begun
+ * closing, when this block's own timestamp is the last lot's.
+ *
+ * Note this block renders once and never re-evaluates: `view.js` only hydrates
+ * the timestamp to local time a single time. A consumer that varies the label
+ * by wall-clock must therefore do its own time comparison, and the label can be
+ * up to one page-cache lifetime stale.
+ *
+ * @since 1.9.0
+ *
+ * @param string $label_text    The computed label.
+ * @param array  $item_data     Item context data.
+ * @param array  $attributes    Block attributes.
+ * @param string $current_state Computed state: upcoming, running or expired.
+ */
+$label_text = (string) apply_filters( 'aucteeno_field_ends_at_label', $label_text, $item_data, $attributes, $current_state );
+
 $formatted = wp_date( $php_format, $timestamp );
 
 $orientation        = $attributes['orientation'] ?? 'column';

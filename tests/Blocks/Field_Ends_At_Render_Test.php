@@ -1,0 +1,269 @@
+<?php
+/**
+ * Tests for the Aucteeno Field Ends At block server-side render.
+ *
+ * @package Aucteeno
+ */
+
+namespace The_Another\Plugin\Aucteeno\Tests\Blocks;
+
+use Brain\Monkey;
+use Brain\Monkey\Filters;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class Field_Ends_At_Render_Test extends TestCase {
+
+	protected function setUp(): void {
+		parent::setUp();
+		Monkey\setUp();
+
+		// Re-stub functions the bootstrap stubs globally; Patchwork restores them
+		// after each tearDown() and they throw MissingFunctionExpectations otherwise.
+		Functions\when( '__' )->returnArg();
+		Functions\when( 'esc_html' )->returnArg();
+		Functions\when( 'esc_attr' )->returnArg();
+		Functions\when( 'sanitize_html_class' )->alias(
+			static function ( $class ) {
+				return preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $class );
+			}
+		);
+		Functions\when( 'get_option' )->justReturn( 'F j, Y' );
+		Functions\when( 'wp_date' )->alias(
+			static function ( $format, $timestamp ) {
+				return gmdate( $format, $timestamp );
+			}
+		);
+
+		// Serialize every wrapper attribute so tests can assert on presence/absence.
+		Functions\when( 'get_block_wrapper_attributes' )->alias(
+			static function ( $a = array() ) {
+				$out = array();
+				foreach ( $a as $key => $value ) {
+					$out[] = $key . '="' . $value . '"';
+				}
+				return implode( ' ', $out );
+			}
+		);
+	}
+
+	protected function tearDown(): void {
+		Monkey\tearDown();
+		parent::tearDown();
+	}
+
+	/**
+	 * Include the block's render.php with the given attributes and item data.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $item_data  Item context data.
+	 * @return string Rendered HTML.
+	 */
+	private function run_render( array $attributes, array $item_data ): string {
+		$content = '';
+		$block   = (object) array( 'context' => array( 'aucteeno/item' => $item_data ) );
+
+		ob_start();
+		try {
+			include dirname( __DIR__, 2 ) . '/blocks/field-ends-at/render.php';
+		} finally {
+			$html = ob_get_clean();
+		}
+		return $html ?? '';
+	}
+
+	/**
+	 * An upcoming auction: starts in an hour, ends in two.
+	 *
+	 * @return array Item data.
+	 */
+	private function upcoming_item(): array {
+		$now = time();
+		return array(
+			'id'                => 42,
+			'bidding_starts_at' => $now + 3600,
+			'bidding_ends_at'   => $now + 7200,
+		);
+	}
+
+	/**
+	 * A running auction: started an hour ago, ends in two hours and one minute.
+	 *
+	 * The extra minute matters: render.php calls time() a moment after this
+	 * helper does, so a flat +7200 could in theory land exactly on the
+	 * boundary and flake.
+	 *
+	 * @return array Item data.
+	 */
+	private function running_item(): array {
+		$now = time();
+		return array(
+			'id'                => 42,
+			'bidding_starts_at' => $now - 3600,
+			'bidding_ends_at'   => $now + 7260,
+		);
+	}
+
+	/**
+	 * An expired auction: started two hours ago, ended a minute ago.
+	 *
+	 * The minute-old end matters for the same reason as running_item()'s extra
+	 * minute: it keeps the state firmly on one side of the boundary.
+	 *
+	 * @return array Item data.
+	 */
+	private function expired_item(): array {
+		$now = time();
+		return array(
+			'id'                => 42,
+			'bidding_starts_at' => $now - 7200,
+			'bidding_ends_at'   => $now - 60,
+		);
+	}
+
+	// --- Default labels, no filter registered ---
+
+	public function test_default_label_for_upcoming_state_with_no_filter(): void {
+		$html = $this->run_render( array(), $this->upcoming_item() );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding closes at</dt>',
+			$html
+		);
+	}
+
+	public function test_default_label_for_running_state_with_no_filter(): void {
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding closes at</dt>',
+			$html
+		);
+	}
+
+	public function test_default_label_for_expired_state_with_no_filter(): void {
+		$html = $this->run_render( array(), $this->expired_item() );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding closed at</dt>',
+			$html
+		);
+	}
+
+	// --- Filter registered ---
+
+	public function test_registered_filter_replaces_the_label(): void {
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( 'Bidding started closing' );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding started closing</dt>',
+			$html
+		);
+	}
+
+	public function test_filter_receives_the_resolved_label_and_context_for_running_state(): void {
+		$item = $this->running_item();
+
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )
+			->once()
+			->with( 'Bidding closes at', $item, array(), 'running' )
+			->andReturn( 'Bidding started closing' );
+
+		$html = $this->run_render( array(), $item );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding started closing</dt>',
+			$html
+		);
+	}
+
+	public function test_filter_still_applies_when_respect_bidding_status_is_false(): void {
+		$item       = $this->running_item();
+		$attributes = array(
+			'respectBiddingStatus' => false,
+			'label'                => 'Sale status',
+		);
+
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )
+			->once()
+			->with( 'Sale status', $item, $attributes, 'running' )
+			->andReturn( 'Overridden label' );
+
+		$html = $this->run_render( $attributes, $item );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Overridden label</dt>',
+			$html
+		);
+	}
+
+	// --- Non-string filter return ---
+
+	public function test_non_string_filter_return_is_cast_to_string_and_does_not_fatal(): void {
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( array( 'unexpected' ) );
+
+		// PHP's (string) cast on an array is exactly the behaviour under test; it
+		// emits a native "Array to string conversion" E_WARNING, which PHPUnit's
+		// failOnWarning would otherwise turn into a test failure. Swallow just
+		// that warning for the duration of the render call.
+		set_error_handler(
+			static function () {
+				return true;
+			},
+			E_WARNING
+		);
+
+		try {
+			$html = $this->run_render( array(), $this->running_item() );
+		} finally {
+			restore_error_handler();
+		}
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Array</dt>',
+			$html
+		);
+	}
+
+	// --- showLabel: false ---
+
+	public function test_show_label_false_renders_no_label_element_without_filter(): void {
+		$html = $this->run_render( array( 'showLabel' => false ), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'wp-block-aucteeno-field-ends-at__label', $html );
+	}
+
+	public function test_show_label_false_renders_no_label_element_with_filter_registered(): void {
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( 'Should not appear' );
+
+		$html = $this->run_render( array( 'showLabel' => false ), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'wp-block-aucteeno-field-ends-at__label', $html );
+		$this->assertStringNotContainsString( 'Should not appear', $html );
+	}
+
+	// --- Escaping ---
+
+	public function test_filter_output_is_escaped_before_reaching_the_label(): void {
+		// The suite stubs esc_html() as a pass-through, so escaping is invisible
+		// to every other test here. Use the real thing for this one: the label
+		// is consumer-supplied via the filter and lands inside the <dt> element.
+		Functions\when( 'esc_html' )->alias(
+			static function ( $text ) {
+				return htmlspecialchars( (string) $text, ENT_QUOTES );
+			}
+		);
+
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( 'Closing" onmouseover="x' );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'onmouseover="x', $html );
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Closing&quot; onmouseover=&quot;x</dt>',
+			$html
+		);
+	}
+}
