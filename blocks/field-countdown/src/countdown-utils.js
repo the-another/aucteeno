@@ -265,3 +265,47 @@ export function updateCardClasses( cardElement, newState, oldState ) {
 	// Add new state class.
 	cardElement.classList.add( `aucteeno-card--${ newState }` );
 }
+
+/**
+ * Apply a consumer-supplied display override, if one applies right now.
+ *
+ * A consumer supplies a value plus the window it covers, rather than a bare
+ * replacement string, so that this function can re-decide on every tick
+ * without calling back into the consumer. That is what lets an override
+ * survive the per-second re-render.
+ *
+ * Mirrors the validation in render.php. Keep the two in step.
+ *
+ * @param {number}      now      Current UTC timestamp in seconds.
+ * @param {Object|null} override Override descriptor, or null/{} for none.
+ * @param {Object}      computed Computed display: {displayValue, isShowingDate, state}.
+ * @return {Object} The override applied, or `computed` unchanged.
+ */
+export function applyOverride( now, override, computed ) {
+	if (
+		! override ||
+		typeof override.value !== 'string' ||
+		override.value === ''
+	) {
+		return computed;
+	}
+
+	const from = Number( override.from ) || 0;
+	const until = Number( override.until ) || 0;
+
+	if ( from <= 0 || until <= 0 || from >= until ) {
+		return computed;
+	}
+
+	// Inclusive-exclusive, so a window can end exactly where the block's own
+	// expired state begins — no overlap, no gap.
+	if ( now < from || now >= until ) {
+		return computed;
+	}
+
+	return {
+		displayValue: override.value,
+		isShowingDate: false,
+		state: override.state || computed.state,
+	};
+}

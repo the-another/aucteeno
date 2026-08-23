@@ -7,6 +7,7 @@ import {
 	formatCountdown,
 	getUpdateInterval,
 	updateCardClasses,
+	applyOverride,
 } from '../src/countdown-utils';
 
 // Use a fixed UTC timestamp for deterministic date tests: 2026-01-17 12:00:00 UTC
@@ -219,5 +220,111 @@ describe( 'updateCardClasses', () => {
 
 	test( 'does nothing when cardElement is null', () => {
 		expect( () => updateCardClasses( null, 'running', 'upcoming' ) ).not.toThrow();
+	} );
+} );
+
+describe( 'applyOverride', () => {
+	const computed = {
+		displayValue: '2 hours',
+		isShowingDate: false,
+		state: 'running',
+	};
+	const valid = { value: 'Closing', from: 1000, until: 2000, state: 'closing' };
+
+	describe( 'rejects malformed overrides', () => {
+		test( 'null override returns computed unchanged', () => {
+			expect( applyOverride( 1500, null, computed ) ).toBe( computed );
+		} );
+
+		test( 'empty object returns computed unchanged', () => {
+			expect( applyOverride( 1500, {}, computed ) ).toBe( computed );
+		} );
+
+		test( 'missing value returns computed unchanged', () => {
+			const o = { from: 1000, until: 2000 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'empty-string value returns computed unchanged', () => {
+			const o = { ...valid, value: '' };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'non-string value returns computed unchanged', () => {
+			const o = { ...valid, value: 42 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'zero from returns computed unchanged', () => {
+			const o = { ...valid, from: 0 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'zero until returns computed unchanged', () => {
+			const o = { ...valid, until: 0 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'inverted window returns computed unchanged', () => {
+			const o = { ...valid, from: 2000, until: 1000 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'zero-length window returns computed unchanged', () => {
+			const o = { ...valid, from: 1000, until: 1000 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+	} );
+
+	describe( 'respects the window', () => {
+		test( 'before the window returns computed unchanged', () => {
+			expect( applyOverride( 999, valid, computed ) ).toBe( computed );
+		} );
+
+		test( 'exactly at from applies the override', () => {
+			expect( applyOverride( 1000, valid, computed ).displayValue ).toBe(
+				'Closing'
+			);
+		} );
+
+		test( 'inside the window applies the override', () => {
+			expect( applyOverride( 1500, valid, computed ).displayValue ).toBe(
+				'Closing'
+			);
+		} );
+
+		test( 'exactly at until returns computed unchanged', () => {
+			expect( applyOverride( 2000, valid, computed ) ).toBe( computed );
+		} );
+
+		test( 'after the window returns computed unchanged', () => {
+			expect( applyOverride( 5000, valid, computed ) ).toBe( computed );
+		} );
+	} );
+
+	describe( 'when applied', () => {
+		test( 'forces isShowingDate false', () => {
+			const showingDate = { ...computed, isShowingDate: true };
+			expect(
+				applyOverride( 1500, valid, showingDate ).isShowingDate
+			).toBe( false );
+		} );
+
+		test( 'uses the override state when given', () => {
+			expect( applyOverride( 1500, valid, computed ).state ).toBe(
+				'closing'
+			);
+		} );
+
+		test( 'keeps the computed state when no override state is given', () => {
+			const o = { value: 'Closing', from: 1000, until: 2000 };
+			expect( applyOverride( 1500, o, computed ).state ).toBe( 'running' );
+		} );
+
+		test( 'does not mutate the computed object', () => {
+			applyOverride( 1500, valid, computed );
+			expect( computed.displayValue ).toBe( '2 hours' );
+			expect( computed.state ).toBe( 'running' );
+		} );
 	} );
 } );
