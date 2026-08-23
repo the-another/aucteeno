@@ -274,6 +274,16 @@ describe( 'applyOverride', () => {
 			const o = { ...valid, from: 1000, until: 1000 };
 			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
 		} );
+
+		test( 'negative from returns computed unchanged', () => {
+			const o = { ...valid, from: -5000 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
+
+		test( 'negative until returns computed unchanged', () => {
+			const o = { ...valid, until: -5000 };
+			expect( applyOverride( 1500, o, computed ) ).toBe( computed );
+		} );
 	} );
 
 	describe( 'respects the window', () => {

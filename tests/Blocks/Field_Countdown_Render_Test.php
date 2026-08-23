@@ -99,7 +99,7 @@ class Field_Countdown_Render_Test extends TestCase {
 
 		$this->assertStringNotContainsString( 'data-override', $html );
 		$this->assertStringContainsString( 'aucteeno-field-countdown--running', $html );
-		$this->assertStringContainsString( '2 hours', $html );
+		$this->assertStringContainsString( '>2 hours<', $html );
 	}
 
 	public function test_active_override_replaces_the_value_and_the_modifier_class(): void {
@@ -118,7 +118,7 @@ class Field_Countdown_Render_Test extends TestCase {
 		$this->assertStringContainsString( '>Closing<', $html );
 		$this->assertStringContainsString( 'aucteeno-field-countdown--closing', $html );
 		$this->assertStringNotContainsString( 'aucteeno-field-countdown--running', $html );
-		$this->assertStringContainsString( 'data-override-value="Closing"', $html );
+		$this->assertStringContainsString( ' data-override-value="Closing"', $html );
 		$this->assertStringContainsString( 'data-override-state="closing"', $html );
 	}
 
@@ -137,9 +137,9 @@ class Field_Countdown_Render_Test extends TestCase {
 
 		// The client must learn the window now so it can apply it on the right
 		// tick without a reload.
-		$this->assertStringContainsString( 'data-override-value="Closing"', $html );
+		$this->assertStringContainsString( ' data-override-value="Closing"', $html );
 		$this->assertStringContainsString( 'aucteeno-field-countdown--running', $html );
-		$this->assertStringContainsString( '2 hours', $html );
+		$this->assertStringContainsString( '>2 hours<', $html );
 		$this->assertStringNotContainsString( '>Closing<', $html );
 	}
 
@@ -205,7 +205,7 @@ class Field_Countdown_Render_Test extends TestCase {
 		);
 
 		$this->assertStringNotContainsString( '>Closing<', $html );
-		$this->assertStringContainsString( '2 hours', $html );
+		$this->assertStringContainsString( '>2 hours<', $html );
 	}
 
 	public function test_malformed_override_is_rejected(): void {
@@ -221,7 +221,7 @@ class Field_Countdown_Render_Test extends TestCase {
 		$html = $this->run_render( array(), $this->running_item() );
 
 		$this->assertStringNotContainsString( 'data-override', $html );
-		$this->assertStringContainsString( '2 hours', $html );
+		$this->assertStringContainsString( '>2 hours<', $html );
 	}
 
 	public function test_override_state_is_sanitised_before_it_reaches_a_class(): void {
@@ -238,6 +238,7 @@ class Field_Countdown_Render_Test extends TestCase {
 		$html = $this->run_render( array(), $this->running_item() );
 
 		$this->assertStringNotContainsString( '<script>', $html );
+		$this->assertStringContainsString( 'aucteeno-field-countdown--scriptalert1script', $html );
 	}
 
 	public function test_negative_window_bounds_are_rejected_not_made_positive(): void {
@@ -296,5 +297,30 @@ class Field_Countdown_Render_Test extends TestCase {
 			'<span class="aucteeno-field-countdown__label">Bidding ends on</span>',
 			$html
 		);
+	}
+
+	public function test_override_value_is_escaped_into_the_attribute(): void {
+		// The suite stubs esc_attr() as a pass-through, so escaping is invisible
+		// to every other test here. Use the real thing for this one: `value` is
+		// consumer-supplied and lands inside a double-quoted attribute.
+		Functions\when( 'esc_attr' )->alias(
+			static function ( $value ) {
+				return htmlspecialchars( (string) $value, ENT_QUOTES );
+			}
+		);
+
+		$now = time();
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Closing" onmouseover="alert(1)',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'onmouseover="alert(1)"', $html );
+		$this->assertStringContainsString( '&quot; onmouseover=', $html );
 	}
 }
