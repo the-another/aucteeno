@@ -33,6 +33,7 @@ import {
 	formatCountdown,
 	getUpdateInterval,
 	updateCardClasses,
+	applyOverride,
 } from './countdown-utils';
 
 /**
@@ -57,6 +58,10 @@ function updateCountdown( element ) {
 	const labelRunningDate =
 		element.dataset.labelRunningDate || 'Bidding ends on';
 	const labelExpired = element.dataset.labelExpired || 'Bidding ended';
+	const overrideValue = element.dataset.overrideValue || '';
+	const overrideFrom = parseInt( element.dataset.overrideFrom, 10 ) || 0;
+	const overrideUntil = parseInt( element.dataset.overrideUntil, 10 ) || 0;
+	const overrideState = element.dataset.overrideState || '';
 
 	if ( ! startsAt || ! endsAt ) {
 		return;
@@ -80,12 +85,29 @@ function updateCountdown( element ) {
 
 	// Calculate countdown display.
 	const diff = timestamp - now;
-	const { displayValue, isShowingDate } = formatCountdown(
+	const computed = formatCountdown(
 		diff,
 		timestamp,
 		effectiveState,
 		dateFormat
 	);
+
+	// A pinned targetDate is an explicit request for that countdown, so it wins.
+	const override =
+		targetDate === 'auto'
+			? {
+					value: overrideValue,
+					from: overrideFrom,
+					until: overrideUntil,
+					state: overrideState,
+			  }
+			: null;
+
+	const {
+		displayValue,
+		isShowingDate,
+		state: displayState,
+	} = applyOverride( now, override, { ...computed, state } );
 
 	// Determine label based on effective state and whether showing date.
 	let label;
@@ -105,9 +127,10 @@ function updateCountdown( element ) {
 				: labelRunningTime;
 	}
 
-	// Update the countdown value.
+	// Update the countdown value. A static override string does not need
+	// rewriting sixty times a minute.
 	const valueEl = element.querySelector( '.aucteeno-field-countdown__value' );
-	if ( valueEl ) {
+	if ( valueEl && valueEl.textContent !== displayValue ) {
 		valueEl.textContent = displayValue;
 	}
 
@@ -117,14 +140,22 @@ function updateCountdown( element ) {
 		labelEl.textContent = label;
 	}
 
-	// Update countdown element classes if state changed.
+	// Update the modifier class. An override may supply a suffix this file has
+	// never heard of, and the override can start or stop without the computed
+	// state changing, so match by prefix rather than by a hardcoded list.
+	const desiredClass = `aucteeno-field-countdown--${ displayState }`;
+	if ( ! element.classList.contains( desiredClass ) ) {
+		Array.from( element.classList )
+			.filter( ( name ) =>
+				name.startsWith( 'aucteeno-field-countdown--' )
+			)
+			.forEach( ( name ) => element.classList.remove( name ) );
+		element.classList.add( desiredClass );
+	}
+
+	// Card classes follow the computed state only — an override never reaches
+	// them, so a card keeps the class it was rendered with.
 	if ( state !== previousState ) {
-		element.classList.remove(
-			'aucteeno-field-countdown--upcoming',
-			'aucteeno-field-countdown--running',
-			'aucteeno-field-countdown--expired'
-		);
-		element.classList.add( `aucteeno-field-countdown--${ state }` );
 		element.dataset.currentState = state;
 
 		// Find and update parent card element.
