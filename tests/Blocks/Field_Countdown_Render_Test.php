@@ -156,7 +156,10 @@ class Field_Countdown_Render_Test extends TestCase {
 
 		$html = $this->run_render( array(), $this->running_item() );
 
-		$this->assertStringContainsString( 'Bidding ends in', $html );
+		$this->assertStringContainsString(
+			'<span class="aucteeno-field-countdown__label">Bidding ends in</span>',
+			$html
+		);
 	}
 
 	public function test_label_is_the_single_label_when_respect_bidding_status_is_off(): void {
@@ -178,7 +181,10 @@ class Field_Countdown_Render_Test extends TestCase {
 			$this->running_item()
 		);
 
-		$this->assertStringContainsString( 'Sale status', $html );
+		$this->assertStringContainsString(
+			'<span class="aucteeno-field-countdown__label">Sale status</span>',
+			$html
+		);
 		$this->assertStringContainsString( '>Closing<', $html );
 	}
 
@@ -250,5 +256,45 @@ class Field_Countdown_Render_Test extends TestCase {
 
 		$this->assertStringNotContainsString( 'data-override', $html );
 		$this->assertStringNotContainsString( '>Closing<', $html );
+	}
+
+	public function test_active_override_uses_the_time_label_even_when_the_date_would_have_shown(): void {
+		$now  = time();
+		$ends = $now + ( 14 * DAY_IN_SECONDS );
+
+		// More than a week out, so without an override the block would render a
+		// formatted date and pick the "on" label variant. An override's value is
+		// never a date, so the "in" variant is the correct one to follow it.
+		//
+		// Assert on the label span, not the whole document: every label variant
+		// is also emitted as a data-label-* attribute on the wrapper, so a bare
+		// substring assertion would pass no matter what the span says.
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Closing',
+				'from'  => $now - 60,
+				'until' => $ends,
+				'state' => 'closing',
+			)
+		);
+
+		$html = $this->run_render(
+			array(),
+			array(
+				'id'                => 42,
+				'bidding_starts_at' => $now - 3600,
+				'bidding_ends_at'   => $ends,
+			)
+		);
+
+		$this->assertStringContainsString( '>Closing<', $html );
+		$this->assertStringContainsString(
+			'<span class="aucteeno-field-countdown__label">Bidding ends in</span>',
+			$html
+		);
+		$this->assertStringNotContainsString(
+			'<span class="aucteeno-field-countdown__label">Bidding ends on</span>',
+			$html
+		);
 	}
 }
