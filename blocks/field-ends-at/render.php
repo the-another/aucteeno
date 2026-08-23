@@ -101,6 +101,24 @@ $label_text = is_scalar( $filtered ) ? (string) $filtered : $label_text;
 
 $formatted = wp_date( $php_format, $timestamp );
 
+/**
+ * Filters the formatted value shown beside the label.
+ *
+ * Note this block renders once and does not tick like field-countdown does:
+ * view.js only hydrates the timestamp to local time a single time. A
+ * consumer varying the value by wall-clock (e.g. showing elapsed time once
+ * bidding has passed this timestamp) must therefore do its own time
+ * comparison, and the value can be up to one page-cache lifetime stale.
+ *
+ * @since 1.9.0
+ * @param string $formatted     The formatted date string.
+ * @param array  $item_data     Item context data.
+ * @param array  $attributes    Block attributes.
+ * @param string $current_state Computed state: upcoming, running or expired.
+ */
+$filtered_value = apply_filters( 'aucteeno_field_ends_at_value', $formatted, $item_data, $attributes, $current_state );
+$formatted      = is_scalar( $filtered_value ) ? (string) $filtered_value : $formatted;
+
 $orientation        = $attributes['orientation'] ?? 'column';
 $wrapper_attributes = get_block_wrapper_attributes(
 	array( 'class' => 'is-orientation-' . sanitize_html_class( $orientation ) )

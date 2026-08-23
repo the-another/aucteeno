@@ -282,4 +282,77 @@ class Field_Ends_At_Render_Test extends TestCase {
 			$html
 		);
 	}
+
+	// --- Value filter ---
+
+	/**
+	 * The default-format date string, computed the same way render.php does
+	 * from the stubbed get_option() and wp_date() in setUp().
+	 *
+	 * @param int $timestamp Unix timestamp.
+	 * @return string Expected formatted date string.
+	 */
+	private function expected_default_formatted_date( int $timestamp ): string {
+		return gmdate( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp );
+	}
+
+	public function test_value_filter_replaces_the_rendered_time_text(): void {
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( 'Overridden value' );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString( '>Overridden value</time>', $html );
+	}
+
+	public function test_value_filter_receives_the_formatted_date_and_context(): void {
+		$item = $this->running_item();
+
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )
+			->once()
+			->with( $this->expected_default_formatted_date( $item['bidding_ends_at'] ), $item, array(), 'running' )
+			->andReturn( 'Overridden value' );
+
+		$html = $this->run_render( array(), $item );
+
+		$this->assertStringContainsString( '>Overridden value</time>', $html );
+	}
+
+	public function test_non_scalar_value_filter_return_does_not_fatal(): void {
+		// Without the is_scalar() guard, render.php would do (string) $filtered
+		// on a plain \stdClass — an uncaught Error, not merely a wrong value.
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( new \stdClass() );
+
+		$item = $this->running_item();
+		$html = $this->run_render( array(), $item );
+
+		$expected = $this->expected_default_formatted_date( $item['bidding_ends_at'] );
+		$this->assertStringContainsString( '>' . $expected . '</time>', $html );
+	}
+
+	public function test_with_no_value_filter_output_is_unchanged(): void {
+		$item = $this->running_item();
+		$html = $this->run_render( array(), $item );
+
+		$expected = $this->expected_default_formatted_date( $item['bidding_ends_at'] );
+		$this->assertStringContainsString( '>' . $expected . '</time>', $html );
+	}
+
+	public function test_array_value_filter_return_is_discarded_in_favour_of_the_formatted_date(): void {
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( array( 'unexpected' ) );
+
+		$item     = $this->running_item();
+		$html     = $this->run_render( array(), $item );
+		$expected = $this->expected_default_formatted_date( $item['bidding_ends_at'] );
+
+		$this->assertStringContainsString( '>' . $expected . '</time>', $html );
+		$this->assertStringNotContainsString( 'Array', $html );
+	}
+
+	public function test_scalar_value_filter_return_is_accepted_and_stringified(): void {
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( 42 );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString( '>42</time>', $html );
+	}
 }
