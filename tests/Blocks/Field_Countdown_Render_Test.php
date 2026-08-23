@@ -479,4 +479,51 @@ class Field_Countdown_Render_Test extends TestCase {
 		$this->assertStringContainsString( '>Fallback<', $html );
 		$this->assertStringNotContainsString( 'ago<', $html );
 	}
+
+	public function test_label_and_since_together_the_label_wins_while_the_value_is_elapsed(): void {
+		$now   = time();
+		$since = $now - 7200; // 2 hours ago - stable against a couple seconds of drift.
+
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Fallback',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'label' => 'Custom status',
+				'since' => $since,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString(
+			'<span class="aucteeno-field-countdown__label">Custom status</span>',
+			$html
+		);
+		$this->assertStringContainsString( '>2 hours ago<', $html );
+		$this->assertStringNotContainsString( '>Fallback<', $html );
+	}
+
+	public function test_label_with_show_label_false_still_reaches_no_label_span(): void {
+		// showLabel: false renders no label span at all - a consumer's label
+		// has nowhere to display and must not produce one. The wire
+		// attribute (data-override-label) is unaffected: it is emitted
+		// exactly as it is for every other override field, independent of
+		// this display-only attribute.
+		$now = time();
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Fallback',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'label' => 'Custom status',
+			)
+		);
+
+		$html = $this->run_render( array( 'showLabel' => false ), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'aucteeno-field-countdown__label', $html );
+		$this->assertStringNotContainsString( '>Custom status<', $html );
+		$this->assertStringContainsString( '>Fallback<', $html );
+	}
 }

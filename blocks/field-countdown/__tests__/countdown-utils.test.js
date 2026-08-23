@@ -494,4 +494,33 @@ describe( 'applyOverride', () => {
 			expect( result.label ).toBeUndefined();
 		} );
 	} );
+
+	describe( 'label and since together', () => {
+		const computedWithFormat = { ...computed, dateFormat: 'default' };
+
+		test( 'the label wins while the value comes from the elapsed formatter', () => {
+			const override = {
+				...valid,
+				label: 'Custom status',
+				since: 1000,
+			};
+			const result = applyOverride( 1125, override, computedWithFormat );
+
+			expect( result.label ).toBe( 'Custom status' );
+			expect( result.displayValue ).toBe( '2 minutes 5 seconds ago' );
+			expect( result.isShowingDate ).toBe( false );
+		} );
+
+		test( 'the label still wins when since falls back to the static value', () => {
+			const override = {
+				...valid,
+				label: 'Custom status',
+				since: 1600, // In the future relative to `now` below.
+			};
+			const result = applyOverride( 1500, override, computedWithFormat );
+
+			expect( result.label ).toBe( 'Custom status' );
+			expect( result.displayValue ).toBe( 'Closing' );
+		} );
+	} );
 } );
