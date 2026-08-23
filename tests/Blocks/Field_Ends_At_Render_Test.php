@@ -199,30 +199,46 @@ class Field_Ends_At_Render_Test extends TestCase {
 		);
 	}
 
-	// --- Non-string filter return ---
+	// --- Non-scalar filter return ---
 
-	public function test_non_string_filter_return_is_cast_to_string_and_does_not_fatal(): void {
+	public function test_array_filter_return_is_discarded_in_favour_of_the_computed_label(): void {
 		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( array( 'unexpected' ) );
 
-		// PHP's (string) cast on an array is exactly the behaviour under test; it
-		// emits a native "Array to string conversion" E_WARNING, which PHPUnit's
-		// failOnWarning would otherwise turn into a test failure. Swallow just
-		// that warning for the duration of the render call.
-		set_error_handler(
-			static function () {
-				return true;
-			},
-			E_WARNING
-		);
-
-		try {
-			$html = $this->run_render( array(), $this->running_item() );
-		} finally {
-			restore_error_handler();
-		}
+		$html = $this->run_render( array(), $this->running_item() );
 
 		$this->assertStringContainsString(
-			'<dt class="wp-block-aucteeno-field-ends-at__label">Array</dt>',
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding closes at</dt>',
+			$html
+		);
+		$this->assertStringNotContainsString( 'Array', $html );
+	}
+
+	public function test_non_stringable_object_filter_return_does_not_fatal(): void {
+		// Without the is_scalar() guard, render.php would do (string) $filtered
+		// on a plain \stdClass — that is an uncaught Error ("Object of class
+		// stdClass could not be converted to string"), not merely a wrong
+		// value. This test fatals rather than merely fails if the guard is
+		// removed, which is exactly what justifies having it: a filter
+		// returning a bad object must not take the page down.
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( new \stdClass() );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">Bidding closes at</dt>',
+			$html
+		);
+	}
+
+	public function test_scalar_filter_return_is_accepted_and_stringified(): void {
+		// The guard must not over-reject: scalars other than strings (int,
+		// float, bool) are legitimate, safely castable return values.
+		Filters\expectApplied( 'aucteeno_field_ends_at_label' )->andReturn( 42 );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString(
+			'<dt class="wp-block-aucteeno-field-ends-at__label">42</dt>',
 			$html
 		);
 	}

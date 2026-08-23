@@ -86,6 +86,9 @@ if ( $respect_bidding_status ) {
  * by wall-clock must therefore do its own time comparison, and the label can be
  * up to one page-cache lifetime stale.
  *
+ * A non-scalar return (array, object, null) is discarded and the computed
+ * label stands; only string/int/float/bool are accepted.
+ *
  * @since 1.9.0
  *
  * @param string $label_text    The computed label.
@@ -93,7 +96,8 @@ if ( $respect_bidding_status ) {
  * @param array  $attributes    Block attributes.
  * @param string $current_state Computed state: upcoming, running or expired.
  */
-$label_text = (string) apply_filters( 'aucteeno_field_ends_at_label', $label_text, $item_data, $attributes, $current_state );
+$filtered   = apply_filters( 'aucteeno_field_ends_at_label', $label_text, $item_data, $attributes, $current_state );
+$label_text = is_scalar( $filtered ) ? (string) $filtered : $label_text;
 
 $formatted = wp_date( $php_format, $timestamp );
 
