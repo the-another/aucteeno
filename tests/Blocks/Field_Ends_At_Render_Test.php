@@ -355,4 +355,47 @@ class Field_Ends_At_Render_Test extends TestCase {
 
 		$this->assertStringContainsString( '>42</time>', $html );
 	}
+
+	// --- Hydration opt-out (the value filter must survive page load) ---
+
+	public function test_a_value_that_actually_changes_opts_the_time_element_out_of_hydration(): void {
+		// Without data-aucteeno-datetime-hydrated="true", view.js's hydrate()
+		// would overwrite this filtered value with the plain local-time date
+		// a few hundred milliseconds after paint - the exact load-flash this
+		// filter exists to let a consumer avoid.
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( 'Overridden value' );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString( 'data-aucteeno-datetime-hydrated="true"', $html );
+	}
+
+	public function test_no_value_filter_does_not_opt_out_of_hydration(): void {
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'data-aucteeno-datetime-hydrated', $html );
+	}
+
+	public function test_a_filter_returning_the_same_string_does_not_opt_out_of_hydration(): void {
+		// A filter that runs but leaves the value unchanged must not pay the
+		// "never hydrates" cost - only an actual change opts an element out.
+		$item     = $this->running_item();
+		$expected = $this->expected_default_formatted_date( $item['bidding_ends_at'] );
+
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( $expected );
+
+		$html = $this->run_render( array(), $item );
+
+		$this->assertStringNotContainsString( 'data-aucteeno-datetime-hydrated', $html );
+	}
+
+	public function test_a_non_scalar_filter_return_does_not_opt_out_of_hydration(): void {
+		// The value falls back to the computed date unchanged, so hydration
+		// must proceed exactly as if no filter had run at all.
+		Filters\expectApplied( 'aucteeno_field_ends_at_value' )->andReturn( array( 'unexpected' ) );
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'data-aucteeno-datetime-hydrated', $html );
+	}
 }
