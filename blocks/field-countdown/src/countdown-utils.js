@@ -285,11 +285,20 @@ export function updateCardClasses( cardElement, newState, oldState ) {
  * without calling back into the consumer. That is what lets an override
  * survive the per-second re-render.
  *
+ * Two optional fields extend what an active override can drive:
+ * - `since`: when it is a usable timestamp (> 0 and <= now), the value comes
+ *   from formatElapsed() instead of the static `value` - the "time since"
+ *   ticks up live. A `since` in the future is not usable, and `value` is
+ *   used instead: never render a negative elapsed time. `computed.dateFormat`
+ *   supplies the date format for once that elapsed value scales past a week.
+ * - `label`: when a non-empty string, it is returned in `label` for the
+ *   caller to display alongside the value.
+ *
  * Mirrors the validation in render.php. Keep the two in step.
  *
  * @param {number}      now      Current UTC timestamp in seconds.
  * @param {Object|null} override Override descriptor, or null/{} for none.
- * @param {Object}      computed Computed display: {displayValue, isShowingDate, state}.
+ * @param {Object}      computed Computed display: {displayValue, isShowingDate, state, dateFormat}.
  * @return {Object} The override applied, or `computed` unchanged.
  */
 export function applyOverride( now, override, computed ) {
@@ -314,9 +323,28 @@ export function applyOverride( now, override, computed ) {
 		return computed;
 	}
 
-	return {
+	const result = {
 		displayValue: override.value,
 		isShowingDate: false,
 		state: override.state || computed.state,
 	};
+
+	const since = Number( override.since ) || 0;
+	if ( since > 0 && now >= since ) {
+		const elapsed = now - since;
+		const formatted = formatElapsed( elapsed, since, computed.dateFormat );
+		result.displayValue = formatted.displayValue;
+		result.isShowingDate = formatted.isShowingDate;
+		// Lets the caller pick a tick interval that tracks this elapsed
+		// value instead of the countdown diff - otherwise a freshly-started
+		// `since` (elapsed = 0) could inherit a slower interval and not
+		// visibly tick every second even though it is well under an hour.
+		result.elapsed = elapsed;
+	}
+
+	if ( typeof override.label === 'string' && override.label !== '' ) {
+		result.label = override.label;
+	}
+
+	return result;
 }

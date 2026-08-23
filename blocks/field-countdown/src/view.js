@@ -62,6 +62,8 @@ function updateCountdown( element ) {
 	const overrideFrom = parseInt( element.dataset.overrideFrom, 10 ) || 0;
 	const overrideUntil = parseInt( element.dataset.overrideUntil, 10 ) || 0;
 	const overrideState = element.dataset.overrideState || '';
+	const overrideLabel = element.dataset.overrideLabel || '';
+	const overrideSince = parseInt( element.dataset.overrideSince, 10 ) || 0;
 
 	if ( ! startsAt || ! endsAt ) {
 		return;
@@ -112,17 +114,28 @@ function updateCountdown( element ) {
 					from: overrideFrom,
 					until: overrideUntil,
 					state: safeOverrideState,
+					label: overrideLabel,
+					since: overrideSince,
 			  };
 
+	const overrideResult = applyOverride( now, override, {
+		...computed,
+		state,
+		dateFormat,
+	} );
 	const {
 		displayValue,
 		isShowingDate,
 		state: displayState,
-	} = applyOverride( now, override, { ...computed, state } );
+		label: overrideAppliedLabel,
+	} = overrideResult;
 
 	// Determine label based on effective state and whether showing date.
+	// An override's own label, when supplied, wins outright.
 	let label;
-	if ( ! respectStatus ) {
+	if ( overrideAppliedLabel ) {
+		label = overrideAppliedLabel;
+	} else if ( ! respectStatus ) {
 		label = singleLabel;
 	} else if ( effectiveState === 'expired' ) {
 		label = labelExpired;
@@ -180,7 +193,14 @@ function updateCountdown( element ) {
 	// For expired items, continue updating if less than 1 week ago.
 	const shouldContinue = state !== 'expired' || Math.abs( diff ) < 604800;
 	if ( shouldContinue ) {
-		const interval = getUpdateInterval( Math.abs( diff ) );
+		// When `since` is actively driving the displayed value, the tick
+		// interval must track that elapsed value instead of the countdown
+		// diff, or a freshly-started elapsed counter won't tick every second.
+		const intervalBasis =
+			typeof overrideResult.elapsed === 'number'
+				? overrideResult.elapsed
+				: Math.abs( diff );
+		const interval = getUpdateInterval( intervalBasis );
 		setTimeout( () => updateCountdown( element ), interval );
 	}
 }

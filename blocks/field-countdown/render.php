@@ -101,7 +101,7 @@ if ( 'starts_at' === $target_date ) {
 }
 
 // Calculate countdown display.
-$diff        = $timestamp - $now;
+$diff            = $timestamp - $now;
 $is_showing_date = false;
 
 // For expired items, calculate elapsed time.
@@ -155,7 +155,7 @@ if ( 'expired' === $effective_state ) {
  *
  * @since 1.9.0
  *
- * @param array  $override        Empty array, or array{ value: string, from: int, until: int, state?: string }.
+ * @param array  $override        Empty array, or array{ value: string, from: int, until: int, state?: string, label?: string, since?: int }.
  * @param array  $item_data       Item context data.
  * @param array  $attributes      Block attributes.
  * @param string $effective_state Computed effective state (upcoming|running|expired).
@@ -166,6 +166,8 @@ $override_value = '';
 $override_from  = 0;
 $override_until = 0;
 $override_state = '';
+$override_label = '';
+$override_since = 0;
 
 if ( is_array( $override ) && isset( $override['value'] ) && is_string( $override['value'] ) && '' !== $override['value'] ) {
 	$candidate_from  = is_numeric( $override['from'] ?? null ) ? (int) $override['from'] : 0;
@@ -186,6 +188,13 @@ if ( is_array( $override ) && isset( $override['value'] ) && is_string( $overrid
 		if ( ! preg_match( '/^[A-Za-z0-9_-]*$/', $override_state ) ) {
 			$override_state = '';
 		}
+
+		// A non-string label is ignored rather than rendered, same as value.
+		$raw_label      = $override['label'] ?? '';
+		$override_label = is_string( $raw_label ) ? $raw_label : '';
+
+		// Same is_numeric guard the from/until bounds use above.
+		$override_since = is_numeric( $override['since'] ?? null ) ? (int) $override['since'] : 0;
 	}
 }
 
@@ -201,10 +210,22 @@ $override_active = '' !== $override_value
 if ( $override_active ) {
 	$display_value   = $override_value;
 	$is_showing_date = false;
+
+	// `since` only drives the display while the override itself is active, and
+	// only once it has actually started - a `since` still in the future would
+	// otherwise render a negative elapsed time.
+	if ( $override_since > 0 && $now >= $override_since ) {
+		$elapsed_result  = aucteeno_format_elapsed( $now - $override_since, $override_since, $date_format );
+		$display_value   = $elapsed_result['display_value'];
+		$is_showing_date = $elapsed_result['is_showing_date'];
+	}
 }
 
-// Determine label based on state and whether showing date.
-if ( ! $respect_bidding_status ) {
+// Determine label based on state and whether showing date. An active
+// override's own label, when supplied, wins outright.
+if ( $override_active && '' !== $override_label ) {
+	$label = $override_label;
+} elseif ( ! $respect_bidding_status ) {
 	$label = $single_label;
 } elseif ( 'expired' === $effective_state ) {
 	$label = $label_expired;
@@ -216,8 +237,8 @@ if ( ! $respect_bidding_status ) {
 
 $state_class = ( $override_active && '' !== $override_state ) ? $override_state : $current_state;
 
-$wrapper_classes = 'aucteeno-field-countdown';
-$wrapper_classes .= ' aucteeno-field-countdown--' . $state_class;
+$wrapper_classes    = 'aucteeno-field-countdown';
+$wrapper_classes   .= ' aucteeno-field-countdown--' . $state_class;
 $wrapper_attributes = get_block_wrapper_attributes( array( 'class' => $wrapper_classes ) );
 
 // Emitted only when a well-formed override exists — a block with no consumer
@@ -233,6 +254,16 @@ if ( '' !== $override_value ) {
 		$override_until,
 		esc_attr( $override_state )
 	);
+
+	// label/since are each independently optional, so each is only emitted
+	// when the consumer actually supplied it.
+	if ( '' !== $override_label ) {
+		$override_attributes .= sprintf( ' data-override-label="%s"', esc_attr( $override_label ) );
+	}
+
+	if ( $override_since > 0 ) {
+		$override_attributes .= sprintf( ' data-override-since="%d"', $override_since );
+	}
 }
 
 ob_start();

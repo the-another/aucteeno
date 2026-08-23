@@ -5,6 +5,7 @@ import {
 	formatDate,
 	calculateState,
 	formatCountdown,
+	formatElapsed,
 	getUpdateInterval,
 	updateCardClasses,
 	applyOverride,
@@ -168,6 +169,82 @@ describe( 'formatCountdown', () => {
 			const result = formatCountdown( -700000, FIXED_TIMESTAMP, 'expired', 'long' );
 			expect( result.isShowingDate ).toBe( true );
 		} );
+	} );
+} );
+
+describe( 'formatElapsed', () => {
+	test( 'shows seconds ago, minutes omitted when zero', () => {
+		const result = formatElapsed( 45, 0, 'default' );
+		expect( result.displayValue ).toBe( '45 seconds ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'shows singular second ago', () => {
+		const result = formatElapsed( 1, 0, 'default' );
+		expect( result.displayValue ).toBe( '1 second ago' );
+	} );
+
+	test( 'shows minutes and seconds ago', () => {
+		const result = formatElapsed( 125, 0, 'default' );
+		expect( result.displayValue ).toBe( '2 minutes 5 seconds ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'shows singular minute ago with plural seconds when zero', () => {
+		const result = formatElapsed( 120, 0, 'default' );
+		expect( result.displayValue ).toBe( '2 minutes 0 seconds ago' );
+	} );
+
+	test( 'boundary: 3599 stays in the minutes/seconds branch', () => {
+		const result = formatElapsed( 3599, 0, 'default' );
+		expect( result.displayValue ).toBe( '59 minutes 59 seconds ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'boundary: 3600 moves to the hours branch', () => {
+		const result = formatElapsed( 3600, 0, 'default' );
+		expect( result.displayValue ).toBe( '1 hour ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'shows plural hours ago', () => {
+		const result = formatElapsed( 7200, 0, 'default' );
+		expect( result.displayValue ).toBe( '2 hours ago' );
+	} );
+
+	test( 'boundary: 86399 stays in the hours branch', () => {
+		const result = formatElapsed( 86399, 0, 'default' );
+		expect( result.displayValue ).toBe( '23 hours ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'boundary: 86400 moves to the days branch', () => {
+		const result = formatElapsed( 86400, 0, 'default' );
+		expect( result.displayValue ).toBe( '1 day ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'shows plural days ago', () => {
+		const result = formatElapsed( 259200, 0, 'default' );
+		expect( result.displayValue ).toBe( '3 days ago' );
+	} );
+
+	test( 'boundary: 604799 stays in the days branch', () => {
+		const result = formatElapsed( 604799, 0, 'default' );
+		expect( result.displayValue ).toBe( '6 days ago' );
+		expect( result.isShowingDate ).toBe( false );
+	} );
+
+	test( 'boundary: 604800 moves to the formatted-date branch', () => {
+		const result = formatElapsed( 604800, FIXED_TIMESTAMP, 'long' );
+		expect( result.isShowingDate ).toBe( true );
+		expect( result.displayValue ).toBe( formatDate( FIXED_TIMESTAMP, 'long' ) );
+	} );
+
+	test( 'shows the formatted date well past a week', () => {
+		const result = formatElapsed( 700000, FIXED_TIMESTAMP, 'long' );
+		expect( result.isShowingDate ).toBe( true );
+		expect( result.displayValue ).toBe( formatDate( FIXED_TIMESTAMP, 'long' ) );
 	} );
 } );
 
@@ -335,6 +412,86 @@ describe( 'applyOverride', () => {
 			applyOverride( 1500, valid, computed );
 			expect( computed.displayValue ).toBe( '2 hours' );
 			expect( computed.state ).toBe( 'running' );
+		} );
+	} );
+
+	describe( 'since', () => {
+		const computedWithFormat = { ...computed, dateFormat: 'default' };
+
+		test( 'renders the elapsed time instead of the static value', () => {
+			const override = { ...valid, since: 1000 };
+			const result = applyOverride( 1125, override, computedWithFormat );
+			expect( result.displayValue ).toBe( '2 minutes 5 seconds ago' );
+			expect( result.isShowingDate ).toBe( false );
+		} );
+
+		test( 'exposes the elapsed seconds for interval selection', () => {
+			const override = { ...valid, since: 1000 };
+			const result = applyOverride( 1125, override, computedWithFormat );
+			expect( result.elapsed ).toBe( 125 );
+		} );
+
+		test( 'renders zero elapsed, not the fallback value, exactly at since', () => {
+			const override = { ...valid, since: 1500 };
+			const result = applyOverride( 1500, override, computedWithFormat );
+			expect( result.displayValue ).toBe( '0 seconds ago' );
+		} );
+
+		test( 'falls back to the static value when now is before since', () => {
+			const override = { ...valid, since: 1600 };
+			const result = applyOverride( 1500, override, computedWithFormat );
+			expect( result.displayValue ).toBe( 'Closing' );
+			expect( result.elapsed ).toBeUndefined();
+		} );
+
+		test( 'falls back to the static value when since is 0', () => {
+			const override = { ...valid, since: 0 };
+			const result = applyOverride( 1500, override, computedWithFormat );
+			expect( result.displayValue ).toBe( 'Closing' );
+		} );
+
+		test( 'falls back to the static value when since is absent', () => {
+			const result = applyOverride( 1500, valid, computedWithFormat );
+			expect( result.displayValue ).toBe( 'Closing' );
+		} );
+
+		test( 'falls back to the static value when since is non-numeric', () => {
+			const override = { ...valid, since: 'nope' };
+			const result = applyOverride( 1500, override, computedWithFormat );
+			expect( result.displayValue ).toBe( 'Closing' );
+		} );
+
+		test( 'still applies while the override is otherwise inactive (outside window) — no elapsed leaks through', () => {
+			const override = { ...valid, since: 1000 };
+			// Before the window opens: same rejection as without `since`.
+			expect( applyOverride( 500, override, computedWithFormat ) ).toBe(
+				computedWithFormat
+			);
+		} );
+	} );
+
+	describe( 'label', () => {
+		test( 'passes the label through when present', () => {
+			const override = { ...valid, label: 'Custom status' };
+			const result = applyOverride( 1500, override, computed );
+			expect( result.label ).toBe( 'Custom status' );
+		} );
+
+		test( 'omits label when absent', () => {
+			const result = applyOverride( 1500, valid, computed );
+			expect( result.label ).toBeUndefined();
+		} );
+
+		test( 'ignores a non-string label', () => {
+			const override = { ...valid, label: 42 };
+			const result = applyOverride( 1500, override, computed );
+			expect( result.label ).toBeUndefined();
+		} );
+
+		test( 'ignores an empty-string label', () => {
+			const override = { ...valid, label: '' };
+			const result = applyOverride( 1500, override, computed );
+			expect( result.label ).toBeUndefined();
 		} );
 	} );
 } );

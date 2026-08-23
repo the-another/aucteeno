@@ -365,4 +365,114 @@ class Field_Countdown_Render_Test extends TestCase {
 		$this->assertStringNotContainsString( 'onmouseover="alert(1)"', $html );
 		$this->assertStringContainsString( '&quot; onmouseover=', $html );
 	}
+
+	public function test_active_override_with_since_renders_elapsed_and_emits_the_attribute(): void {
+		$now   = time();
+		$since = $now - 7200; // 2 hours ago - stable against a couple seconds of test/render drift.
+
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Fallback',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'since' => $since,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString( '>2 hours ago<', $html );
+		$this->assertStringNotContainsString( '>Fallback<', $html );
+		$this->assertStringContainsString( 'data-override-since="' . $since . '"', $html );
+	}
+
+	public function test_active_override_with_label_renders_it_in_the_label_span(): void {
+		$now = time();
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Fallback',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'label' => 'Custom status',
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString(
+			'<span class="aucteeno-field-countdown__label">Custom status</span>',
+			$html
+		);
+		$this->assertStringContainsString( 'data-override-label="Custom status"', $html );
+	}
+
+	public function test_no_consumer_emits_no_label_or_since_attributes(): void {
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringNotContainsString( 'data-override-label', $html );
+		$this->assertStringNotContainsString( 'data-override-since', $html );
+	}
+
+	public function test_active_override_without_label_or_since_emits_neither_attribute(): void {
+		// A well-formed override that never supplies label/since must not emit
+		// either attribute, even though data-override-value/from/until/state do
+		// appear.
+		$now = time();
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Closing',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString( ' data-override-value="Closing"', $html );
+		$this->assertStringNotContainsString( 'data-override-label', $html );
+		$this->assertStringNotContainsString( 'data-override-since', $html );
+	}
+
+	public function test_server_since_output_matches_the_shared_elapsed_formatter(): void {
+		// This is the parity guard between the server and client rules: both
+		// sides compute now - since and hand it to their own port of the same
+		// formatter (aucteeno_format_elapsed() here, formatElapsed() in JS).
+		// Asserting the render against a direct call to that shared PHP
+		// formatter is the strongest proof available in a PHP-only test that
+		// the two sides cannot silently drift apart.
+		$now   = time();
+		$since = $now - 9000; // 2.5 hours ago - stable against a couple seconds of drift.
+
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Fallback',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'since' => $since,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$expected = aucteeno_format_elapsed( $now - $since, $since, 'default' )['display_value'];
+
+		$this->assertStringContainsString( '>' . $expected . '<', $html );
+	}
+
+	public function test_since_in_the_future_falls_back_to_the_static_value(): void {
+		$now = time();
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Fallback',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'since' => $now + 3600,
+			)
+		);
+
+		$html = $this->run_render( array(), $this->running_item() );
+
+		$this->assertStringContainsString( '>Fallback<', $html );
+		$this->assertStringNotContainsString( 'ago<', $html );
+	}
 }
