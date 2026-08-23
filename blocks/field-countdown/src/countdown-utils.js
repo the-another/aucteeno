@@ -120,6 +120,62 @@ export function calculateState( now, startsAt, endsAt ) {
 }
 
 /**
+ * Format an elapsed duration since a moment in time, with the same smart
+ * scaling used for a countdown's own expired state: seconds/minutes, then
+ * hours, then days, then a formatted date once the duration passes a week.
+ *
+ * @param {number} elapsed    Elapsed duration in seconds. Must be >= 0.
+ * @param {number} timestamp  Unix timestamp the elapsed duration is measured
+ *                            from - used only once the duration scales up to
+ *                            a formatted date (e.g. a consumer tracking a
+ *                            closing auction would pass its end time here).
+ * @param {string} dateFormat Date format setting.
+ * @return {Object} Object with displayValue and isShowingDate.
+ */
+export function formatElapsed( elapsed, timestamp, dateFormat ) {
+	if ( elapsed < 3600 ) {
+		// Less than 1 hour ago - show minutes and seconds elapsed.
+		const minutes = Math.floor( elapsed / 60 );
+		const seconds = Math.floor( elapsed % 60 );
+		const parts = [];
+
+		if ( minutes > 0 ) {
+			parts.push(
+				`${ minutes } ${ minutes === 1 ? 'minute' : 'minutes' }`
+			);
+		}
+
+		parts.push( `${ seconds } ${ seconds === 1 ? 'second' : 'seconds' }` );
+
+		return {
+			displayValue: `${ parts.join( ' ' ) } ago`,
+			isShowingDate: false,
+		};
+	}
+	if ( elapsed < 86400 ) {
+		// Less than 1 day ago - show hours elapsed.
+		const hours = Math.floor( elapsed / 3600 );
+		return {
+			displayValue: `${ hours } ${ hours === 1 ? 'hour' : 'hours' } ago`,
+			isShowingDate: false,
+		};
+	}
+	if ( elapsed < 604800 ) {
+		// Less than 1 week ago - show days elapsed.
+		const days = Math.floor( elapsed / 86400 );
+		return {
+			displayValue: `${ days } ${ days === 1 ? 'day' : 'days' } ago`,
+			isShowingDate: false,
+		};
+	}
+	// More than 1 week ago - show the end date.
+	return {
+		displayValue: formatDate( timestamp, dateFormat ),
+		isShowingDate: true,
+	};
+}
+
+/**
  * Format countdown display with smart scaling.
  *
  * @param {number} diff       Difference in seconds.
@@ -131,52 +187,7 @@ export function calculateState( now, startsAt, endsAt ) {
 export function formatCountdown( diff, timestamp, state, dateFormat ) {
 	// For expired items, show elapsed time.
 	if ( state === 'expired' ) {
-		const elapsed = Math.abs( diff );
-
-		if ( elapsed < 3600 ) {
-			// Less than 1 hour ago - show minutes and seconds elapsed.
-			const minutes = Math.floor( elapsed / 60 );
-			const seconds = Math.floor( elapsed % 60 );
-			const parts = [];
-
-			if ( minutes > 0 ) {
-				parts.push(
-					`${ minutes } ${ minutes === 1 ? 'minute' : 'minutes' }`
-				);
-			}
-
-			parts.push(
-				`${ seconds } ${ seconds === 1 ? 'second' : 'seconds' }`
-			);
-
-			return {
-				displayValue: `${ parts.join( ' ' ) } ago`,
-				isShowingDate: false,
-			};
-		}
-		if ( elapsed < 86400 ) {
-			// Less than 1 day ago - show hours elapsed.
-			const hours = Math.floor( elapsed / 3600 );
-			return {
-				displayValue: `${ hours } ${
-					hours === 1 ? 'hour' : 'hours'
-				} ago`,
-				isShowingDate: false,
-			};
-		}
-		if ( elapsed < 604800 ) {
-			// Less than 1 week ago - show days elapsed.
-			const days = Math.floor( elapsed / 86400 );
-			return {
-				displayValue: `${ days } ${ days === 1 ? 'day' : 'days' } ago`,
-				isShowingDate: false,
-			};
-		}
-		// More than 1 week ago - show the end date.
-		return {
-			displayValue: formatDate( timestamp, dateFormat ),
-			isShowingDate: true,
-		};
+		return formatElapsed( Math.abs( diff ), timestamp, dateFormat );
 	}
 
 	// For upcoming/running items, show countdown.

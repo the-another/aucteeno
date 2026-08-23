@@ -18,6 +18,13 @@ class Field_Countdown_Render_Test extends TestCase {
 		parent::setUp();
 		Monkey\setUp();
 
+		// render.php's expired branch calls aucteeno_format_elapsed(), which
+		// lives in includes/functions.php rather than render.php itself (so a
+		// consuming plugin can call it directly). The full plugin bootstrap
+		// loads that file before any block ever renders; this test includes
+		// render.php in isolation, so it must load it too.
+		require_once dirname( __DIR__, 2 ) . '/includes/functions.php';
+
 		// Re-stub functions the bootstrap stubs globally; Patchwork restores them
 		// after each tearDown() and they throw MissingFunctionExpectations otherwise.
 		Functions\when( '__' )->returnArg();

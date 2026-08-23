@@ -106,43 +106,9 @@ $is_showing_date = false;
 
 // For expired items, calculate elapsed time.
 if ( 'expired' === $effective_state ) {
-	$elapsed = abs( $diff );
-
-	if ( $elapsed < 3600 ) {
-		// Less than 1 hour ago - show minutes and seconds elapsed.
-		$minutes = floor( $elapsed / 60 );
-		$seconds = $elapsed % 60;
-		$parts   = array();
-
-		if ( $minutes > 0 ) {
-			/* translators: %d: number of minutes */
-			$parts[] = sprintf( _n( '%d minute', '%d minutes', $minutes, 'aucteeno' ), $minutes );
-		}
-
-		/* translators: %d: number of seconds */
-		$parts[] = sprintf( _n( '%d second', '%d seconds', $seconds, 'aucteeno' ), $seconds );
-
-		/* translators: %s: elapsed time (e.g., "5 minutes 30 seconds") */
-		$display_value = sprintf( __( '%s ago', 'aucteeno' ), implode( ' ', $parts ) );
-	} elseif ( $elapsed < 86400 ) {
-		// Less than 1 day ago - show hours elapsed.
-		$hours = floor( $elapsed / 3600 );
-		/* translators: %d: number of hours */
-		$time_string = sprintf( _n( '%d hour', '%d hours', $hours, 'aucteeno' ), $hours );
-		/* translators: %s: elapsed time (e.g., "3 hours") */
-		$display_value = sprintf( __( '%s ago', 'aucteeno' ), $time_string );
-	} elseif ( $elapsed < 604800 ) {
-		// Less than 1 week ago - show days elapsed.
-		$days = floor( $elapsed / 86400 );
-		/* translators: %d: number of days */
-		$time_string = sprintf( _n( '%d day', '%d days', $days, 'aucteeno' ), $days );
-		/* translators: %s: elapsed time (e.g., "2 days") */
-		$display_value = sprintf( __( '%s ago', 'aucteeno' ), $time_string );
-	} else {
-		// More than 1 week ago - show the end date.
-		$display_value   = aucteeno_format_date( $timestamp, $date_format );
-		$is_showing_date = true;
-	}
+	$elapsed_result  = aucteeno_format_elapsed( abs( $diff ), $timestamp, $date_format );
+	$display_value   = $elapsed_result['display_value'];
+	$is_showing_date = $elapsed_result['is_showing_date'];
 } elseif ( $diff <= 0 && 'upcoming' !== $effective_state ) {
 	$display_value = __( 'Ended', 'aucteeno' );
 } elseif ( $diff < 3600 ) {
