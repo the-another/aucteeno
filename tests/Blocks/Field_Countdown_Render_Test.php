@@ -188,7 +188,42 @@ class Field_Countdown_Render_Test extends TestCase {
 		$this->assertStringContainsString( '>Closing<', $html );
 	}
 
-	public function test_pinned_target_date_ignores_an_active_override(): void {
+	public function test_starts_at_pin_ignores_an_active_override(): void {
+		// A starts_at pin is an explicit request to count to the start, so an
+		// override must not hijack it — this is the one mode where suppression
+		// is correct. Item starts in just over two hours, so pinning to
+		// starts_at counts down to it ("2 hours"), same as the un-pinned
+		// display would for an equivalent auto countdown.
+		$now = time();
+		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
+			array(
+				'value' => 'Closing',
+				'from'  => $now - 60,
+				'until' => $now + 7260,
+				'state' => 'closing',
+			)
+		);
+
+		$html = $this->run_render(
+			array( 'targetDate' => 'starts_at' ),
+			array(
+				'id'                => 42,
+				'bidding_starts_at' => $now + 7260,
+				'bidding_ends_at'   => $now + 14400,
+			)
+		);
+
+		$this->assertStringNotContainsString( '>Closing<', $html );
+		$this->assertStringContainsString( '>2 hours<', $html );
+	}
+
+	public function test_ends_at_pin_honours_an_active_override(): void {
+		// An ends_at pin only selects which timestamp to count to — it does not
+		// ask to suppress state — and the override's window sits entirely
+		// inside the span this mode already treats as running. This is the
+		// regression guard for the real bug: a live auction card pinning
+		// ends_at carried correct, currently-active override data and still
+		// rendered an ordinary countdown.
 		$now = time();
 		Filters\expectApplied( 'aucteeno_field_countdown_override' )->andReturn(
 			array(
@@ -204,8 +239,8 @@ class Field_Countdown_Render_Test extends TestCase {
 			$this->running_item()
 		);
 
-		$this->assertStringNotContainsString( '>Closing<', $html );
-		$this->assertStringContainsString( '>2 hours<', $html );
+		$this->assertStringContainsString( '>Closing<', $html );
+		$this->assertStringContainsString( 'aucteeno-field-countdown--closing', $html );
 	}
 
 	public function test_malformed_override_is_rejected(): void {

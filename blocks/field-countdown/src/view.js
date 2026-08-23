@@ -100,16 +100,19 @@ function updateCountdown( element ) {
 		? overrideState
 		: '';
 
-	// A pinned targetDate is an explicit request for that countdown, so it wins.
+	// A starts_at pin is an explicit request to count to the start, so an
+	// override must not hijack it. An ends_at pin only selects which timestamp
+	// to count to — the override's window sits entirely inside that mode's
+	// running span, so it applies there just as it does under 'auto'.
 	const override =
-		targetDate === 'auto'
-			? {
+		targetDate === 'starts_at'
+			? null
+			: {
 					value: overrideValue,
 					from: overrideFrom,
 					until: overrideUntil,
 					state: safeOverrideState,
-			  }
-			: null;
+			  };
 
 	const {
 		displayValue,
