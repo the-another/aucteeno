@@ -92,6 +92,14 @@ function updateCountdown( element ) {
 		dateFormat
 	);
 
+	// classList throws InvalidCharacterError on a token containing whitespace,
+	// and this runs before the tick is rescheduled — a throw would freeze the
+	// countdown permanently. sanitize_html_class() is the only writer today, but
+	// it ends in a filter a site can hook, so re-check the token here.
+	const safeOverrideState = /^[A-Za-z0-9_-]*$/.test( overrideState )
+		? overrideState
+		: '';
+
 	// A pinned targetDate is an explicit request for that countdown, so it wins.
 	const override =
 		targetDate === 'auto'
@@ -99,7 +107,7 @@ function updateCountdown( element ) {
 					value: overrideValue,
 					from: overrideFrom,
 					until: overrideUntil,
-					state: overrideState,
+					state: safeOverrideState,
 			  }
 			: null;
 

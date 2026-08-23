@@ -202,15 +202,24 @@ $override_until = 0;
 $override_state = '';
 
 if ( is_array( $override ) && isset( $override['value'] ) && is_string( $override['value'] ) && '' !== $override['value'] ) {
-	$candidate_from  = (int) ( $override['from'] ?? 0 );
-	$candidate_until = (int) ( $override['until'] ?? 0 );
+	$candidate_from  = is_numeric( $override['from'] ?? null ) ? (int) $override['from'] : 0;
+	$candidate_until = is_numeric( $override['until'] ?? null ) ? (int) $override['until'] : 0;
 
 	if ( $candidate_from > 0 && $candidate_until > 0 && $candidate_from < $candidate_until ) {
 		$override_value = $override['value'];
 		$override_from  = $candidate_from;
 		$override_until = $candidate_until;
+
 		// Interpolated into a class name below, so it must be sanitised here.
-		$override_state = sanitize_html_class( (string) ( $override['state'] ?? '' ) );
+		$raw_state      = $override['state'] ?? '';
+		$override_state = is_string( $raw_state ) ? sanitize_html_class( $raw_state ) : '';
+
+		// sanitize_html_class() ends in a filter a site can hook, and the client
+		// re-checks this token before handing it to classList. Keep both sides
+		// agreeing on what a valid suffix is.
+		if ( ! preg_match( '/^[A-Za-z0-9_-]*$/', $override_state ) ) {
+			$override_state = '';
+		}
 	}
 }
 
