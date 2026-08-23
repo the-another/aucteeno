@@ -118,11 +118,13 @@ function updateCountdown( element ) {
 					since: overrideSince,
 			  };
 
-	const overrideResult = applyOverride( now, override, {
-		...computed,
-		state,
-		dateFormat,
-	} );
+	const computedWithContext = { ...computed, state, dateFormat };
+	const overrideResult = applyOverride( now, override, computedWithContext );
+	// applyOverride() returns the exact object passed in when it rejects the
+	// override (out of window, malformed, none supplied) - reference identity
+	// is a free, always-correct signal that the override is currently active,
+	// without re-deriving the from/until window check a third time here.
+	const overrideApplied = overrideResult !== computedWithContext;
 	const {
 		displayValue,
 		isShowingDate,
@@ -190,8 +192,12 @@ function updateCountdown( element ) {
 	}
 
 	// Schedule next update.
-	// For expired items, continue updating if less than 1 week ago.
-	const shouldContinue = state !== 'expired' || Math.abs( diff ) < 604800;
+	// For expired items, continue updating if less than 1 week ago - unless
+	// an override is currently active, which must keep ticking regardless
+	// (e.g. a `since` counter opened on an item expired more than a week
+	// would otherwise freeze the moment this function next runs).
+	const shouldContinue =
+		state !== 'expired' || Math.abs( diff ) < 604800 || overrideApplied;
 	if ( shouldContinue ) {
 		// When `since` is actively driving the displayed value, the tick
 		// interval must track that elapsed value instead of the countdown
@@ -200,7 +206,22 @@ function updateCountdown( element ) {
 			typeof overrideResult.elapsed === 'number'
 				? overrideResult.elapsed
 				: Math.abs( diff );
-		const interval = getUpdateInterval( intervalBasis );
+		let interval = getUpdateInterval( intervalBasis );
+
+		// An override's own window can open or close sooner than the next
+		// scheduled tick would otherwise land - clamp to the nearest
+		// upcoming boundary so the value/class don't linger past `until`
+		// (or fail to apply right at `from`/`since`) for as long as
+		// getUpdateInterval() would otherwise allow.
+		if ( override ) {
+			const boundaries = [ override.from, override.until, override.since ]
+				.filter( ( t ) => t > now )
+				.map( ( t ) => ( t - now ) * 1000 );
+			if ( boundaries.length > 0 ) {
+				interval = Math.min( interval, ...boundaries );
+			}
+		}
+
 		setTimeout( () => updateCountdown( element ), interval );
 	}
 }
