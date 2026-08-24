@@ -4,7 +4,7 @@ Tags: auction, woocommerce, auction management, bidding, lots
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.3
-Stable tag: 1.8.4
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,16 @@ Yes, the plugin provides a full REST API at `/wp-json/aucteeno/v1/` for programm
 5. Plugin settings page
 
 == Changelog ==
+
+= 1.9.0 - 2026-08-24 =
+* Add: `aucteeno_field_countdown_override` filter on the countdown block — a consuming plugin returns a value plus the window it covers (`value`, `from`, `until`, and optionally `state` and `label`), and the block shows that value instead of a remaining-time countdown for exactly that period; the contract is a window rather than a bare string because the block re-renders from its data attributes every second, so a filter that only replaced the server output would be correct for one frame and then clobbered by the first tick
+* Add: `since` on that override — supply a timestamp and the value becomes a live "time ago" counter using the block's own scale (seconds and minutes under an hour, then hours, then days, then a formatted date), so a consumer can show elapsed time without reimplementing the breakpoints
+* Add: `aucteeno_field_ends_at_label` and `aucteeno_field_ends_at_value` filters on the ends-at block, letting a consumer replace either half of that line; a filtered value opts the block out of client-side local-time hydration so the consumer's string is not overwritten on load, which also means the consumer owns the timezone presentation for that value
+* Add: `aucteeno_format_elapsed()` global function exposing the same "time ago" scale the countdown block uses, so a consumer producing a matching string calls one shared implementation instead of carrying its own copy of the breakpoints that then drifts
+* Refactor: The elapsed-time scale was duplicated between the block's PHP render and its JavaScript; both now call a single function per side, with the existing expired-state tests unchanged as the proof the extraction altered no output
+* Chore: A block with no consumer registered renders byte-for-byte as it did in 1.8.4 — the override data attributes are emitted only when a filter returns a well-formed override, and `calculateState`, `formatCountdown`, `getUpdateInterval` and `updateCardClasses` are untouched
+* Chore: CI now runs on every pull request instead of only those targeting `master`; a pull request into a release branch previously ran no checks at all, which GitHub renders as an absence of failures rather than a warning
+* Chore: Refresh dev tooling locks (composer/ca-bundle 1.5.14, symfony/filesystem 7.4.17, symfony/process 7.4.17) — no runtime dependency changes
 
 = 1.8.4 - 2026-08-21 =
 * Fix: The search modal's busy spinner rendered next to a still-visible magnifier icon — the stylesheet's unconditional `display: flex` on the icon overrode its `hidden` attribute; the icon now actually hides while the spinner runs, and the disabled submit button drops its pointer cursor and hover accent so it doesn't advertise clickability
