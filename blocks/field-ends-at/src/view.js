@@ -10,7 +10,22 @@
 
 import { formatDatetime } from '../../shared/src/datetime-utils';
 
-function hydrate( element ) {
+/**
+ * Hydrate one `<time data-aucteeno-datetime>` element to the visitor's local
+ * timezone, unless it is already flagged as hydrated.
+ *
+ * That flag is also how render.php opts an element out of hydration
+ * entirely: a `<time>` whose text came from the aucteeno_field_ends_at_value
+ * filter carries `data-aucteeno-datetime-hydrated="true"` from the server,
+ * so this function returns before ever touching it - the consumer-supplied
+ * value must not be overwritten by the plain local-time date a moment later.
+ *
+ * Exported for direct unit testing; the module's own DOMContentLoaded /
+ * MutationObserver wiring below is what actually drives it on a real page.
+ *
+ * @param {HTMLElement} element The `<time>` element to hydrate.
+ */
+export function hydrate( element ) {
 	if ( element.dataset.aucteenoDatetimeHydrated === 'true' ) {
 		return;
 	}

@@ -101,3 +101,107 @@ function aucteeno_get_active_auctions_count( string $country, string $subdivisio
 function aucteeno_get_item_counts_by_location(): array {
 	return Container::get_instance()->get( 'location_count_provider' )->get_item_counts_by_location();
 }
+
+/**
+ * Format a timestamp based on the selected date format.
+ *
+ * The timestamp is a Unix timestamp (UTC-based). wp_date() automatically converts
+ * it to the WordPress timezone setting for display.
+ *
+ * @param int    $timestamp   Unix timestamp (UTC-based).
+ * @param string $date_format Date format setting.
+ * @return string Formatted date string in WordPress timezone.
+ */
+function aucteeno_format_date( $timestamp, $date_format ) {
+	switch ( $date_format ) {
+		case 'mdy':
+			return wp_date( 'm/d/Y', $timestamp );
+		case 'dmy':
+			return wp_date( 'd/m/Y', $timestamp );
+		case 'ymd':
+			return wp_date( 'Y-m-d', $timestamp );
+		case 'long':
+			return wp_date( 'F j, Y', $timestamp );
+		case 'long_eu':
+			return wp_date( 'j F Y', $timestamp );
+		case 'full':
+			return wp_date( 'l, F jS Y', $timestamp );
+		case 'default':
+		default:
+			return wp_date( get_option( 'date_format' ), $timestamp );
+	}
+}
+
+/**
+ * Format an elapsed duration since a moment in time, with the same smart
+ * scaling a countdown display uses for its own expired state: seconds and
+ * minutes, then hours, then days, then a formatted date once the duration
+ * passes a week.
+ *
+ * Generic on purpose: a consuming plugin calls this to render a matching
+ * "time since" string anywhere it has a UTC timestamp to measure from - for
+ * example, a plugin that needs to say how long ago a closing auction ended.
+ *
+ * @since 1.9.0
+ *
+ * @param int    $elapsed     Elapsed duration in seconds. Must be >= 0.
+ * @param int    $timestamp   Unix timestamp the elapsed duration is measured
+ *                             from - used only once the duration scales up to
+ *                             a formatted date.
+ * @param string $date_format Date format setting; see aucteeno_format_date().
+ * @return array{ display_value: string, is_showing_date: bool }
+ */
+function aucteeno_format_elapsed( int $elapsed, int $timestamp, string $date_format ): array {
+	if ( $elapsed < 3600 ) {
+		// Less than 1 hour ago - show minutes and seconds elapsed.
+		$minutes = floor( $elapsed / 60 );
+		$seconds = $elapsed % 60;
+		$parts   = array();
+
+		if ( $minutes > 0 ) {
+			/* translators: %d: number of minutes */
+			$parts[] = sprintf( _n( '%d minute', '%d minutes', $minutes, 'aucteeno' ), $minutes );
+		}
+
+		/* translators: %d: number of seconds */
+		$parts[] = sprintf( _n( '%d second', '%d seconds', $seconds, 'aucteeno' ), $seconds );
+
+		return array(
+			/* translators: %s: elapsed time (e.g., "5 minutes 30 seconds") */
+			'display_value'   => sprintf( __( '%s ago', 'aucteeno' ), implode( ' ', $parts ) ),
+			'is_showing_date' => false,
+		);
+	}
+
+	if ( $elapsed < 86400 ) {
+		// Less than 1 day ago - show hours elapsed.
+		$hours = floor( $elapsed / 3600 );
+		/* translators: %d: number of hours */
+		$time_string = sprintf( _n( '%d hour', '%d hours', $hours, 'aucteeno' ), $hours );
+
+		return array(
+			/* translators: %s: elapsed time (e.g., "3 hours") */
+			'display_value'   => sprintf( __( '%s ago', 'aucteeno' ), $time_string ),
+			'is_showing_date' => false,
+		);
+	}
+
+	if ( $elapsed < 604800 ) {
+		// Less than 1 week ago - show days elapsed.
+		$days = floor( $elapsed / 86400 );
+		/* translators: %d: number of days */
+		$time_string = sprintf( _n( '%d day', '%d days', $days, 'aucteeno' ), $days );
+
+		return array(
+			/* translators: %s: elapsed time (e.g., "2 days") */
+			'display_value'   => sprintf( __( '%s ago', 'aucteeno' ), $time_string ),
+			'is_showing_date' => false,
+		);
+	}
+
+	// More than 1 week ago - show the date.
+	return array(
+		'display_value'   => aucteeno_format_date( $timestamp, $date_format ),
+		'is_showing_date' => true,
+	);
+}

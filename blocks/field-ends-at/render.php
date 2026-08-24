@@ -74,7 +74,65 @@ if ( $respect_bidding_status ) {
 	$label_text = $attributes['label'] ?? __( 'Bidding closes at', 'aucteeno' );
 }
 
-$formatted = wp_date( $php_format, $timestamp );
+/**
+ * Filters the label shown beside the bidding end time.
+ *
+ * Lets a consuming plugin state something the block cannot know on its own —
+ * for example that an auction closing its lots on a stagger has already begun
+ * closing, when this block's own timestamp is the last lot's.
+ *
+ * Note this block renders once and never re-evaluates: `view.js` only hydrates
+ * the timestamp to local time a single time. A consumer that varies the label
+ * by wall-clock must therefore do its own time comparison, and the label can be
+ * up to one page-cache lifetime stale.
+ *
+ * A non-scalar return (array, object, null) is discarded and the computed
+ * label stands; only string/int/float/bool are accepted.
+ *
+ * @since 1.9.0
+ *
+ * @param string $label_text    The computed label.
+ * @param array  $item_data     Item context data.
+ * @param array  $attributes    Block attributes.
+ * @param string $current_state Computed state: upcoming, running or expired.
+ */
+$filtered   = apply_filters( 'aucteeno_field_ends_at_label', $label_text, $item_data, $attributes, $current_state );
+$label_text = is_scalar( $filtered ) ? (string) $filtered : $label_text;
+
+$formatted            = wp_date( $php_format, $timestamp );
+$unfiltered_formatted = $formatted;
+
+/**
+ * Filters the formatted value shown beside the label.
+ *
+ * A filtered value is server-rendered and is NOT hydrated to the visitor's
+ * local timezone: view.js's hydrate() skips any <time> element carrying
+ * data-aucteeno-datetime-hydrated="true", which this block sets below
+ * whenever the filter actually changes the value. Without that flag, the
+ * plain WordPress-timezone date would silently replace a consumer-supplied
+ * value a few hundred milliseconds after paint - the exact load-flash this
+ * filter exists to let a consumer avoid.
+ *
+ * A consumer supplying a value therefore owns both its timezone
+ * presentation and its staleness: this block still renders once and never
+ * re-evaluates, so a value that varies by wall-clock (e.g. showing elapsed
+ * time once bidding has passed this timestamp) must do its own time
+ * comparison, and can be up to one page-cache lifetime stale.
+ *
+ * @since 1.9.0
+ * @param string $formatted     The formatted date string.
+ * @param array  $item_data     Item context data.
+ * @param array  $attributes    Block attributes.
+ * @param string $current_state Computed state: upcoming, running or expired.
+ */
+$filtered_value = apply_filters( 'aucteeno_field_ends_at_value', $formatted, $item_data, $attributes, $current_state );
+$formatted      = is_scalar( $filtered_value ) ? (string) $filtered_value : $formatted;
+
+// Only a filter that actually changed the value opts this element out of
+// client-side hydration - an unfiltered block, or one whose filter returned
+// the same string, still hydrates to local time exactly as before.
+$value_overridden   = $formatted !== $unfiltered_formatted;
+$hydrated_attribute = $value_overridden ? ' data-aucteeno-datetime-hydrated="true"' : '';
 
 $orientation        = $attributes['orientation'] ?? 'column';
 $wrapper_attributes = get_block_wrapper_attributes(
@@ -94,7 +152,7 @@ ob_start();
 				data-timestamp="<?php echo esc_attr( (string) $timestamp ); ?>"
 				data-format="<?php echo esc_attr( $datetime_format ); ?>"
 				data-custom-format="<?php echo esc_attr( $custom_format ); ?>"
-				datetime="<?php echo esc_attr( gmdate( 'c', $timestamp ) ); ?>"
+				datetime="<?php echo esc_attr( gmdate( 'c', $timestamp ) ); ?>"<?php echo $hydrated_attribute; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string built above from a boolean, no user input. ?>
 			><?php echo esc_html( $formatted ); ?></time>
 		</dd>
 	</dl>
