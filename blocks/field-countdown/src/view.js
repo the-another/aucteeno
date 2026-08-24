@@ -33,6 +33,7 @@ import {
 	formatCountdown,
 	getUpdateInterval,
 	updateCardClasses,
+	applyOverride,
 } from './countdown-utils';
 
 /**
@@ -57,6 +58,12 @@ function updateCountdown( element ) {
 	const labelRunningDate =
 		element.dataset.labelRunningDate || 'Bidding ends on';
 	const labelExpired = element.dataset.labelExpired || 'Bidding ended';
+	const overrideValue = element.dataset.overrideValue || '';
+	const overrideFrom = parseInt( element.dataset.overrideFrom, 10 ) || 0;
+	const overrideUntil = parseInt( element.dataset.overrideUntil, 10 ) || 0;
+	const overrideState = element.dataset.overrideState || '';
+	const overrideLabel = element.dataset.overrideLabel || '';
+	const overrideSince = parseInt( element.dataset.overrideSince, 10 ) || 0;
 
 	if ( ! startsAt || ! endsAt ) {
 		return;
@@ -80,16 +87,57 @@ function updateCountdown( element ) {
 
 	// Calculate countdown display.
 	const diff = timestamp - now;
-	const { displayValue, isShowingDate } = formatCountdown(
+	const computed = formatCountdown(
 		diff,
 		timestamp,
 		effectiveState,
 		dateFormat
 	);
 
+	// classList throws InvalidCharacterError on a token containing whitespace,
+	// and this runs before the tick is rescheduled — a throw would freeze the
+	// countdown permanently. sanitize_html_class() is the only writer today, but
+	// it ends in a filter a site can hook, so re-check the token here.
+	const safeOverrideState = /^[A-Za-z0-9_-]*$/.test( overrideState )
+		? overrideState
+		: '';
+
+	// A starts_at pin is an explicit request to count to the start, so an
+	// override must not hijack it. An ends_at pin only selects which timestamp
+	// to count to — the override's window sits entirely inside that mode's
+	// running span, so it applies there just as it does under 'auto'.
+	const override =
+		targetDate === 'starts_at'
+			? null
+			: {
+					value: overrideValue,
+					from: overrideFrom,
+					until: overrideUntil,
+					state: safeOverrideState,
+					label: overrideLabel,
+					since: overrideSince,
+			  };
+
+	const computedWithContext = { ...computed, state, dateFormat };
+	const overrideResult = applyOverride( now, override, computedWithContext );
+	// applyOverride() returns the exact object passed in when it rejects the
+	// override (out of window, malformed, none supplied) - reference identity
+	// is a free, always-correct signal that the override is currently active,
+	// without re-deriving the from/until window check a third time here.
+	const overrideApplied = overrideResult !== computedWithContext;
+	const {
+		displayValue,
+		isShowingDate,
+		state: displayState,
+		label: overrideAppliedLabel,
+	} = overrideResult;
+
 	// Determine label based on effective state and whether showing date.
+	// An override's own label, when supplied, wins outright.
 	let label;
-	if ( ! respectStatus ) {
+	if ( overrideAppliedLabel ) {
+		label = overrideAppliedLabel;
+	} else if ( ! respectStatus ) {
 		label = singleLabel;
 	} else if ( effectiveState === 'expired' ) {
 		label = labelExpired;
@@ -105,9 +153,10 @@ function updateCountdown( element ) {
 				: labelRunningTime;
 	}
 
-	// Update the countdown value.
+	// Update the countdown value. A static override string does not need
+	// rewriting sixty times a minute.
 	const valueEl = element.querySelector( '.aucteeno-field-countdown__value' );
-	if ( valueEl ) {
+	if ( valueEl && valueEl.textContent !== displayValue ) {
 		valueEl.textContent = displayValue;
 	}
 
@@ -117,14 +166,22 @@ function updateCountdown( element ) {
 		labelEl.textContent = label;
 	}
 
-	// Update countdown element classes if state changed.
+	// Update the modifier class. An override may supply a suffix this file has
+	// never heard of, and the override can start or stop without the computed
+	// state changing, so match by prefix rather than by a hardcoded list.
+	const desiredClass = `aucteeno-field-countdown--${ displayState }`;
+	if ( ! element.classList.contains( desiredClass ) ) {
+		Array.from( element.classList )
+			.filter( ( name ) =>
+				name.startsWith( 'aucteeno-field-countdown--' )
+			)
+			.forEach( ( name ) => element.classList.remove( name ) );
+		element.classList.add( desiredClass );
+	}
+
+	// Card classes follow the computed state only — an override never reaches
+	// them, so a card keeps the class it was rendered with.
 	if ( state !== previousState ) {
-		element.classList.remove(
-			'aucteeno-field-countdown--upcoming',
-			'aucteeno-field-countdown--running',
-			'aucteeno-field-countdown--expired'
-		);
-		element.classList.add( `aucteeno-field-countdown--${ state }` );
 		element.dataset.currentState = state;
 
 		// Find and update parent card element.
@@ -135,10 +192,36 @@ function updateCountdown( element ) {
 	}
 
 	// Schedule next update.
-	// For expired items, continue updating if less than 1 week ago.
-	const shouldContinue = state !== 'expired' || Math.abs( diff ) < 604800;
+	// For expired items, continue updating if less than 1 week ago - unless
+	// an override is currently active, which must keep ticking regardless
+	// (e.g. a `since` counter opened on an item expired more than a week
+	// would otherwise freeze the moment this function next runs).
+	const shouldContinue =
+		state !== 'expired' || Math.abs( diff ) < 604800 || overrideApplied;
 	if ( shouldContinue ) {
-		const interval = getUpdateInterval( Math.abs( diff ) );
+		// When `since` is actively driving the displayed value, the tick
+		// interval must track that elapsed value instead of the countdown
+		// diff, or a freshly-started elapsed counter won't tick every second.
+		const intervalBasis =
+			typeof overrideResult.elapsed === 'number'
+				? overrideResult.elapsed
+				: Math.abs( diff );
+		let interval = getUpdateInterval( intervalBasis );
+
+		// An override's own window can open or close sooner than the next
+		// scheduled tick would otherwise land - clamp to the nearest
+		// upcoming boundary so the value/class don't linger past `until`
+		// (or fail to apply right at `from`/`since`) for as long as
+		// getUpdateInterval() would otherwise allow.
+		if ( override ) {
+			const boundaries = [ override.from, override.until, override.since ]
+				.filter( ( t ) => t > now )
+				.map( ( t ) => ( t - now ) * 1000 );
+			if ( boundaries.length > 0 ) {
+				interval = Math.min( interval, ...boundaries );
+			}
+		}
+
 		setTimeout( () => updateCountdown( element ), interval );
 	}
 }

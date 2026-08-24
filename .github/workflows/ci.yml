@@ -1,8 +1,9 @@
 name: CI
 
+# No base-branch filter on pull_request: feature PRs target release/* branches,
+# and a PR that silently runs no CI at all reads as green when it isn't.
 on:
   pull_request:
-    branches: [master]
   workflow_dispatch:
 
 concurrency:
